@@ -1,28 +1,27 @@
+
 import express from 'express';
 import { createServer } from 'http';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { initSocket } from './config/socket.js';
-import authRoutes from './routes/auth.routes.js';
+import { initSocket } from './config/socket.js'; // 1. Importar primero
+import cors from 'cors';
 
 const app = express();
 const httpServer = createServer(app);
 
-// Inicializar Sockets
 initSocket(httpServer);
 
-// Middlewares
 app.use(cors({
-    origin: 'http://localhost:4200', // Tu PWA Angular
+    origin: 'http://localhost:4200',
     credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
 
-// Rutas
+
+import authRoutes from './routes/auth.routes.js';
 app.use('/security', authRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 httpServer.listen(PORT, () => {
-    console.log(`Auth Service corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });
