@@ -22,7 +22,7 @@ app.use(cookieParser());
 import inventoryRoutes from './routes/inventory.routes.js';
 app.use('/inventory', inventoryRoutes);
 
-const PORT = 3000;
+const PORT = 3001;
 httpServer.listen(PORT, () => {
     console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });

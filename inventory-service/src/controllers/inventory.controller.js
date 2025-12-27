@@ -1,4 +1,4 @@
-import db from '../config/db.js';
+import { pool } from '../config/db.js';
 
 export const createSession = async (req, res) => {
     const { store_name } = req.body;
@@ -8,7 +8,7 @@ export const createSession = async (req, res) => {
     const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
-        const [result] = await db.execute(
+        const [result] = await pool.execute(
             'INSERT INTO inventory_sessions (session_code, store_name, created_by) VALUES (?, ?, ?)',
             [sessionCode, store_name, userId]
         );
@@ -29,8 +29,8 @@ export const registerScan = async (req, res) => {
 
     try {
         // 1. Buscamos el ID de la sesión usando el código único
-        const [session] = await db.execute(
-            'SELECT id FROM inventory_sessions WHERE session_code = ? AND status = "active"',
+        const [session] = await pool.execute(
+            'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
             [session_code]
         );
 
@@ -41,8 +41,8 @@ export const registerScan = async (req, res) => {
         const sessionId = session[0].id;
 
         // 2. Insertamos el escaneo en la base de datos
-        await db.execute(
-            'INSERT INTO inventory_scans (session_id, sku, quantity, scanned_by) VALUES (?, ?, ?, ?)',
+        await pool.execute(
+            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por) VALUES (?, ?, ?, ?)',
             [sessionId, sku, quantity, scannedBy]
         );
 
@@ -65,12 +65,13 @@ export const registerScan = async (req, res) => {
 };
 
 export const syncBulkScans = async (req, res) => {
+    
     const { session_code, scans } = req.body; // 'scans' es un array de objetos
     const userId = req.user.id;
 
     try {
-        const [session] = await db.execute(
-            'SELECT id FROM inventory_sessions WHERE session_code = ? AND status = "active"',
+        const [session] = await pool.execute(
+            'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
             [session_code]
         );
 
@@ -81,7 +82,7 @@ export const syncBulkScans = async (req, res) => {
         const values = scans.map(s => [sessionId, s.sku, s.quantity, userId, s.scanned_at]);
 
         await db.query(
-            'INSERT INTO inventory_scans (session_id, sku, quantity, scanned_by, scanned_at) VALUES ?',
+            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo) VALUES ?',
             [values]
         );
 
@@ -114,7 +115,7 @@ export const getSessionSummary = async (req, res) => {
             ORDER BY ultimo_escaneo DESC
         `;
 
-        const [summary] = await db.execute(query, [session_code]);
+        const [summary] = await pool.execute(query, [session_code]);
 
         // También obtenemos info general de la sesión
         const [sessionInfo] = await db.execute(
