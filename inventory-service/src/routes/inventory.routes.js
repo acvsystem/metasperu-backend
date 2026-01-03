@@ -3,7 +3,8 @@ import {
     createSession, 
     registerScan, 
     syncBulkScans, 
-    getSessionSummary 
+    getSessionSummary,
+    getStores 
 } from '../controllers/inventory.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 
@@ -18,5 +19,6 @@ router.get('/summary/:session_code', verifyToken, getSessionSummary);
 router.post('/scan', verifyToken, registerScan); 
 // Usada para subir datos guardados en el Pocket tras estar offline
 router.post('/sync-bulk', verifyToken, syncBulkScans); 
+router.get('/stores', verifyToken, getStores);
 
 export default router;

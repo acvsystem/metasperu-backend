@@ -1,7 +1,7 @@
 import { pool } from '../config/db.js';
 
 export const createSession = async (req, res) => {
-    const { store_name } = req.body;
+    const { tienda_id } = req.body;
     const userId = req.user.id; // Obtenido del middleware de auth
 
     // Generar código único de 6 caracteres (ej: A7B2X9)
@@ -9,8 +9,8 @@ export const createSession = async (req, res) => {
 
     try {
         const [result] = await pool.execute(
-            'INSERT INTO inventory_sessions (session_code, store_name, created_by) VALUES (?, ?, ?)',
-            [sessionCode, store_name, userId]
+            'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id,estado, creado_por) VALUES (?, ?, ?, ?)',
+            [sessionCode, tienda_id, 'ACTIVO', userId]
         );
 
         res.status(201).json({
@@ -65,7 +65,7 @@ export const registerScan = async (req, res) => {
 };
 
 export const syncBulkScans = async (req, res) => {
-    
+
     const { session_code, scans } = req.body; // 'scans' es un array de objetos
     const userId = req.user.id;
 
@@ -103,14 +103,13 @@ export const getSessionSummary = async (req, res) => {
 
     try {
         const query = `
-            SELECT 
-                s.sku, 
-                SUM(s.quantity) as total_cantidad,
-                MAX(s.scanned_at) as ultimo_escaneo,
+            SELECT     s.sku, 
+                SUM(s.cantidad) as total_cantidad,
+                MAX(s.escaneado_por) as ultimo_escaneo,
                 COUNT(s.id) as veces_escaneado
-            FROM inventory_scans s
-            JOIN inventory_sessions sess ON s.session_id = sess.id
-            WHERE sess.session_code = ?
+            FROM inventario_escaneos s
+            JOIN inventario_sesiones sess ON s.sesion_id = sess.id
+            WHERE sess.codigo_sesion = ?
             GROUP BY s.sku
             ORDER BY ultimo_escaneo DESC
         `;
@@ -118,8 +117,11 @@ export const getSessionSummary = async (req, res) => {
         const [summary] = await pool.execute(query, [session_code]);
 
         // También obtenemos info general de la sesión
-        const [sessionInfo] = await db.execute(
-            'SELECT store_name, status, created_at FROM inventory_sessions WHERE session_code = ?',
+        const [sessionInfo] = await pool.execute(
+            `SELECT sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, usuario FROM inventario_sesiones sess
+             INNER JOIN tiendas t ON t.id = sess.tienda_id
+             INNER JOIN usuarios u ON u.id = sess.creado_por
+             WHERE codigo_sesion = ?`,
             [session_code]
         );
 
@@ -130,5 +132,34 @@ export const getSessionSummary = async (req, res) => {
 
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener el resumen', error: error.message });
+    }
+};
+
+export const getStores = async (req, res) => {
+    try {
+        // Seleccionamos id y nombre de la tabla tiendas
+        const [rows] = await pool.query('SELECT id, serie, nombre_tienda FROM tiendas ORDER BY nombre_tienda ASC');
+
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Listar sesiones activas para retomar
+export const getActiveSessions = async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT s.id, s.codigo_sesion, s.tienda_id,t.nombre_tienda, s.creado_por, u.usuario, 
+            (SELECT COUNT(DISTINCT sku) FROM inventario_escaneos e WHERE e.id = s.id) as total_skus
+            FROM inventario_sesiones s 
+            INNER JOIN tiendas t on t.id = s.tienda_id
+            INNER JOIN usuarios u on u.id = s.creado_por
+            WHERE s.estado = 'ACTIVO' 
+            ORDER BY s.creado_por DESC`
+        );
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
