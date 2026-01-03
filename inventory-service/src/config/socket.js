@@ -5,7 +5,7 @@ let io;
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: "http://localhost:4200", // URL de tu PWA Angular
+            origin: "http://localhost:4200", 
             methods: ["GET", "POST"],
             credentials: true
         }
@@ -13,6 +13,19 @@ export const initSocket = (server) => {
 
     io.on('connection', (socket) => {
         console.log('Cliente conectado:', socket.id);
+        // --- ESTO ES LO QUE FALTA ---
+        socket.on('join_session', (sessionCode) => {
+            
+            if (sessionCode) {
+                const room = sessionCode.toUpperCase().trim();
+                socket.join(room);
+                console.log(`Socket ${socket.id} se unió a la sala: ${room}`);
+            }
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Cliente desconectado:', socket.id);
+        });
     });
 
     return io;

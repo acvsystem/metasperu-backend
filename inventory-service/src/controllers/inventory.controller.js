@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-
+import { getIO } from '../config/socket.js';
 export const createSession = async (req, res) => {
     const { tienda_id } = req.body;
     const userId = req.user.id; // Obtenido del middleware de auth
@@ -68,7 +68,6 @@ export const syncBulkScans = async (req, res) => {
 
     const { session_code, scans } = req.body; // 'scans' es un array de objetos
     const userId = req.user.id;
-
     try {
         const [session] = await pool.execute(
             'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
@@ -79,19 +78,19 @@ export const syncBulkScans = async (req, res) => {
         const sessionId = session[0].id;
 
         // Preparamos los datos para una sola inserción masiva (optimización SQL)
-        const values = scans.map(s => [sessionId, s.sku, s.quantity, userId, s.scanned_at]);
+        const values = scans.map(s => [sessionId, s.sku, s.quantity, 1, s.scanned_at]);
 
-        await db.query(
+        await pool.query(
             'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo) VALUES ?',
             [values]
         );
 
         // Notificamos al Dashboard que llegaron nuevos datos
-        req.io.to(session_code).emit('bulk-scan-sync', {
+        getIO().to(session_code).emit('update_totals', {
             count: scans.length,
             last_scans: scans.slice(-5) // enviamos los últimos 5 para previsualización
         });
-
+        console.log(values);
         res.status(200).json({ message: 'Sincronización exitosa' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -99,6 +98,7 @@ export const syncBulkScans = async (req, res) => {
 };
 
 export const getSessionSummary = async (req, res) => {
+    console.log(req.params);
     const { session_code } = req.params;
 
     try {
