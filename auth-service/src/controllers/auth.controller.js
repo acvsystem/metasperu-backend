@@ -4,8 +4,9 @@ import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
 
 export const login = async (req, res) => {
-    const { username, password } = req.body;
 
+    const { username, password } = req.body;
+    console.log(username, password);
     try {
         // 1. Buscar usuario
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE usuario = ?', [username]);
@@ -51,7 +52,7 @@ export const checkSession = async (req, res) => {
     try {
         // req.user viene inyectado desde el middleware
         const [rows] = await pool.query('SELECT id, usuario, nombre, rol FROM usuarios WHERE id = ?', [req.user.id]);
-        
+
         if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
 
         res.json(rows[0]);
