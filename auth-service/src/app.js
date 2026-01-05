@@ -19,7 +19,7 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 import authRoutes from './routes/auth.routes.js';
-app.use('/security', authRoutes);
+app.use('/auth', authRoutes);
 
 const PORT = 3000;
 httpServer.listen(PORT, () => {
