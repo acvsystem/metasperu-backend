@@ -2,13 +2,19 @@ import { Server } from 'socket.io';
 
 let io;
 
+
+app.use(cors({
+    origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+    credentials: true
+}));
+
 export const initSocket = (server) => {
     io = new Server(server, {
         path: '/inventory-socket/',
         cors: {
-            origin: "*", 
-            methods: ["GET", "POST"],
-            credentials: true
+            origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+            credentials: true,
+            methods: ["GET", "POST"]
         }
     });
 
@@ -16,7 +22,7 @@ export const initSocket = (server) => {
         console.log('Cliente conectado:', socket.id);
         // --- ESTO ES LO QUE FALTA ---
         socket.on('join_session', (sessionCode) => {
-            
+
             if (sessionCode) {
                 const room = sessionCode.toUpperCase().trim();
                 socket.join(room);
