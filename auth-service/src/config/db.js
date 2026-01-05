@@ -6,9 +6,9 @@ dotenv.config();
 
 // Creamos el pool de conexiones
 export const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    host: process.env.DB_HOST || '192.168.0.9',
+    user: process.env.DB_USER || 'dbserver',
+    password: process.env.DB_PASSWORD || 'J4s0nd34d$$',
     database: process.env.DB_NAME || 'metasperu_bd',
     waitForConnections: true,
     connectionLimit: 10, // Máximo de conexiones simultáneas
