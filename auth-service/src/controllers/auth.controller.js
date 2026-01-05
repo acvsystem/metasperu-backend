@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
 
+
 export const login = async (req, res) => {
 
     const { username, password } = req.body;
@@ -18,20 +19,18 @@ export const login = async (req, res) => {
         // 2. Verificar password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ message: 'Credenciales inválidas' });
-        console.log({ id: user.id, rol: user.rol },
-            process.env.JWT_SECRET,
-            { expiresIn: '8h' });
+        
         // 3. Generar JWT
         const token = jwt.sign(
             { id: user.id, rol: user.rol },
-            process.env.JWT_SECRET,
+            'una_clave_muy_segura_y_larga_123456',
             { expiresIn: '8h' }
         );
 
         // 4. Configurar Cookie Segura (PWA compliant)
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: 'development' === 'production',
             sameSite: 'strict',
             maxAge: 8 * 60 * 60 * 1000 // 8 horas
         });
