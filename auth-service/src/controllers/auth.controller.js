@@ -37,7 +37,7 @@ export const login = async (req, res) => {
         // 5. Notificar via Socket.io (Opcional: Registro de auditoría en tiempo real)
         //const io = getIO();
         //io.emit('user:logged', { username: user.usuario, time: new Date() });
-
+        console.log(rows);
         res.json({
             user: { id: user.id, nombre: user.nombre, rol: user.rol }
         });
