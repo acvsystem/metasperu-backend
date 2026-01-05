@@ -2,12 +2,6 @@ import { Server } from 'socket.io';
 
 let io;
 
-
-app.use(cors({
-    origin: (origin, callback) => callback(null, true), // Permite cualquier origen
-    credentials: true
-}));
-
 export const initSocket = (server) => {
     io = new Server(server, {
         path: '/inventory-socket/',
