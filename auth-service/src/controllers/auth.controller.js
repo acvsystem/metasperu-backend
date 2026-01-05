@@ -10,7 +10,7 @@ export const login = async (req, res) => {
     try {
         // 1. Buscar usuario
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE usuario = ?', [username]);
-        
+
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
@@ -18,14 +18,14 @@ export const login = async (req, res) => {
         // 2. Verificar password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ message: 'Credenciales inválidas' });
-
+        console.log(rows);
         // 3. Generar JWT
         const token = jwt.sign(
             { id: user.id, rol: user.rol },
             process.env.JWT_SECRET,
             { expiresIn: '8h' }
         );
-        console.log(rows);
+
         // 4. Configurar Cookie Segura (PWA compliant)
         res.cookie('auth_token', token, {
             httpOnly: true,
@@ -37,7 +37,7 @@ export const login = async (req, res) => {
         // 5. Notificar via Socket.io (Opcional: Registro de auditoría en tiempo real)
         //const io = getIO();
         //io.emit('user:logged', { username: user.usuario, time: new Date() });
-        
+
         res.json({
             user: { id: user.id, nombre: user.nombre, rol: user.rol }
         });
