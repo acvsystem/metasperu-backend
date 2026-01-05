@@ -13,7 +13,7 @@ export const verifyToken = (req, res, next) => {
     try {
         // 2. Verificar el token con la clave secreta
         // IMPORTANTE: Process.env.JWT_SECRET debe ser igual en Auth e Inventario
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, 'una_clave_muy_segura_y_larga_123456');
 
         // 3. Inyectamos los datos del usuario en el objeto request
         req.user = decoded;
