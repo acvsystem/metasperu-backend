@@ -43,7 +43,7 @@ export const login = async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error en el servidor' });
+        res.status(500).json({ message: 'Error en el servidor', error: error });
     }
 };
 
