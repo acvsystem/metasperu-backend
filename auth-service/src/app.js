@@ -11,8 +11,8 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 app.use(cors({
-    origin: '*',
-    credentials: true
+  origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+  credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
