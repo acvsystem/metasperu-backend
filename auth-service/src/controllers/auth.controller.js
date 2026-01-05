@@ -6,11 +6,11 @@ import { getIO } from '../config/socket.js';
 export const login = async (req, res) => {
 
     const { username, password } = req.body;
-    console.log(username, password);
+
     try {
         // 1. Buscar usuario
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE usuario = ?', [username]);
-
+        console.log(rows);
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
