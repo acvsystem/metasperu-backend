@@ -18,7 +18,9 @@ export const login = async (req, res) => {
         // 2. Verificar password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ message: 'Credenciales inválidas' });
-        console.log(rows);
+        console.log({ id: user.id, rol: user.rol },
+            process.env.JWT_SECRET,
+            { expiresIn: '8h' });
         // 3. Generar JWT
         const token = jwt.sign(
             { id: user.id, rol: user.rol },
