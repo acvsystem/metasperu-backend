@@ -10,7 +10,7 @@ export const login = async (req, res) => {
     try {
         // 1. Buscar usuario
         const [rows] = await pool.query('SELECT * FROM usuarios WHERE usuario = ?', [username]);
-        console.log(rows);
+        
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
@@ -35,8 +35,8 @@ export const login = async (req, res) => {
         });
 
         // 5. Notificar via Socket.io (Opcional: Registro de auditoría en tiempo real)
-        const io = getIO();
-        io.emit('user:logged', { username: user.usuario, time: new Date() });
+        //const io = getIO();
+        //io.emit('user:logged', { username: user.usuario, time: new Date() });
 
         res.json({
             user: { id: user.id, nombre: user.nombre, rol: user.rol }
