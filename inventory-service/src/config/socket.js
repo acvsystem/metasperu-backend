@@ -4,8 +4,9 @@ let io;
 
 export const initSocket = (server) => {
     io = new Server(server, {
+        path: '/inventory-socket/',
         cors: {
-            origin: "http://localhost:4200", 
+            origin: "*", 
             methods: ["GET", "POST"],
             credentials: true
         }
