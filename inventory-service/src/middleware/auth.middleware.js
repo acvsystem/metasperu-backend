@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken';
 export const verifyToken = (req, res, next) => {
     // 1. Intentar obtener el token de las cookies
     const token = req.cookies?.auth_token;
-    console.log(req.cookies);
+    
+    console.log('Headers recibidos:', req.headers);
+    console.log('Cookies recibidas:', req.cookies);
+
     if (!token) {
         return res.status(401).json({
             message: 'Acceso denegado. No se encontró un token de sesión.'
