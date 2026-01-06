@@ -4,7 +4,6 @@ let io;
 
 export const initSocket = (server) => {
     io = new Server(server, {
-        path: '/s3/socket/',
         cors: {
             origin: (origin, callback) => callback(null, true), // Permite cualquier origen
             credentials: true,
