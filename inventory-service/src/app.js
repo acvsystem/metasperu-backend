@@ -21,7 +21,7 @@ app.use(cookieParser());
 
 
 import inventoryRoutes from './routes/inventory.routes.js';
-app.use('/inventory', inventoryRoutes);
+app.use('/s3/inventory', inventoryRoutes);
 
 const PORT = 3001;
 httpServer.listen(PORT, () => {
