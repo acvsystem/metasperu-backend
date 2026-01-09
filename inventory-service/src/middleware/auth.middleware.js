@@ -1,30 +1,20 @@
 import jwt from 'jsonwebtoken';
 
 export const verifyToken = (req, res, next) => {
-    // 1. Intentar obtener el token de las cookies
-    const token = req.cookies?.auth_token;
-    
-    console.log('Headers recibidos:', req.headers);
-    console.log('Cookies recibidas:', req.cookies);
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
-        return res.status(401).json({
-            message: 'Acceso denegado. No se encontró un token de sesión.'
-        });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "No se proporcionó un token" });
     }
 
+    const token = authHeader.split(' ')[1]; // Extrae el token después de "Bearer "
+
+    // Aquí verificas el JWT (ej. jwt.verify)
     try {
-        // 2. Verificar el token con la clave secreta
-        // IMPORTANTE: Process.env.JWT_SECRET debe ser igual en Auth e Inventario
-        const decoded = jwt.verify(token, 'una_clave_muy_segura_y_larga_123456');
-
-        // 3. Inyectamos los datos del usuario en el objeto request
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
-
-        next(); // Continuar al controlador
-    } catch (error) {
-        return res.status(403).json({
-            message: 'Token inválido o expirado.'
-        });
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Token inválido o expirado" });
     }
 };
