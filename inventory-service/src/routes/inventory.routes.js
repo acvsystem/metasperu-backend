@@ -4,6 +4,7 @@ import {
     registerScan, 
     syncBulkScans, 
     getSessionSummary,
+    getSessions,
     getStores 
 } from '../controllers/inventory.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
@@ -13,6 +14,7 @@ const router = Router();
 // --- RUTAS PARA EL ADMINISTRADOR (WEB) ---
 router.post('/create-session', verifyToken, createSession);
 router.get('/summary/:session_code', verifyToken, getSessionSummary);
+router.get('/sessions', verifyToken, getSessions);
 
 // --- RUTAS PARA EL POCKET (DISPOSITIVO) ---
 // Usada cuando hay buena conexión
