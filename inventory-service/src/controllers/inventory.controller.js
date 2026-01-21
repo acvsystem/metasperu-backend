@@ -62,6 +62,7 @@ export const registerScan = async (req, res) => {
     }
 
 
+
 };
 
 export const syncBulkScans = async (req, res) => {
@@ -183,3 +184,18 @@ export const getActiveSessions = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+
+export const getInventoryReqStore = async (req, res) => {
+    const { session_code } = req.params;
+    if (session_code) {
+        getIO().to(session_code).emit('req_inv_store', { session_code: session_code });
+    }
+}
+
+export const getInventoryResStore = async (req, res) => {
+    const { session_code } = req.body;
+    if (session_code) {
+        getIO().to(session_code).emit('res_inv_store', { session_code: session_code });
+    }
+}
