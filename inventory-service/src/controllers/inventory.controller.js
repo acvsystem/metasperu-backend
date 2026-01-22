@@ -190,6 +190,12 @@ export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie } = req.params;
     if (session_code && serie) {
         getIO().to(session_code).emit('req_inv_store', { session_code: session_code, serie: serie });
+
+        res.status(200).json({
+            success: true
+        });
+    } else {
+        res.status(500).json({ error: "Error envio a socket" });
     }
 }
 
