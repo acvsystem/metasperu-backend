@@ -30,6 +30,7 @@ if len(configuration) > 0:
     @sio.event
     def connect():
         print("Conectado al Socket del Backend Central")
+        sio.emit('join_room', {'room': serieTienda})
 
     @sio.on('orden_enviar_inventario')
     def req_inv_store(dataSession):
@@ -79,6 +80,7 @@ if len(configuration) > 0:
 
                 myobj = [
                     {
+                        'cSessionCode': dataSession['session_code'],
                         'cCodigoTienda': serieTienda,
                         'cCodigoArticulo': r[0],
                         'cReferencia': r[1],

@@ -7,7 +7,7 @@ import {
     getSessions,
     getStores,
     getInventoryReqStore,
-    getInventoryResStore
+    postInventoryResStore
 } from '../controllers/inventory.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 
@@ -27,6 +27,6 @@ router.get('/stores', verifyToken, getStores);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
-router.post('/response/store', verifyToken, getInventoryResStore);
+router.post('/response/store', verifyToken, postInventoryResStore);
 
 export default router;

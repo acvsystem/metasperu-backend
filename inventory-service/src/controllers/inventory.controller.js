@@ -188,9 +188,9 @@ export const getActiveSessions = async (req, res) => {
 
 export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie_store } = req.query;
-        console.log(req.query);
+
     if (session_code && serie_store) {
-        getIO().to(session_code).emit('req_inv_store', { session_code: session_code, serie: serie_store });
+        getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
 
         res.status(200).json({
             success: true
@@ -200,9 +200,10 @@ export const getInventoryReqStore = async (req, res) => {
     }
 }
 
-export const getInventoryResStore = async (req, res) => {
-    const { session_code } = req.body;
-    if (session_code) {
-        getIO().to(session_code).emit('res_inv_store', { session_code: session_code });
+export const postInventoryResStore = async (req, res) => {
+    const dataBody = req.body;
+    console.log(dataBody);
+    if (dataBody) {
+        getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
     }
 }
