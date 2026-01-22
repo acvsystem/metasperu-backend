@@ -26,7 +26,7 @@ router.post('/sync-bulk', verifyToken, syncBulkScans);
 router.get('/stores', verifyToken, getStores);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
-router.get('/request/store/:session_code', verifyToken, getInventoryReqStore);
+router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', verifyToken, getInventoryResStore);
 
 export default router;
