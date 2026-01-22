@@ -187,8 +187,8 @@ export const getActiveSessions = async (req, res) => {
 
 
 export const getInventoryReqStore = async (req, res) => {
-    const { session_code, serie } = req.params;
-    console.log(req.params);
+    const { session_code, serie } = req.query;
+    
     if (session_code && serie) {
         getIO().to(session_code).emit('req_inv_store', { session_code: session_code, serie: serie });
 
