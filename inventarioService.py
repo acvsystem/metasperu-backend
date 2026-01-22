@@ -104,8 +104,9 @@ if len(configuration) > 0:
                         'cTemporada': r[11]
                     } for r in rows
                 ]
-
-                requests.post(API_URL, json=myobj)
+                print(myobj)
+                x = requests.post(API_URL, json=myobj)
+                print(x)
         except Exception as e:
             print(f" Error crítico en búsqueda avanzada: {e}")
 

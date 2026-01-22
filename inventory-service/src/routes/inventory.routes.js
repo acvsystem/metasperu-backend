@@ -27,6 +27,6 @@ router.get('/stores', verifyToken, getStores);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
-router.post('/response/store', verifyToken, postInventoryResStore);
+router.post('/response/store', postInventoryResStore);
 
 export default router;
