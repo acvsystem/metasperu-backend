@@ -4,11 +4,14 @@ import requests
 from getmac import get_mac_address as gma
 
 # Cliente Socket para escuchar la orden
-sio = socketio.Client()
+sio = socketio.Client(reconnection=True)
 API_URL = "https://api.metasperu.net.pe/s3/inventory/response/store"
 
 serverBackend = 'https://api.metasperu.net.pe'
-serverSocket = 'wss://api.metasperu.net.pe'
+
+URL_METAS = 'https://api.metasperu.net.pe'
+SOCKET_PATH = '/s3/socket/'
+
 res = requests.post(serverBackend + '/frontRetail/search/configuration/agente',data={"mac":gma()})
 configuration = res.json()
 print('configuration',configuration)
@@ -30,10 +33,11 @@ if len(configuration) > 0:
     @sio.event
     def connect():
         print("Conectado al Socket del Backend Central")
-        sio.emit('join_room', {'room': serieTienda})
+        sio.emit('join_session', serieTienda)
 
-    @sio.on('orden_enviar_inventario')
+    @sio.on('req_inv_store')
     def req_inv_store(dataSession):
+        print(dataSession)
         mapping_estilo = {
             '7': 'STYLO_REFERENCIA',
             '9N': 'STYLO', '9D': 'STYLO', '9B': 'STYLO', # ... etc
@@ -46,31 +50,35 @@ if len(configuration) > 0:
                 break
         conexion_str = f'DRIVER={{SQL Server}};SERVER={instanciaBD};DATABASE={nameBD};UID=ICGAdmin;PWD=masterkey'
         query_sql = f"""
-        SET NOCOUNT ON;
-        DECLARE @CODALMACEN AS NVARCHAR(3) = (SELECT TOP 1 VALOR FROM PARAMETROS WHERE CLAVE='ALDEF');
-        WITH EstiloObjetivo AS (
-            SELECT TOP 1 CL.{campo_estilo} as EstiloID, L.COLOR
-            FROM ARTICULOSLIN L
-            INNER JOIN ARTICULOSCAMPOSLIBRES CL ON L.CODARTICULO = CL.CODARTICULO
-            WHERE L.CODBARRAS = ?
-        )
-        SELECT 
-            A.CODARTICULO, A.REFPROVEEDOR, L.CODBARRAS, A.DESCRIPCION,
-            D.DESCRIPCION as DEP, SEC.DESCRIPCION as SEC, F.DESCRIPCION as FAM, 
-            SF.DESCRIPCION as SUBFAM, L.TALLA, L.COLOR, S.STOCK, A.TEMPORADA
-        FROM ARTICULOS A WITH(NOLOCK)
-        INNER JOIN ARTICULOSLIN L WITH(NOLOCK) ON A.CODARTICULO = L.CODARTICULO
-        INNER JOIN ARTICULOSCAMPOSLIBRES CL WITH(NOLOCK) ON A.CODARTICULO = CL.CODARTICULO
-        LEFT JOIN STOCKS S WITH(NOLOCK) ON L.CODARTICULO = S.CODARTICULO 
-                                        AND L.TALLA = S.TALLA 
-                                        AND L.COLOR = S.COLOR 
-                                        AND S.CODALMACEN = @CODALMACEN
-        LEFT JOIN DEPARTAMENTO D WITH(NOLOCK) ON A.DPTO = D.NUMDPTO
-        LEFT JOIN SECCIONES SEC WITH(NOLOCK) ON A.DPTO = SEC.NUMDPTO AND A.SECCION = SEC.NUMSECCION
-        INNER JOIN EstiloObjetivo EO ON CL.{campo_estilo} = EO.EstiloID AND L.COLOR = EO.COLOR
-        WHERE D.NUMDPTO NOT IN ('96', '97') 
-          AND A.REFPROVEEDOR NOT LIKE '%-1'
-          AND S.STOCK > 0;
+                    SET NOCOUNT ON;
+                    DECLARE @CODALMACEN AS NVARCHAR(3) = (SELECT TOP 1 VALOR FROM PARAMETROS WHERE CLAVE='ALDEF');
+                    SELECT 
+                        A.CODARTICULO, 
+                        A.REFPROVEEDOR, 
+                        L.CODBARRAS, 
+                        A.DESCRIPCION,
+                        D.DESCRIPCION as DEP, 
+                        SEC.DESCRIPCION as SEC, 
+                        F.DESCRIPCION as FAM, 
+                        SF.DESCRIPCION as SUBFAM, 
+                        L.TALLA, 
+                        L.COLOR, 
+                        ISNULL(S.STOCK, 0) as STOCK, -- Evitamos nulos en el dashboard
+                        A.TEMPORADA
+                    FROM ARTICULOS A WITH(NOLOCK)
+                    INNER JOIN ARTICULOSLIN L WITH(NOLOCK) ON A.CODARTICULO = L.CODARTICULO
+                    INNER JOIN ARTICULOSCAMPOSLIBRES CL WITH(NOLOCK) ON A.CODARTICULO = CL.CODARTICULO
+                    LEFT JOIN STOCKS S WITH(NOLOCK) ON L.CODARTICULO = S.CODARTICULO 
+                                                    AND L.TALLA = S.TALLA 
+                                                    AND L.COLOR = S.COLOR 
+                                                    AND S.CODALMACEN = @CODALMACEN
+                    LEFT JOIN DEPARTAMENTO D WITH(NOLOCK) ON A.DPTO = D.NUMDPTO
+                    LEFT JOIN SECCIONES SEC WITH(NOLOCK) ON A.DPTO = SEC.NUMDPTO AND A.SECCION = SEC.NUMSECCION
+                    LEFT JOIN FAMILIAS F WITH(NOLOCK) ON A.DPTO = F.NUMDPTO AND A.SECCION = F.NUMSECCION AND A.FAMILIA = F.NUMFAMILIA
+                    LEFT JOIN SUBFAMILIAS SF WITH(NOLOCK) ON A.DPTO = SF.NUMDPTO AND A.SECCION = SF.NUMSECCION AND A.FAMILIA = SF.NUMFAMILIA AND A.SUBFAMILIA = SF.NUMSUBFAMILIA
+                    WHERE D.NUMDPTO NOT IN ('96', '97') 
+                      AND A.REFPROVEEDOR NOT LIKE '%-1'
+                      AND ISNULL(S.STOCK, 0) > 0;
         """
         try:
             with pyodbc.connect(conexion_str) as conn:
@@ -101,5 +109,14 @@ if len(configuration) > 0:
         except Exception as e:
             print(f" Error crítico en búsqueda avanzada: {e}")
 
-    sio.connect('https://api.metasperu.net.pe/s3/socket/')
+
+# 3. Conectar con el socket_path personalizado
+try:
+    sio.connect(
+        URL_METAS, 
+        socketio_path=SOCKET_PATH, # <--- IMPORTANTE
+        transports=['websocket', 'polling']
+    )
     sio.wait()
+except Exception as e:
+    print(f"Fallo total de conexión: {e}")
