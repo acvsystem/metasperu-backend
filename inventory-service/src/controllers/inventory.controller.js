@@ -202,8 +202,8 @@ export const getInventoryReqStore = async (req, res) => {
 
 export const postInventoryResStore = async (req, res) => {
     const dataBody = req.body;
-    console.log(dataBody);
     if (dataBody) {
+        console.log(dataBody[0]['cSessionCode']);
         getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
     }
 }
