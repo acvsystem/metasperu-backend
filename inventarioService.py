@@ -101,7 +101,9 @@ if len(configuration) > 0:
                         'cTalla': r[8],
                         'cColor': r[9],
                         'cStock': float(r[10] or 0),
-                        'cTemporada': r[11]
+                        'cTemporada': r[11],
+                        'cConteo': 0,
+                        'cTotalConteo': 0,
                     } for r in rows
                 ]
                 print(myobj)

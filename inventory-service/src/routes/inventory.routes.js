@@ -9,6 +9,7 @@ import {
     getInventoryReqStore,
     postInventoryResStore
 } from '../controllers/inventory.controller.js';
+import { getSections, postSections, putSecitons, delSecitons } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -28,5 +29,12 @@ router.get('/stores', verifyToken, getStores);
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', postInventoryResStore);
+
+
+// --- RUTAS PARA MANTENIMIENTO
+router.get('/api/v1/seccion', verifyToken, getSections);
+router.post('/api/v1/seccion', verifyToken, postSections);
+router.put('/api/v1/seccion', verifyToken, putSecitons);
+router.delete('/api/v1/seccion/:id', verifyToken, delSecitons);
 
 export default router;
