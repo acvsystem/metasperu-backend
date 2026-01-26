@@ -55,7 +55,7 @@ export const putSecitons = async (req, res) => {
 
 export const delSecitons = async (req, res) => {
     const { seccion_id } = req.params;
-    console.log(req.params);
+  
     try {
         await pool.execute(
             'DELETE FROM secciones_escaneos WHERE seccion_id = ?;',

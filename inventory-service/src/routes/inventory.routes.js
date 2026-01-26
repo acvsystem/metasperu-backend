@@ -35,6 +35,6 @@ router.post('/response/store', postInventoryResStore);
 router.get('/api/v1/seccion', verifyToken, getSections);
 router.post('/api/v1/seccion', verifyToken, postSections);
 router.put('/api/v1/seccion', verifyToken, putSecitons);
-router.delete('/api/v1/seccion/:id', verifyToken, delSecitons);
+router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 
 export default router;
