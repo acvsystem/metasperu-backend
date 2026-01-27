@@ -3,12 +3,12 @@ import { getIO } from '../config/socket.js';
 
 export const createSession = async (req, res) => {
     const { tienda_id, assigned_section } = req.body;
-    const userId = req.user.id; 
+    const userId = req.user.id;
 
     const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
-   
+
         const [result] = await pool.execute(
             'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id, estado, creado_por) VALUES (?, ?, ?, ?)',
             [sessionCode, tienda_id, 'ACTIVO', userId]
@@ -19,7 +19,7 @@ export const createSession = async (req, res) => {
                 return pool.execute(
                     'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
                     [
-                        sessionCode, 
+                        sessionCode,
                         section.seccion_id || null, // Si no hay ID, mandamos null, no undefined
                         section.nombre_seccion || 'Sin Nombre'
                     ]
@@ -115,6 +115,21 @@ export const syncBulkScans = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+
+export const getAssignedSection = async (req, res) => {
+    try {
+        const { session_code } = req.params;
+        const query = `
+            SELECT  * FROM  secciones_asginados WHERE codigo_sesion = ?;
+        `;
+        const [sections] = await pool.execute(query, [session_code]);
+
+        res.json(sections);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 
 export const getSessionSummary = async (req, res) => {
     console.log(req.params);
