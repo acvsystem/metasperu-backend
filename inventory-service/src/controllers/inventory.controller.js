@@ -1,7 +1,7 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
 export const createSession = async (req, res) => {
-    const { tienda_id } = req.body;
+    const { tienda_id, assigned_section } = req.body;
     const userId = req.user.id; // Obtenido del middleware de auth
 
     // Generar código único de 6 caracteres (ej: A7B2X9)
@@ -12,6 +12,13 @@ export const createSession = async (req, res) => {
             'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id,estado, creado_por) VALUES (?, ?, ?, ?)',
             [sessionCode, tienda_id, 'ACTIVO', userId]
         );
+
+        assigned_section.filter(async (section) => {
+            await pool.execute(
+                'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
+                [section.codigo_sesion, section.seccion_id, section.nombre_seccion]
+            );
+        });
 
         res.status(201).json({
             id: result.insertId,

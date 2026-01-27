@@ -30,7 +30,6 @@ router.get('/stores', verifyToken, getStores);
 router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', postInventoryResStore);
 
-
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);
 router.post('/api/v1/seccion', verifyToken, postSections);
