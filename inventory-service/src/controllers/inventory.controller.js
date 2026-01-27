@@ -97,10 +97,10 @@ export const syncBulkScans = async (req, res) => {
         const sessionId = session[0].id;
 
         // Preparamos los datos para una sola inserción masiva (optimización SQL)
-        const values = scans.map(s => [sessionId, s.sku, s.quantity, 1, s.scanned_at]);
+        const values = scans.map(s => [sessionId, s.sku, s.quantity, 1, s.scanned_at, s.seccion_id]);
 
         await pool.query(
-            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo) VALUES ?',
+            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo, seccion_id) VALUES ?',
             [values]
         );
 
