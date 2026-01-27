@@ -1,33 +1,42 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
+
 export const createSession = async (req, res) => {
     const { tienda_id, assigned_section } = req.body;
-    const userId = req.user.id; // Obtenido del middleware de auth
+    const userId = req.user.id; 
 
-    // Generar código único de 6 caracteres (ej: A7B2X9)
     const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     try {
+   
         const [result] = await pool.execute(
-            'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id,estado, creado_por) VALUES (?, ?, ?, ?)',
+            'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id, estado, creado_por) VALUES (?, ?, ?, ?)',
             [sessionCode, tienda_id, 'ACTIVO', userId]
         );
 
-        
-        assigned_section.filter((section) => {
-            console.log(section);
-            pool.execute(
-                'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
-                [section.codigo_sesion, section.seccion_id, section.nombre_seccion]
-            );
-        });
+        if (assigned_section && assigned_section.length > 0) {
+            const insertPromises = assigned_section.map((section) => {
+                return pool.execute(
+                    'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
+                    [
+                        sessionCode, 
+                        section.seccion_id || null, // Si no hay ID, mandamos null, no undefined
+                        section.nombre_seccion || 'Sin Nombre'
+                    ]
+                );
+            });
+
+            await Promise.all(insertPromises);
+        }
 
         res.status(201).json({
             id: result.insertId,
             session_code: sessionCode,
             message: 'Sesión de inventario iniciada'
         });
+
     } catch (error) {
+        console.error("Error en createSession:", error);
         res.status(500).json({ message: 'Error al crear sesión', error: error.message });
     }
 };
