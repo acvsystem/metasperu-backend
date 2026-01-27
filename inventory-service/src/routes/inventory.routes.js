@@ -30,7 +30,7 @@ router.get('/stores', verifyToken, getStores);
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', postInventoryResStore);
-router.get('/section/assigned:session_code', verifyToken, getAssignedSection);
+router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
 
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);
