@@ -140,11 +140,12 @@ export const getSessionSummary = async (req, res) => {
             SELECT     s.sku, 
                 SUM(s.cantidad) as total_cantidad,
                 MAX(s.escaneado_por) as ultimo_escaneo,
-                COUNT(s.id) as veces_escaneado
+                COUNT(s.id) as veces_escaneado,
+                s.seccion_id_fk as seccion_id
             FROM inventario_escaneos s
             JOIN inventario_sesiones sess ON s.sesion_id = sess.id
             WHERE sess.codigo_sesion = ?
-            GROUP BY s.sku
+            GROUP BY s.sku, seccion_id
             ORDER BY ultimo_escaneo DESC
         `;
 
