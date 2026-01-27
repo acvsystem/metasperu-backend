@@ -13,9 +13,10 @@ export const createSession = async (req, res) => {
             [sessionCode, tienda_id, 'ACTIVO', userId]
         );
 
-        console.log(assigned_section);
-        assigned_section.filter(async (section) => {
-            await pool.execute(
+        
+        assigned_section.filter((section) => {
+            console.log(section);
+            pool.execute(
                 'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
                 [section.codigo_sesion, section.seccion_id, section.nombre_seccion]
             );
