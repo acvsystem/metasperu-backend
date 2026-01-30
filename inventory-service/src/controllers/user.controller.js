@@ -24,7 +24,11 @@ export const userController = {
                 'INSERT INTO usuarios (usuario, password, nombre, rol, estado) VALUES (?, ?, ?, ?, 1)',
                 [username, hashedPassword, perfilname, role]
             );
-            res.status(201).json({ message: 'Usuario creado con éxito' });
+
+            const [rows] = await pool.execute('SELECT id, usuario, nombre, rol, estado FROM usuarios');
+            res.json(rows);
+
+            res.status(201).json({ data: rows, message: 'Usuario creado con éxito' });
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
@@ -32,8 +36,7 @@ export const userController = {
 
     // ACTUALIZAR
     updateUser: async (req, res) => {
-        const { id } = req.params;
-        const { username, perfilname, role, password } = req.body;
+        const { id, username, perfilname, role, password } = req.body;
 
         try {
             let query = 'UPDATE usuarios SET username = ?, email = ?, role = ?';
