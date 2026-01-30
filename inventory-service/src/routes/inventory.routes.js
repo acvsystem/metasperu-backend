@@ -41,7 +41,7 @@ router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 
 // --- RUTAS PARA USUARIOS
-router.get('/api/v1/user', verifyToken, userController.getUsers);
+router.get('/api/v1/user',  userController.getUsers);
 router.post('/api/v1/user', verifyToken, userController.createUser);
 router.put('/api/v1/user', verifyToken, userController.updateUser);
 router.delete('/api/v1/user/:id', verifyToken, userController.deleteUser);
