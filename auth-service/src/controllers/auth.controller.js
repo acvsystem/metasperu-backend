@@ -8,7 +8,7 @@ export const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const [rows] = await pool.query('SELECT * FROM usuarios WHERE usuario = ?', [username]);
+        const [rows] = await pool.query('SELECT * FROM usuarios WHERE username = ?', [username]);
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
@@ -46,7 +46,7 @@ export const login = async (req, res) => {
 export const checkSession = async (req, res) => {
     try {
         // req.user viene inyectado desde el middleware
-        const [rows] = await pool.query('SELECT id, usuario, nombre, rol FROM usuarios WHERE id = ?', [req.user.id]);
+        const [rows] = await pool.query('SELECT id, username, perfilname, rol FROM usuarios WHERE id = ?', [req.user.id]);
 
         if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
 
