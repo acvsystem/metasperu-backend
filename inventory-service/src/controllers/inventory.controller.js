@@ -187,7 +187,7 @@ export const getStores = async (req, res) => {
 export const getSessions = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT s.codigo_sesion,s.tienda_id,t.nombre_tienda,s.creado_por,u.usuario,s.fecha_inicio,s.estado FROM inventario_sesiones s 
+            SELECT s.codigo_sesion,s.tienda_id,t.nombre_tienda,s.creado_por,u.username,s.fecha_inicio,s.estado FROM inventario_sesiones s 
             INNER JOIN tiendas t on t.id = s.tienda_id
             INNER JOIN usuarios u on u.id = s.creado_por
             ORDER BY s.fecha_inicio DESC;
