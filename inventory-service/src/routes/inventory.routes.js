@@ -10,6 +10,8 @@ import {
     postInventoryResStore,
     getAssignedSection
 } from '../controllers/inventory.controller.js';
+
+import { userController } from '../controllers/user.controller.js';
 import { getSections, postSections, putSecitons, delSecitons } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 
@@ -37,5 +39,11 @@ router.get('/api/v1/seccion', verifyToken, getSections);
 router.post('/api/v1/seccion', verifyToken, postSections);
 router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
+
+// --- RUTAS PARA USUARIOS
+router.get('/api/v1/user', verifyToken, userController.getUsers);
+router.post('/api/v1/user', verifyToken, userController.createUser);
+router.put('/api/v1/user/:id', verifyToken, userController.updateUser);
+router.delete('/api/v1/user/:id', verifyToken, userController.deleteUser);
 
 export default router;

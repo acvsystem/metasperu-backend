@@ -1,6 +1,8 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
 
+/** MANTENIMIENTO SECCION */
+
 export const getSections = async (req, res) => {
     try {
         const [rows] = await pool.query(`
@@ -55,7 +57,7 @@ export const putSecitons = async (req, res) => {
 
 export const delSecitons = async (req, res) => {
     const { seccion_id } = req.params;
-  
+
     try {
         await pool.execute(
             'DELETE FROM secciones_escaneos WHERE seccion_id = ?;',
