@@ -5,7 +5,7 @@ export const userController = {
     // LISTAR
     getUsers: async (req, res) => {
         try {
-            const [rows] = await pool.execute('SELECT id, usuario, nombre, rol, estado FROM usuarios');
+            const [rows] = await pool.execute('SELECT id, username, perfilname, role, estado FROM usuarios');
             res.json(rows);
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -21,11 +21,11 @@ export const userController = {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             await pool.execute(
-                'INSERT INTO usuarios (usuario, password, nombre, rol, estado) VALUES (?, ?, ?, ?, ?)',
+                'INSERT INTO usuarios (username, password, perfilname, role, estado) VALUES (?, ?, ?, ?, ?)',
                 [username, hashedPassword, perfilname, role, 1]
             );
 
-            const [rows] = await pool.execute('SELECT id, usuario, nombre, rol, estado FROM usuarios');
+            const [rows] = await pool.execute('SELECT id, username, perfilname, role, estado FROM usuarios');
             res.json(rows);
 
             res.status(201).json({ data: rows, message: 'Usuario creado con éxito' });
@@ -39,7 +39,7 @@ export const userController = {
         const { id, username, perfilname, role, password } = req.body;
 
         try {
-            let query = 'UPDATE usuarios SET username = ?, email = ?, role = ?';
+            let query = 'UPDATE usuarios SET username = ?, perfilname = ?, role = ?';
             let params = [username, perfilname, role];
 
             // Si el usuario envió una nueva contraseña, la encriptamos
