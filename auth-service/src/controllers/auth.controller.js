@@ -46,7 +46,7 @@ export const login = async (req, res) => {
 export const checkSession = async (req, res) => {
     try {
         // req.user viene inyectado desde el middleware
-        const [rows] = await pool.query('SELECT id, username, perfilname, rol FROM usuarios WHERE id = ?', [req.user.id]);
+        const [rows] = await pool.query('SELECT id, username, perfilname, role FROM usuarios WHERE id = ?', [req.user.id]);
 
         if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
 
