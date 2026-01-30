@@ -21,8 +21,8 @@ export const userController = {
             const hashedPassword = await bcrypt.hash(password, salt);
 
             await pool.execute(
-                'INSERT INTO usuarios (usuario, password, nombre, rol, estado) VALUES (?, ?, ?, ?, 1)',
-                [username, hashedPassword, perfilname, role]
+                'INSERT INTO usuarios (usuario, password, nombre, rol, estado) VALUES (?, ?, ?, ?, ?)',
+                [username, hashedPassword, perfilname, role, 1]
             );
 
             const [rows] = await pool.execute('SELECT id, usuario, nombre, rol, estado FROM usuarios');
