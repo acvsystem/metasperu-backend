@@ -35,7 +35,7 @@ export const login = async (req, res) => {
         // ENVIAR EL TOKEN EN EL JSON
         res.json({
             token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
-            user: { id: user.id, nombre: user.nombre, rol: user.rol }
+            user: { id: user.id, username: user.username, role: user.role }
         });
 
     } catch (error) {
