@@ -147,7 +147,7 @@ export const getSessionSummary = async (req, res) => {
             JOIN inventario_sesiones sess ON s.sesion_id = sess.id
             JOIN usuarios u ON s.escaneado_por = u.id
             WHERE sess.codigo_sesion = ?
-            GROUP BY s.sku, seccion_id, u.usuario
+            GROUP BY s.sku, seccion_id, u.username
             ORDER BY ultimo_escaneo DESC
         `;
 
@@ -207,7 +207,7 @@ export const getSessions = async (req, res) => {
 export const getActiveSessions = async (req, res) => {
     try {
         const [rows] = await db.query(
-            `SELECT s.id, s.codigo_sesion, s.tienda_id,t.nombre_tienda, s.creado_por, u.usuario, 
+            `SELECT s.id, s.codigo_sesion, s.tienda_id,t.nombre_tienda, s.creado_por, u.username, 
             (SELECT COUNT(DISTINCT sku) FROM inventario_escaneos e WHERE e.id = s.id) as total_skus
             FROM inventario_sesiones s 
             INNER JOIN tiendas t on t.id = s.tienda_id
