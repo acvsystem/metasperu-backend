@@ -8,7 +8,8 @@ import {
     getStores,
     getInventoryReqStore,
     postInventoryResStore,
-    getAssignedSection
+    getAssignedSection,
+    getPocketScan
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
@@ -28,6 +29,7 @@ router.post('/scan', verifyToken, registerScan);
 // Usada para subir datos guardados en el Pocket tras estar offline
 router.post('/sync-bulk', verifyToken, syncBulkScans);
 router.get('/stores', verifyToken, getStores);
+router.get('/pocket/scan', verifyToken, getPocketScan);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
