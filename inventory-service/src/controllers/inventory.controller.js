@@ -155,7 +155,7 @@ export const getSessionSummary = async (req, res) => {
 
         // También obtenemos info general de la sesión
         const [sessionInfo] = await pool.execute(
-            `SELECT sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, usuario FROM inventario_sesiones sess
+            `SELECT sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, u.username FROM inventario_sesiones sess
              INNER JOIN tiendas t ON t.id = sess.tienda_id
              INNER JOIN usuarios u ON u.id = sess.creado_por
              WHERE codigo_sesion = ?`,
