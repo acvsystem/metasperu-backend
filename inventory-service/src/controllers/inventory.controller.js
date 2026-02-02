@@ -257,7 +257,7 @@ export const getPocketScan = async (req, res) => {
             pool.execute(`SELECT sku,cantidad,nombre_seccion FROM 
                 inventario_escaneos ie
                 INNER JOIN secciones_escaneos se on se.seccion_id = ie.seccion_id
-                WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], userId])
+                WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0][0]['id'], userId])
         ]);
 
         res.json(promisePocketScan);
