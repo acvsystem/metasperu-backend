@@ -20,7 +20,6 @@ export const storeController = {
             );
 
             const [rows] = await pool.execute('SELECT * FROM tiendas');
-            res.json(rows);
 
             res.status(201).json({ data: rows, message: 'Tienda creada' });
         } catch (error) {
