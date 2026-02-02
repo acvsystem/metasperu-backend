@@ -51,7 +51,6 @@ router.put('/api/v1/user', verifyToken, userController.updateUser);
 router.delete('/api/v1/user/:id', verifyToken, userController.deleteUser);
 
 // --- RUTAS PARA TIENDAS
-
 router.get('/api/v1/store', verifyToken, storeController.getTiendas);
 router.post('/api/v1/store', verifyToken, storeController.createTienda);
 router.put('/api/v1/store', verifyToken, storeController.updateTienda);

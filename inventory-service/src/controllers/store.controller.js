@@ -18,20 +18,27 @@ export const storeController = {
                 'INSERT INTO tiendas (serie, nombre_tienda, estado) VALUES (?, ?, ?)',
                 [serie, nombre_tienda, estado || 'ACTIVO']
             );
-            res.status(201).json({ id: result.insertId, message: 'Tienda creada' });
+
+            const [rows] = await pool.execute('SELECT * FROM tiendas');
+            res.json(rows);
+
+            res.status(201).json({ data: rows, message: 'Tienda creada' });
         } catch (error) {
             res.status(500).json({ message: 'Error al crear tienda', error });
         }
     },
 
     updateTienda: async (req, res) => {
-        const { id } = req.params;
-        const { serie, nombre_tienda, estado } = req.body;
+        const { id, serie, nombre_tienda, estado } = req.body;
+
+        console.log(serie, nombre_tienda, estado);
+
         try {
             await pool.execute(
                 'UPDATE tiendas SET serie = ?, nombre_tienda = ?, estado = ? WHERE id = ?',
                 [serie, nombre_tienda, estado, id]
             );
+
             res.json({ message: 'Tienda actualizada correctamente' });
         } catch (error) {
             res.status(500).json({ message: 'Error al actualizar', error });
