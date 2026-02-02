@@ -259,7 +259,7 @@ export const getPocketScan = async (req, res) => {
                 INNER JOIN secciones_escaneos se on se.seccion_id = ie.seccion_id
                 WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], userId])
         ]);
-
+        console.log(promiseSession,promisePocketScan);
         res.json(promisePocketScan);
     } catch (error) {
         res.status(500).json({ message: 'Error en las consultas', error });
