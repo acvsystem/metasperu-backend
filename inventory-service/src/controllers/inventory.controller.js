@@ -251,8 +251,7 @@ export const getPocketScan = async (req, res) => {
 
         const [promiseSession] = await pool.execute('SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?', [session_code]);
 
-        console.log(promiseSession);
-        const [promisePocketScan] = await pool.execute(`SELECT cantidad,fecha_escaneo,seccion_id,codigo_sesion,sku,estado FROM 
+        const [promisePocketScan] = await pool.execute(`SELECT cantidad as quantity,fecha_escaneo as scanned_at,seccion_id,codigo_sesion as session_code,sku,estado as synced FROM 
                 inventario_escaneos ie
                 INNER JOIN inventario_sesiones i ON i.id = ie.sesion_id
                 WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], userId]);
