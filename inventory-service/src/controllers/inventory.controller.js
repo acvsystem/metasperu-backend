@@ -248,11 +248,11 @@ export const getPocketScan = async (req, res) => {
     try {
         const { session_code } = req.params;
         const userId = req.user.id;
-        console.log(session_code, userId);
+
         const [promiseSession] = await Promise.all([
             pool.execute('SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?', [session_code])
         ]);
-
+        console.log(promiseSession);
         const [promisePocketScan] = await Promise.all([
             pool.execute(`SELECT sku,cantidad,nombre_seccion FROM 
                 inventario_escaneos ie
@@ -260,6 +260,7 @@ export const getPocketScan = async (req, res) => {
                 WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], userId])
         ]);
 
+        res.json(promisePocketScan);
     } catch (error) {
         res.status(500).json({ message: 'Error en las consultas', error });
     }
