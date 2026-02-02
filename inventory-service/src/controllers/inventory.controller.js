@@ -246,7 +246,7 @@ export const postInventoryResStore = async (req, res) => {
 
 export const getPocketScan = async (req, res) => {
     try {
-        const { session_code, username } = req.params;
+        const { session_code } = req.params;
         const userId = req.user.id;
 
         const [promiseSession] = await Promise.all([
