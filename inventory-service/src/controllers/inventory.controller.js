@@ -247,9 +247,9 @@ export const postInventoryResStore = async (req, res) => {
 export const getPocketScan = async (req, res) => {
     try {
         const { session_code, username } = req.params;
+        const userId = req.user.id;
 
-        const [promiseSession, promiseUser] = await Promise.all([
-            pool.execute('SELECT * FROM usuarios WHERE username = ?', [username]),
+        const [promiseSession] = await Promise.all([
             pool.execute('SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?', [session_code])
         ]);
 
@@ -257,7 +257,7 @@ export const getPocketScan = async (req, res) => {
             pool.execute(`SELECT sku,cantidad,nombre_seccion FROM 
                 inventario_escaneos ie
                 INNER JOIN secciones_escaneos se on se.seccion_id = ie.seccion_id
-                WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], promiseUser[0]['id']])
+                WHERE sesion_id = ? and escaneado_por = ?;`, [promiseSession[0]['id'], userId])
         ]);
 
         res.json(promisePocketScan);
