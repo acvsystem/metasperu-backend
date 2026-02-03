@@ -9,7 +9,8 @@ import {
     getInventoryReqStore,
     postInventoryResStore,
     getAssignedSection,
-    getPocketScan
+    getPocketScan,
+    updateEndedSession
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
@@ -37,6 +38,7 @@ router.get('/pocket/scan/:session_code', verifyToken, getPocketScan);
 router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', postInventoryResStore);
 router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
+router.put('/ended-session', verifyToken, updateEndedSession);
 
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);

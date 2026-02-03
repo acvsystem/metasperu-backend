@@ -260,3 +260,18 @@ export const getPocketScan = async (req, res) => {
         res.status(500).json({ message: 'Error en las consultas', error });
     }
 }
+
+
+export const updateEndedSession = async (req, res) => {
+    const { session_id } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE inventario_sesiones SET estado = ? WHERE id = ?',
+            ['FINALIZADO', session_id]
+        );
+        res.json({ message: 'Sesion Finalizada' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
