@@ -93,7 +93,7 @@ export const syncBulkScans = async (req, res) => {
             [session_code]
         );
 
-        if (session.length === 0) return res.status(404).json({ error: 'Sesión no válida o finalizada' });
+        if (session.length === 0) return res.status(500).json({ error: 'Sesión no válida o finalizada' });
         const sessionId = session[0].id;
 
         // Preparamos los datos para una sola inserción masiva (optimización SQL)
