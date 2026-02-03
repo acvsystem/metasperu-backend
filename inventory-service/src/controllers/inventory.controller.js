@@ -148,7 +148,6 @@ export const getSessionSummary = async (req, res) => {
             JOIN usuarios u ON s.escaneado_por = u.id
             WHERE sess.codigo_sesion = ?
             GROUP BY s.sku, seccion_id, u.username
-            ORDER BY ultimo_escaneo DESC
         `;
 
         const [summary] = await pool.execute(query, [session_code]);
