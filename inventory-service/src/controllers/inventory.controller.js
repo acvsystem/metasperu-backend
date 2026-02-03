@@ -263,12 +263,12 @@ export const getPocketScan = async (req, res) => {
 
 
 export const updateEndedSession = async (req, res) => {
-    const { session_id } = req.body;
+    const { codeSession } = req.body;
 
     try {
         await pool.execute(
-            'UPDATE inventario_sesiones SET estado = ? WHERE id = ?',
-            ['FINALIZADO', session_id]
+            'UPDATE inventario_sesiones SET estado = ? WHERE codigo_sesion = ?',
+            ['FINALIZADO', codeSession]
         );
         res.json({ message: 'Sesion Finalizada' });
     } catch (error) {
