@@ -275,3 +275,17 @@ export const updateEndedSession = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+export const updateStartSession = async (req, res) => {
+    const { codeSession } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE inventario_sesiones SET estado = ? WHERE codigo_sesion = ?',
+            ['ACTIVO', codeSession]
+        );
+        res.json({ message: 'Sesion Activada' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
