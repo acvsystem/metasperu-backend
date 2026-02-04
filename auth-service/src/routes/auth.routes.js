@@ -1,15 +1,18 @@
 // src/routes/auth.routes.js
 import { Router } from 'express';
-import { login, logout, checkSession } from '../controllers/auth.controller.js';
+import { login, loginCenter, logout, checkSession, checkSessionCenter, logoutCenter } from '../controllers/auth.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Ruta pública
+// Ruta pública inventory-service
 router.post('/login', login);
-
-// Rutas protegidas (Requieren cookie válida)
 router.get('/check-session', verifyToken, checkSession);
 router.post('/logout', verifyToken, logout);
+
+// Ruta publica center-service
+router.post('/center/login', loginCenter);
+router.get('/center/check-session', verifyToken, checkSessionCenter);
+router.post('/center/logout', verifyToken, logoutCenter);
 
 export default router;
