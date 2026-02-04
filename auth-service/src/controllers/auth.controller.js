@@ -72,12 +72,12 @@ export const loginCenter = async (req, res) => {
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
-        console.log(user);
+
         const validPassword = await bcrypt.compare(password, user.PASSWORD_NW);
         if (!validPassword) return res.status(401).json({ message: 'Credenciales inválidas' });
-        
+
         const token = jwt.sign(
-            { id: user.id_login, rol: user.nivel },
+            { id: user.ID_LOGIN, rol: user.NIVEL },
             'una_clave_muy_segura_y_larga_123456',
             { expiresIn: '8h' }
         );
@@ -95,7 +95,7 @@ export const loginCenter = async (req, res) => {
         // ENVIAR EL TOKEN EN EL JSON
         res.json({
             token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
-            user: { id: user.id_login, username: user.usuario, role: user.nivel }
+            user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL }
         });
 
     } catch (error) {
@@ -106,7 +106,7 @@ export const loginCenter = async (req, res) => {
 export const checkSessionCenter = async (req, res) => {
     try {
         // req.user viene inyectado desde el middleware
-        const [rows] = await poolCenter.query('SELECT id_login, usuario, email, nivel FROM usuarios WHERE id_login = ?', [req.user.id]);
+        const [rows] = await poolCenter.query('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL FROM usuarios WHERE ID_LOGIN = ?', [req.user.id]);
 
         if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
 
