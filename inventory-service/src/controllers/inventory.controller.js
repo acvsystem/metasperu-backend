@@ -243,6 +243,15 @@ export const postInventoryResStore = async (req, res) => {
     }
 }
 
+export const getInventoryResStore = async (req, res) => {
+    const dataBody = req.body;
+    if (dataBody) {
+        console.log(dataBody[0]['cSessionCode']);
+        getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
+    }
+}
+
+
 export const getPocketScan = async (req, res) => {
     try {
         const { session_code } = req.params;
