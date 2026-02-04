@@ -13,18 +13,43 @@ export const initSocket = (server) => {
 
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
-        // --- ESTO ES LO QUE FALTA ---
-        socket.on('join_session', (sessionCode) => {
 
-            if (sessionCode) {
-                const room = sessionCode.toUpperCase().trim();
-                socket.join(room);
-                console.log(`center-service: Socket ${socket.id} se unió a la sala: ${room}`);
+        // --- Lógica para las Tiendas (Python) ---
+        socket.on('tienda_identificarse', (data) => {
+            socket.join('grupo_tiendas');
+            tiendasActivas[data.id_tienda] = {
+                socketId: socket.id,
+                nombre: data.nombre,
+                lastSeen: new Date()
+            };
+            console.log(`Tienda conectada: ${data.id_tienda}`);
+            io.emit('actualizar_dashboard', Object.keys(tiendasActivas));
+        });
+
+        // --- Lógica para el Dashboard (Angular) ---
+        socket.on('solicitar_documentos', (id_tienda) => {
+            const tienda = tiendasActivas[id_tienda];
+            if (tienda) {
+                // Le pedimos a la caja específica que nos de sus documentos
+                io.to(tienda.socketId).emit('python_dame_documentos', { pedido_por: socket.id });
             }
         });
 
+        // --- Retorno de Python al Dashboard ---
+        socket.on('python_entrega_documentos', (data) => {
+            // data.enviar_a es el socketId del Dashboard que pidió la info
+            io.to(data.enviar_a).emit('documentos_recibidos', data.documentos);
+        });
+
         socket.on('disconnect', () => {
-            console.log('center-service: Cliente desconectado:', socket.id);
+            // Limpiar al desconectar
+            for (let id in tiendasActivas) {
+                if (tiendasActivas[id].socketId === socket.id) {
+                    delete tiendasActivas[id];
+                    break;
+                }
+            }
+            io.emit('actualizar_dashboard', Object.keys(tiendasActivas));
         });
     });
 
