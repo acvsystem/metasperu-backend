@@ -72,10 +72,10 @@ export const loginCenter = async (req, res) => {
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
-        
+        console.log(user.password_nw);
         const validPassword = await bcrypt.compare(password, user.password_nw);
         if (!validPassword) return res.status(401).json({ message: 'Credenciales inválidas' });
-        console.log(validPassword);
+        
         const token = jwt.sign(
             { id: user.id_login, rol: user.nivel },
             'una_clave_muy_segura_y_larga_123456',
