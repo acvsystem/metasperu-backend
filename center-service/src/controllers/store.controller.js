@@ -5,7 +5,22 @@ export const storeController = {
     getTiendas: async (req, res) => {
         try {
             const [rows] = await pool.execute('SELECT * FROM tb_lista_tienda');
-            res.json(rows);
+
+            const tiendasMapeadas = rows.map(t => {
+                return {
+                    id: t.ID_TIENDA,
+                    serie: t.SERIE_TIENDA,
+                    nombre: t.DESCRIPCION,
+                    codigo_almacen: t.COD_ALMACEN,
+                    unidad_servicio: t.UNID_SERVICIO,
+                    marca: t.TIPO_TIENDA,
+                    email: t.EMAIL,
+                    codigo_ejb: t.COD_TIENDA_EJB,
+                    estado: t.ESTATUS
+                };
+            });
+
+            res.json(tiendasMapeadas);
         } catch (error) {
             res.status(500).json({ message: 'Error al obtener tiendas', error });
         }
