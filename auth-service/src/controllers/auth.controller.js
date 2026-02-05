@@ -104,7 +104,7 @@ export const loginCenter = async (req, res) => {
 };
 
 export const checkSessionCenter = async (req, res) => {
-    console.log("checkSessionCenter",req.user);
+    
     try {
         
         // req.user viene inyectado desde el middleware
