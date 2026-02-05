@@ -34,7 +34,7 @@ export const initSocket = (server) => {
                 lastSeen: new Date()
             };
             console.log(`Tienda conectada: ${data.id_tienda}`);
-            io.emit('actualizar_dashboard', Object.keys(tiendasActivas));
+            io.emit('actualizar_dashboard', tiendasActivas);
         });
 
         // --- Lógica para el Dashboard (Angular) ---
