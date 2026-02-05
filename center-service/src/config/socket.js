@@ -54,9 +54,10 @@ export const initSocket = (server) => {
         });
 
         socket.on('disconnect', () => {
+             console.log(`Tienda ${idTienda} OFFLINE`);
             // Limpiar al desconectar
             const idTienda = tiendasActivas[socket.id];
-
+            console.log(idTienda);
             if (idTienda) {
                 console.log(`Tienda ${idTienda} OFFLINE`);
 
