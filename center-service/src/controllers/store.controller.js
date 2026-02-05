@@ -18,7 +18,7 @@ export const storeController = {
                     codigo_ejb: t.COD_TIENDA_EJB,
                     estado: t.ESTATUS,
                     online: false,
-                    traffic: [],
+                    traffic: 0,
                     comprobantes: 0,
                     transacciones: 0,
                     clientes: 0
