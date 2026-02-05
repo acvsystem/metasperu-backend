@@ -12,7 +12,7 @@ router.post('/logout', verifyToken, logout);
 
 // Ruta publica center-service
 router.post('/center/login', loginCenter);
-router.get('/center/check-session', verifyToken, checkSessionCenter);
+router.get('/center/check-session', checkSessionCenter);
 router.post('/center/logout', verifyToken, logoutCenter);
 
 export default router;
