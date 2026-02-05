@@ -16,8 +16,17 @@ export const initSocket = (server) => {
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
 
+
+        socket.on('registrar_dashboard', () => {
+            socket.join('dashboards');
+            // Enviamos solo a ESTE socket la lista actual de tiendas
+            socket.emit('actualizar_dashboard', Object.keys(tiendasActivas));
+            console.log('Dashboard refrescado y sincronizado');
+        });
+
         // --- Lógica para las Tiendas (Python) ---
         socket.on('tienda_identificarse', (data) => {
+
             socket.join('grupo_tiendas');
             tiendasActivas[data.id_tienda] = {
                 socketId: socket.id,
