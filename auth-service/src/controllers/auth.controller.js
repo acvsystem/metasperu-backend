@@ -104,8 +104,9 @@ export const loginCenter = async (req, res) => {
 };
 
 export const checkSessionCenter = async (req, res) => {
+    console.log("checkSessionCenter",req.user);
     try {
-        console.log("checkSessionCenter",req.user);
+        
         // req.user viene inyectado desde el middleware
         const [rows] = await poolCenter.query('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL FROM tb_login WHERE ID_LOGIN = ?', [req.user.id]);
 
