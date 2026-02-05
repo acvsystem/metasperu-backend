@@ -55,13 +55,17 @@ export const initSocket = (server) => {
 
         socket.on('disconnect', () => {
             // Limpiar al desconectar
-            for (let id in tiendasActivas) {
-                if (tiendasActivas[id].socketId === socket.id) {
-                    delete tiendasActivas[id];
-                    break;
-                }
+            const idTienda = tiendasActivas[socket.id];
+
+            if (idTienda) {
+                console.log(`Tienda ${idTienda} OFFLINE`);
+
+                // Notificamos al dashboard que esta tienda ya no está
+                io.emit('cambio_estado_tienda', { id: idTienda, online: false });
+
+                // Limpiamos nuestra memoria
+                delete tiendasActivas[socket.id];
             }
-            io.emit('actualizar_dashboard', Object.keys(tiendasActivas));
         });
     });
 
