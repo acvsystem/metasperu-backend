@@ -4,7 +4,7 @@ export const storeController = {
 
     getTiendas: async (req, res) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM tb_lista_tienda');
+            const [rows] = await pool.execute('SELECT * FROM tb_lista_tienda ORDER BY DESCRIPCION ASC');
 
             const tiendasMapeadas = rows.map(t => {
                 return {
