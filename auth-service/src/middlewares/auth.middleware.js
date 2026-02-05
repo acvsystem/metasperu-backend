@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 export const verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
-
+    console.log('verifyToken', authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ message: "No se proporcionó un token" });
     }
