@@ -58,8 +58,10 @@ if len(configuration) > 0:
 
     if __name__ == '__main__':
         try:
+            headers = {"code": serieTienda}
             sio.connect(
             URL_METAS, 
+            headers=headers,
             socketio_path=SOCKET_PATH, # <--- IMPORTANTE
             transports=['websocket', 'polling']
             )
