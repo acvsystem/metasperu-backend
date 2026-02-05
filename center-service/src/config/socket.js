@@ -62,7 +62,7 @@ export const initSocket = (server) => {
                 console.log(`Tienda ${store.serie} OFFLINE`);
 
                 // Notificamos al dashboard que esta tienda ya no está
-                io.emit('actualizar_dashboard', { serie: store.serie, online: false });
+                io.emit('actualizar_dashboard', [{ serie: store.serie, online: false }]);
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.id];
