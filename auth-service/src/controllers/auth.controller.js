@@ -106,7 +106,7 @@ export const loginCenter = async (req, res) => {
 export const checkSessionCenter = async (req, res) => {
     try {
         // req.user viene inyectado desde el middleware
-        const [rows] = await poolCenter.query('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL FROM usuarios WHERE ID_LOGIN = ?', [req.user.id]);
+        const [rows] = await poolCenter.query('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL FROM tb_login WHERE ID_LOGIN = ?', [req.user.id]);
 
         if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
 
