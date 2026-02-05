@@ -1,14 +1,14 @@
 import { Router } from 'express';
-//import { verifyToken } from '../middleware/auth.middleware.js';
-//import { storeController } from '../controllers/store.controller.js';
+import { verifyToken } from '../middleware/auth.middleware.js';
+import { storeController } from '../controllers/store.controller.js';
 
 const router = Router();
 
 // --- RUTAS PARA TIENDAS
-/*
-router.get('/api/v1/store', verifyToken, storeController.getTiendas);
-router.post('/api/v1/store', verifyToken, storeController.createTienda);
-router.put('/api/v1/store', verifyToken, storeController.updateTienda);
-router.delete('/api/v1/store/:id', verifyToken, storeController.deleteTienda);
-*/
+
+router.get('/api/store', verifyToken, storeController.getTiendas);
+router.post('/api/store', verifyToken, storeController.createTienda);
+router.put('/api/store', verifyToken, storeController.updateTienda);
+router.delete('/api/store/:id', verifyToken, storeController.deleteTienda);
+
 export default router;
