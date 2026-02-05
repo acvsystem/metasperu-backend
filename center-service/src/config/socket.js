@@ -65,7 +65,7 @@ export const initSocket = (server) => {
                 io.emit('actualizar_dashboard', [{ serie: store.serie, online: false }]);
 
                 // Limpiamos nuestra memoria
-                delete tiendasActivas[socket.id];
+                delete tiendasActivas[socket.handshake.headers.code];
             }
         });
     });
