@@ -11,6 +11,8 @@ export const initSocket = (server) => {
         }
     });
 
+    let tiendasActivas = {};
+
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
 
