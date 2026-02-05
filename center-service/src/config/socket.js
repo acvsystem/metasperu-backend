@@ -20,7 +20,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-            socket.emit('actualizar_dashboard', Object.keys(tiendasActivas));
+            socket.emit('actualizar_dashboard', tiendasActivas);
             console.log('Dashboard refrescado y sincronizado');
         });
 
