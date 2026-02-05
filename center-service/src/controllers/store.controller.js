@@ -16,7 +16,12 @@ export const storeController = {
                     marca: t.TIPO_TIENDA,
                     email: t.EMAIL,
                     codigo_ejb: t.COD_TIENDA_EJB,
-                    estado: t.ESTATUS
+                    estado: t.ESTATUS,
+                    online: false,
+                    traffic: [],
+                    comprobantes: 0,
+                    transacciones: 0,
+                    clientes: 0
                 };
             });
 
