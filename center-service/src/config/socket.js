@@ -29,12 +29,13 @@ export const initSocket = (server) => {
 
             socket.join('grupo_tiendas');
             tiendasActivas[data.id_tienda] = {
+                serie: data.id_tienda,
                 socketId: socket.id,
                 nombre: data.nombre,
                 lastSeen: new Date()
             };
             console.log(`Tienda conectada: ${data.id_tienda}`);
-            io.emit('actualizar_dashboard', tiendasActivas);
+            io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
 
         // --- Lógica para el Dashboard (Angular) ---
