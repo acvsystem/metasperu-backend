@@ -137,7 +137,7 @@ export const getSessionSummary = async (req, res) => {
 
     try {
         const query = `
-            SELECT     s.sku, 
+            SELECT    s.id, s.sku, 
                 SUM(s.cantidad) as total_cantidad,
                 MAX(s.escaneado_por) as ultimo_escaneo,
                 COUNT(s.id) as veces_escaneado,

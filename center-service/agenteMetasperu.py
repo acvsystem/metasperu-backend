@@ -1,6 +1,11 @@
 import socketio
 import pyodbc
 import requests
+import json
+import pyodbc
+import requests
+import collections
+from datetime import datetime,timedelta
 from getmac import get_mac_address as gma
 
 sio = socketio.Client()
@@ -39,13 +44,31 @@ if len(configuration) > 0:
     def on_request(data):
         print(f"Dashboard solicita documentos en cola...")
 
-        # AQUÍ: Lógica real para contar archivos o consultar tu BD
-        # Ejemplo simulado:
-        docs_simulados = [
-            {"id": 101, "cliente": "Juan Perez", "monto": 50.50},
-            {"id": 102, "cliente": "Maria Lopez", "monto": 120.00}
-        ]
-
+        myobj = []
+        j = {}
+        server = instanciaBD
+        dataBase = nameBD
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
+        
+        nowDate=datetime.today().strftime('%Y-%m-%d')
+        lastDate = datetime.today()+timedelta(days=-1)
+        shift = timedelta(max(1, (lastDate.weekday() + 6) % 7))
+        lastDate = lastDate.strftime('%Y-%m-%d')
+        querySql="SELECT CASE TIPOSDOC.TIPODOC WHEN '"+codFactura+"' THEN SUBSTRING(CONCAT('F',NUMSERIE),1,len(CONCAT('F',NUMSERIE))-1) WHEN '"+codBoleta+"' THEN SUBSTRING(CONCAT('B',NUMSERIE),1,len(CONCAT('B',NUMSERIE))-1) ELSE SUBSTRING(CONCAT(CONCAT(SUBSTRING(NUMSERIE,4,1),NUMSERIE),NUMSERIE),1,len(NUMSERIE)) END AS NUMSERIE, NUMFACTURA,TIPOSDOC.DESCRIPCION, FORMAT(FECHA,'yyyy-MM-dd') AS FECHA FROM FACTURASVENTA INNER JOIN TIPOSDOC ON TIPOSDOC.TIPODOC = FACTURASVENTA.TIPODOC WHERE FECHA BETWEEN '"+lastDate+"' AND '"+nowDate+"';"
+        connection = pyodbc.connect(conexion)
+        cursor = connection.cursor()
+        cursor.execute("SELECT @@version;")
+        row = cursor.fetchone()
+        cursor.execute(querySql)
+        rows = cursor.fetchall()
+        for row in rows:
+            obj = collections.OrderedDict()
+            obj['cmpSerie'] = row[0]
+            obj['cmpNumero'] = row[1]
+            obj['cmpTipo'] = row[2]
+            obj['cmpFecha'] = row[3]
+            myobj.append(obj)
+        docs_simulados = json.dumps(myobj)
         # Respondemos enviando de vuelta el ID de quien preguntó
         sio.emit('python_entrega_documentos', {
             'enviar_a': data['pedido_por'],
