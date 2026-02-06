@@ -298,3 +298,17 @@ export const updateStartSession = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+export const updateConteoPocket = async (req, res) => {
+    const { id, cantidad } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE inventario_escaneos SET cantidad = ? WHERE id = ?',
+            [cantidad, id]
+        );
+        res.json({ message: 'Conteo actualizado correctamente' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}

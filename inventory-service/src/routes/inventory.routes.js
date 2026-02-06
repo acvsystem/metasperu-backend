@@ -11,7 +11,8 @@ import {
     getAssignedSection,
     getPocketScan,
     updateEndedSession,
-    updateStartSession
+    updateStartSession,
+    updateConteoPocket
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
@@ -59,5 +60,8 @@ router.get('/api/v1/store', verifyToken, storeController.getTiendas);
 router.post('/api/v1/store', verifyToken, storeController.createTienda);
 router.put('/api/v1/store', verifyToken, storeController.updateTienda);
 router.delete('/api/v1/store/:id', verifyToken, storeController.deleteTienda);
+
+// --- RUTAS POCKET 
+router.put('/pocket/scan', verifyToken, updateConteoPocket)
 
 export default router;
