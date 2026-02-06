@@ -147,7 +147,7 @@ export const getSessionSummary = async (req, res) => {
             JOIN inventario_sesiones sess ON s.sesion_id = sess.id
             JOIN usuarios u ON s.escaneado_por = u.id
             WHERE sess.codigo_sesion = ?
-            GROUP BY s.sku, seccion_id, u.username
+            GROUP BY s.id, s.sku, seccion_id, u.username
         `;
 
         const [summary] = await pool.execute(query, [session_code]);
