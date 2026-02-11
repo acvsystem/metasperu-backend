@@ -224,13 +224,21 @@ export const getActiveSessions = async (req, res) => {
 
 export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie_store } = req.query;
+    let objResponse = { success: true };
 
     if (session_code && serie_store) {
-        getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
 
-        res.status(200).json({
-            success: true
-        });
+        const [sesion] = await pool.execute(`SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?`, [session_code]);
+        const invExist = ((sesion || [])[0] || {}).inventario_registrado || 0;
+        if (sesion.length && invExist) {
+            const [inventario_store] = await pool.execute(`SELECT * FROM inventario_store WHERE cSessionCode = ?`, [session_code]);
+            objResponse['codigo_sesion'] = session_code;
+            objResponse['inventario'] = inventario_store;
+        } else {
+            getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
+        }
+
+        res.status(200).json(objResponse);
     } else {
         res.status(500).json({ error: "Error envio a socket" });
     }
@@ -240,6 +248,22 @@ export const postInventoryResStore = async (req, res) => {
     const dataBody = req.body;
     if (dataBody) {
         console.log(dataBody[0]['cSessionCode']);
+
+        const data = await dataBody.map(async (d) => {
+            await pool.execute(
+                `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
+             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
+                d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, d.cTemporada, d.cConteo, d.cTotalConteo]
+            );
+        });
+
+        const sesion = await pool.execute(`UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
+            [dataBody[0]['cSessionCode']]
+        );
+
+        Promise.all(data, sesion);
+
         getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
     }
 }
