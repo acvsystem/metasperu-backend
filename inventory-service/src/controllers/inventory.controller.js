@@ -230,6 +230,7 @@ export const getInventoryReqStore = async (req, res) => {
 
         const [sesion] = await pool.execute(`SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?`, [session_code]);
         const invExist = ((sesion || [])[0] || {}).inventario_registrado || 0;
+        console.log('getInventoryReqStore', invExist);
         if (sesion.length && invExist) {
             const [inventario_store] = await pool.execute(`SELECT * FROM inventario_store WHERE cSessionCode = ?`, [session_code]);
             objResponse['codigo_sesion'] = session_code;
