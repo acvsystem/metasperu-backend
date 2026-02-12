@@ -12,7 +12,8 @@ import {
     getPocketScan,
     updateEndedSession,
     updateStartSession,
-    updateConteoPocket
+    updateConteoPocket,
+    postInventoryExport
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
@@ -39,6 +40,7 @@ router.get('/pocket/scan/:session_code', verifyToken, getPocketScan);
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
 router.post('/response/store', postInventoryResStore);
+router.post('/response/store/export', postInventoryExport);
 router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
 router.put('/ended-session', verifyToken, updateEndedSession);
 router.put('/estart-session', verifyToken, updateStartSession);

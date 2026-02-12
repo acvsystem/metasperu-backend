@@ -269,6 +269,35 @@ export const postInventoryResStore = async (req, res) => {
     }
 }
 
+export const postInventoryExport = async (req, res) => {
+
+    try {
+        const dataBody = req.body;
+        if (dataBody) {
+            console.log(dataBody[0]['cSessionCode']);
+
+            const data = await dataBody.map(async (d) => {
+                await pool.execute(
+                    `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
+             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                    [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
+                    d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, d.cTemporada, d.cConteo, d.cTotalConteo]
+                );
+            });
+
+            const sesion = await pool.execute(`UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
+                [dataBody[0]['cSessionCode']]
+            );
+
+            Promise.all(data, sesion);
+            res.json({ message: 'Inventario Registrado' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error en las consultas', error });
+    }
+
+}
+
 export const getInventoryResStore = async (req, res) => {
     const dataBody = req.body;
     if (dataBody) {
