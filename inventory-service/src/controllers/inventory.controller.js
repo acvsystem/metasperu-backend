@@ -376,3 +376,17 @@ export const updateConteoPocket = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+export const updateCheckedRow = async (req, res) => {
+    const { id, checked } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE inventario_store SET checking = ? WHERE id = ?',
+            [checked, id]
+        );
+        res.json({ message: 'Check Registrado' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}

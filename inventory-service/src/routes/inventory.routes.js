@@ -13,7 +13,8 @@ import {
     updateEndedSession,
     updateStartSession,
     updateConteoPocket,
-    postInventoryImport
+    postInventoryImport,
+    updateCheckedRow
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
@@ -44,6 +45,7 @@ router.post('/response/store/import', postInventoryImport);
 router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
 router.put('/ended-session', verifyToken, updateEndedSession);
 router.put('/estart-session', verifyToken, updateStartSession);
+router.post('/checked/row/inv', verifyToken, updateCheckedRow);
 
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);
