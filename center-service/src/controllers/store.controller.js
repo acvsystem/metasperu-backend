@@ -81,6 +81,7 @@ export const storeController = {
             
             tiendasOnline.map((store) => {
                 let serie = Object.keys(store);
+                console.log(serie);
                 getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
