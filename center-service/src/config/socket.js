@@ -3,6 +3,10 @@ import { Server } from 'socket.io';
 let io;
 let tiendasActivas = {};
 
+export const tiendasOnline = {
+    storeOnline: Object.values(tiendasActivas)
+};
+
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
@@ -26,6 +30,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
+            tiendasOnline.storeOnline = Object.values(tiendasActivas);
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
             console.log('Dashboard refrescado y sincronizado');
         });
@@ -86,7 +91,7 @@ export const getIO = () => {
     return io;
 };
 
-export const tiendasOnline = Object.values(tiendasActivas);
+
 
 console.log(tiendasOnline);
 

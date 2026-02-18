@@ -79,7 +79,7 @@ export const storeController = {
         const { socketId } = req.params;
         try {
             console.log(tiendasOnline);
-            tiendasOnline.map((store) => {
+            tiendasOnline.storeOnline.map((store) => {
                 getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
