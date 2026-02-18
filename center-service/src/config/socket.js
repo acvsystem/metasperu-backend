@@ -158,7 +158,7 @@ function obtenerFaltantes(tienda, servidor) {
     });
 
     console.log("obtenerFaltantes", faltantes.length);
-    return faltantes;
+    return { documents: faltantes, length: faltantes.length };
 }
 
 function resetearAuditoria() {
