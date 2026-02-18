@@ -123,7 +123,7 @@ function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
-    if (auditoriaEstado.serverData && totalTiendasRecibidas === auditoriaEstado.totalTiendasEsperadas) {
+    if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
     }
