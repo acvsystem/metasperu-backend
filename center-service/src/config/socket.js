@@ -107,7 +107,7 @@ export const initSocket = (server) => {
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            } 
+            }
         });
     });
 
@@ -120,7 +120,6 @@ export const getIO = () => {
 };
 
 function verificarYComparar() {
-    console.log(auditoriaEstado.tiendasData);
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
@@ -131,25 +130,30 @@ function verificarYComparar() {
 }
 
 function iniciarProcesoComparacion() {
-    const resultadosFinales = [];
-    const setServidor = new Set(auditoriaEstado.serverData);
+    const resultadosFinales = obtenerFaltantes(auditoriaEstado.tiendasData, auditoriaEstado.serverData);
 
-    for (const [serie, docsTienda] of Object.entries(auditoriaEstado.tiendasData)) {
-        const faltantes = docsTienda.filter(id => !setServidor.has(id));
-
-        resultadosFinales.push({
-            serie: serie,
-            totalTienda: docsTienda.length,
-            faltantes: faltantes.length,
-            detalles: faltantes
-        });
-    }
-
+    console.log(resultadosFinales);
     // Enviamos el resultado final al Frontend (Angular)
     io.emit('documents_response_dashboard', resultadosFinales);
 
     // Limpiamos para la próxima auditoría
     resetearAuditoria();
+}
+
+function obtenerFaltantes(tienda, servidor) {
+    // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
+    const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
+
+    // 2. Filtramos los de la tienda que NO están en el servidor
+    const faltantes = tienda.filter(t => {
+        // Normalizamos el ID de la tienda: "B7A4" + "-" + "00245813"
+        // padStart(8, '0') asegura que el número tenga 8 dígitos
+        const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
+
+        return !idsEnServidor.has(idNormalizadoTienda);
+    });
+
+    return faltantes;
 }
 
 function resetearAuditoria() {
