@@ -149,7 +149,7 @@ function obtenerFaltantes(tienda, servidor) {
     const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
 
     // 2. Filtramos los de la tienda que NO están en el servidor
-    const faltantes = tienda.filter(t => {
+    const faltantes = JSON.parse(tienda).filter(t => {
         // Normalizamos el ID de la tienda: "B7A4" + "-" + "00245813"
         // padStart(8, '0') asegura que el número tenga 8 dígitos
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
