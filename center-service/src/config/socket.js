@@ -5,6 +5,13 @@ let tiendasActivas = {};
 
 export const tiendasOnline = [];
 
+const auditoriaEstado = {
+    completado: false,
+    serverData: null, // Aquí guardaremos los documentos del servidor general
+    tiendasData: {},  // Aquí guardaremos los documentos de cada tienda indexados por serie
+    totalTiendasEsperadas: 0
+};
+
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
@@ -15,12 +22,7 @@ export const initSocket = (server) => {
     });
 
 
-    const auditoriaEstado = {
-        completado: false,
-        serverData: null, // Aquí guardaremos los documentos del servidor general
-        tiendasData: {},  // Aquí guardaremos los documentos de cada tienda indexados por serie
-        totalTiendasEsperadas: Object.values(tiendasActivas).length
-    };
+
 
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
@@ -47,11 +49,12 @@ export const initSocket = (server) => {
             };
 
             const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
-            
+
             if (index == -1) {
                 (tiendasOnline || []).push(tiendasActivas);
             }
 
+            auditoriaEstado.totalTiendasEsperadas = Object.key(tiendasActivas);
             console.log(`Tienda conectada: ${data.id_tienda}`);
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
@@ -85,6 +88,7 @@ export const initSocket = (server) => {
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
+                auditoriaEstado.totalTiendasEsperadas = Object.key(tiendasActivas);
             }
         });
     });
