@@ -54,7 +54,7 @@ export const initSocket = (server) => {
                 (tiendasOnline || []).push(tiendasActivas);
             }
 
-            auditoriaEstado.totalTiendasEsperadas = Object.key(tiendasActivas);
+            auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             console.log(`Tienda conectada: ${data.id_tienda}`);
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
@@ -88,7 +88,7 @@ export const initSocket = (server) => {
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
-                auditoriaEstado.totalTiendasEsperadas = Object.key(tiendasActivas);
+                auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             }
         });
     });
