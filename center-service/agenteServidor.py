@@ -39,7 +39,7 @@ def connect():
     })
     
 @sio.on('py_request_documents_server')
-def on_request(data):
+def on_request():
     print(f"Dashboard solicita documentos en cola...")
     myobj = []
     j = {}
@@ -65,7 +65,7 @@ def on_request(data):
     docs_simulados = json.dumps(myobj)
     print(docs_simulados)
     # Respondemos enviando de vuelta el ID de quien preguntó
-    sio.emit('py_response_documents_store', {
+    sio.emit('py_response_documents_server', {
         'documentos': docs_simulados
     })
 
