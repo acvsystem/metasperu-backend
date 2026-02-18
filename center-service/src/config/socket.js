@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 
 let io;
+let tiendasActivas = {};
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -11,7 +12,7 @@ export const initSocket = (server) => {
         }
     });
 
-    let tiendasActivas = {};
+
     const auditoriaEstado = {
         completado: false,
         serverData: null, // Aquí guardaremos los documentos del servidor general
