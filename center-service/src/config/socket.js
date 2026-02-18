@@ -91,6 +91,7 @@ export const initSocket = (server) => {
         // --- Retorno de Python server al backend ---
         socket.on('py_response_documents_server', (data) => {
             auditoriaEstado['serverData'] = data;
+            iniciarProcesoComparacion();
         });
 
 
@@ -124,6 +125,7 @@ function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
+
     if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
@@ -131,17 +133,19 @@ function verificarYComparar() {
 }
 
 function iniciarProcesoComparacion() {
-    tiendasOnline.map((store, i) => {
-        let serie = Object.keys(store)[i];
-        const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
+    if (Object.keys(tiendasOnline).length) {
+        tiendasOnline.map((store, i) => {
+            let serie = Object.keys(store)[i];
+            const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
 
-        console.log(resultadosFinales);
-        // Enviamos el resultado final al Frontend (Angular)
-        io.emit('documents_response_dashboard', resultadosFinales);
-    });
+            console.log(resultadosFinales);
+            // Enviamos el resultado final al Frontend (Angular)
+            io.emit('documents_response_dashboard', resultadosFinales);
+        });
 
-    // Limpiamos para la próxima auditoría
-    resetearAuditoria();
+        // Limpiamos para la próxima auditoría
+        resetearAuditoria();
+    }
 }
 
 function obtenerFaltantes(serieStore, store, servidor) {
