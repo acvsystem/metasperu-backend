@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 
 let io;
-var tiendasActivas = {};
+let tiendasActivas = {};
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -86,7 +86,7 @@ export const getIO = () => {
     return io;
 };
 
-export const tiendasOnline = tiendasActivas;
+export const tiendasOnline = Object.values(tiendasActivas);
 
 function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
