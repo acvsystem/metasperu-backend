@@ -152,7 +152,7 @@ function obtenerFaltantes(tienda, servidor) {
     const faltantes = JSON.parse(tienda).filter(t => {
         // Normalizamos el ID de la tienda: "B7A4" + "-" + "00245813"
         // padStart(8, '0') asegura que el número tenga 8 dígitos
-        const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
+        const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(5, '0')}`;
 
         return !idsEnServidor.has(idNormalizadoTienda);
     });
