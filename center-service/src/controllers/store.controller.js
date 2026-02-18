@@ -80,8 +80,9 @@ export const storeController = {
         try {
 
             tiendasOnline.map((store) => {
-                console.log("callDocumentsComparation:", Object.keys(store));
-                getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
+                let serie = Object.keys(store)[0];
+                console.log("callDocumentsComparation:", serie, store[serie]);
+                getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
             // getIO().to(serie_store).emit('py_request_documents_server');
