@@ -141,6 +141,7 @@ function iniciarProcesoComparacion() {
 }
 
 function obtenerFaltantes(tienda, servidor) {
+    console.log(tienda);
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
     const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
 
