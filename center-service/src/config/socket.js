@@ -28,7 +28,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-            (tiendasOnline || []).push(tiendasActivas);
+
 
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
             console.log('Dashboard refrescado y sincronizado');
@@ -45,6 +45,12 @@ export const initSocket = (server) => {
                 lastSeen: new Date(),
                 online: true
             };
+
+            const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
+            if (!index) {
+                (tiendasOnline || []).push(tiendasActivas);
+            }
+
             console.log(`Tienda conectada: ${data.id_tienda}`);
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
