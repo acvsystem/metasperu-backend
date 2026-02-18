@@ -48,7 +48,7 @@ export const initSocket = (server) => {
 
             const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
             console.log(index);
-            if (!index) {
+            if (index == -1) {
                 (tiendasOnline || []).push(tiendasActivas);
             }
 
