@@ -132,7 +132,7 @@ function verificarYComparar() {
 function iniciarProcesoComparacion() {
     tiendasOnline.map((store) => {
         let serie = Object.keys(store)[0];
-        const resultadosFinales = obtenerFaltantes(auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
+        const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
 
         console.log(resultadosFinales);
         // Enviamos el resultado final al Frontend (Angular)
@@ -143,13 +143,12 @@ function iniciarProcesoComparacion() {
     resetearAuditoria();
 }
 
-function obtenerFaltantes(tienda, servidor) {
-    console.log(JSON.parse(servidor));
+function obtenerFaltantes(serieStore, store, servidor) {
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
     const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
 
     // 2. Filtramos los de la tienda que NO están en el servidor
-    const faltantes = JSON.parse(tienda).filter(t => {
+    const faltantes = JSON.parse(store).filter(t => {
         // Normalizamos el ID de la tienda: "B7A4" + "-" + "00245813"
         // padStart(8, '0') asegura que el número tenga 8 dígitos
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
@@ -157,8 +156,8 @@ function obtenerFaltantes(tienda, servidor) {
         return !idsEnServidor.has(idNormalizadoTienda);
     });
 
-    console.log("obtenerFaltantes", faltantes.length);
-    return { documents: faltantes, length: faltantes.length };
+    console.log(`🚀 Documentos Faltantes ${serieStore} - ${faltantes.length}`);
+    return { serie: serieStore, documents: faltantes, length: faltantes.length };
 }
 
 function resetearAuditoria() {
