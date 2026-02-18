@@ -120,6 +120,7 @@ export const getIO = () => {
 };
 
 function verificarYComparar() {
+    console.log("ENTRO verificarYComparar");
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
