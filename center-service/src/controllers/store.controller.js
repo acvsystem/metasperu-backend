@@ -84,7 +84,7 @@ export const storeController = {
                 getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
-            const servidor = Object.values(servidorOnline);
+            const servidor = servidorOnline;
             console.log("callDocumentsComparation:", servidor);
             getIO().to(servidor.socketId).emit('py_request_documents_server');
 

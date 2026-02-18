@@ -35,10 +35,10 @@ arConexionSQL = [
 def connect():
     print("Conectado al servidor central")
     sio.emit('registrar_servidor', {
-        'id_tienda': 'servidor_backup'
+        'id_servidor': 'servidor_backup'
     })
     
-@sio.on('py_requets_documents_store')
+@sio.on('py_request_documents_server')
 def on_request(data):
     print(f"Dashboard solicita documentos en cola...")
     myobj = []
