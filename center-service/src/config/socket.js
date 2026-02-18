@@ -88,6 +88,8 @@ export const getIO = () => {
 
 export const tiendasOnline = Object.values(tiendasActivas);
 
+console.log(tiendasOnline);
+
 function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
