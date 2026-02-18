@@ -28,7 +28,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-            tiendasOnline.storeOnline.push(Object.values(tiendasActivas));
+            tiendasOnline.push(Object.values(tiendasActivas));
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
             console.log('Dashboard refrescado y sincronizado');
         });
@@ -88,10 +88,6 @@ export const getIO = () => {
     if (!io) throw new Error("center-service: Socket.io no ha sido inicializado");
     return io;
 };
-
-
-
-console.log(tiendasOnline);
 
 function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
