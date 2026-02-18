@@ -77,11 +77,9 @@ export const storeController = {
     // 2. Aquí recibe la lista de IDs del Servidor General (Agente Python/Node en la otra locación)
     callDocumentsComparation: async (req, res) => {
         const { socketId } = req.params;
-        console.log("callDocumentsComparation:",socketId);
         try {
-            
+            console.log("tiendasOnline:", store);
             tiendasOnline.map((store) => {
-                console.log(store);
                 getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
