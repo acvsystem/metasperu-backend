@@ -47,9 +47,15 @@ export const initSocket = (server) => {
             };
 
             const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
-            console.log(index);
+
             if (index == -1) {
-                (tiendasOnline || []).push(tiendasActivas);
+                (tiendasOnline || []).push({
+                    serie: data.id_tienda,
+                    socketId: socket.id,
+                    nombre: data.nombre,
+                    lastSeen: new Date(),
+                    online: true
+                });
             }
 
             console.log(`Tienda conectada: ${data.id_tienda}`);
