@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getIO, tiendasOnline } from '../config/socket.js';
+import { getIO, tiendasOnline, servidorOnline } from '../config/socket.js';
 
 export const storeController = {
 
@@ -81,11 +81,12 @@ export const storeController = {
 
             tiendasOnline.map((store) => {
                 let serie = Object.keys(store)[0];
-                console.log("callDocumentsComparation:", serie, store[serie]);
                 getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
-             getIO().to('YZjnnie4AN2OMIO6AAAL').emit('py_request_documents_server');
+            const servidor = Object.values(servidorOnline);
+            console.log("callDocumentsComparation:", servidor);
+            getIO().to(servidor.socketId).emit('py_request_documents_server');
 
             res.json({
                 message: 'Se emitio señal de documentos'

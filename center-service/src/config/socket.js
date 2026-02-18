@@ -4,6 +4,7 @@ let io;
 let tiendasActivas = {};
 
 export const tiendasOnline = [];
+export const servidorOnline = {};
 
 const auditoriaEstado = {
     completado: false,
@@ -26,6 +27,20 @@ export const initSocket = (server) => {
 
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
+
+        socket.on('registrar_servidor', (data) => {
+            socket.join('servidor_backup');
+            // Enviamos solo a ESTE socket la lista actual de tiendas
+            //socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
+            servidorOnline = {
+                socketId: socket.id,
+                nombre: data.id_servidor,
+                lastSeen: new Date(),
+                online: true
+            };
+            console.log("registrar_servidor", servidorOnline);
+            console.log(`Servidor conectado: ${data.id_servidor}`);
+        });
 
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
