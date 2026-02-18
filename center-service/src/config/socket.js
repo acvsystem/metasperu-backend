@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 
 let io;
-let tiendasActivas = {};
+var tiendasActivas = {};
 
 export const initSocket = (server) => {
     io = new Server(server, {
