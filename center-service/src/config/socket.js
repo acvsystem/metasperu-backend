@@ -144,9 +144,9 @@ function iniciarProcesoComparacion() {
 }
 
 function obtenerFaltantes(tienda, servidor) {
-    console.log(servidor);
+    console.log(JSON.parse(servidor));
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
-    const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
+    const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
 
     // 2. Filtramos los de la tienda que NO están en el servidor
     const faltantes = tienda.filter(t => {
