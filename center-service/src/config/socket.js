@@ -130,8 +130,8 @@ function verificarYComparar() {
 }
 
 function iniciarProcesoComparacion() {
-    tiendasOnline.map((store) => {
-        let serie = Object.keys(store)[0];
+    tiendasOnline.map((store, i) => {
+        let serie = Object.keys(store)[i];
         const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
 
         console.log(resultadosFinales);
