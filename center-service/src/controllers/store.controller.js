@@ -78,6 +78,7 @@ export const storeController = {
     callDocumentsComparation: async (req, res) => {
         const { socketId } = req.params;
         try {
+            console.log("callDocumentsComparation:", socketId);
             console.log("tiendasOnline:", tiendasOnline);
             tiendasOnline.map((store) => {
                 getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
