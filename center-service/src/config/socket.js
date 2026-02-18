@@ -22,6 +22,8 @@ export const initSocket = (server) => {
     });
 
 
+
+
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
 

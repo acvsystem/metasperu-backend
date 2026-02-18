@@ -60,6 +60,7 @@ def on_request(data):
         obj['cmpFecha'] = row[1]
         myobj.append(obj)
     docs_simulados = json.dumps(myobj)
+    print(docs_simulados)
     # Respondemos enviando de vuelta el ID de quien preguntó
     sio.emit('py_response_documents_store', {
         'documentos': docs_simulados

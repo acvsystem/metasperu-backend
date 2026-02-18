@@ -85,7 +85,7 @@ export const storeController = {
                 getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
-            getIO().emit('py_request_documents_server');
+             getIO().to('YZjnnie4AN2OMIO6AAAL').emit('py_request_documents_server');
 
             res.json({
                 message: 'Se emitio señal de documentos'
