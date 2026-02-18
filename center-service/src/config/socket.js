@@ -3,9 +3,7 @@ import { Server } from 'socket.io';
 let io;
 let tiendasActivas = {};
 
-export const tiendasOnline = {
-    storeOnline: Object.values(tiendasActivas)
-};
+export const tiendasOnline = [];
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -30,7 +28,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-            tiendasOnline.storeOnline = Object.values(tiendasActivas);
+            tiendasOnline.storeOnline.push(Object.values(tiendasActivas));
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
             console.log('Dashboard refrescado y sincronizado');
         });
