@@ -28,7 +28,7 @@ export const initSocket = (server) => {
         socket.on('registrar_dashboard', () => {
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-            (tiendasOnline || []).push(Object.values(tiendasActivas));
+            (tiendasOnline || []).push(tiendasActivas);
 
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
             console.log('Dashboard refrescado y sincronizado');
