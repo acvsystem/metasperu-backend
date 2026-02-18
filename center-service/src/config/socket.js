@@ -130,18 +130,21 @@ function verificarYComparar() {
 }
 
 function iniciarProcesoComparacion() {
-    const resultadosFinales = obtenerFaltantes(auditoriaEstado.tiendasData, auditoriaEstado.serverData.documentos);
+    tiendasOnline.map((store) => {
+        let serie = Object.keys(store)[0];
+        const resultadosFinales = obtenerFaltantes(auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
 
-    console.log(resultadosFinales);
-    // Enviamos el resultado final al Frontend (Angular)
-    io.emit('documents_response_dashboard', resultadosFinales);
+        console.log(resultadosFinales);
+        // Enviamos el resultado final al Frontend (Angular)
+        io.emit('documents_response_dashboard', resultadosFinales);
+    });
 
     // Limpiamos para la próxima auditoría
     resetearAuditoria();
 }
 
 function obtenerFaltantes(tienda, servidor) {
-    console.log(tienda);
+
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
     const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
 
@@ -154,6 +157,7 @@ function obtenerFaltantes(tienda, servidor) {
         return !idsEnServidor.has(idNormalizadoTienda);
     });
 
+    console.log("obtenerFaltantes", faltantes);
     return faltantes;
 }
 
