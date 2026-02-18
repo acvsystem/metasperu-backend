@@ -4,7 +4,12 @@ let io;
 let tiendasActivas = {};
 
 export const tiendasOnline = [];
-export const servidorOnline = {};
+export const servidorOnline = {
+    socketId: '',
+    nombre: '',
+    lastSeen: new Date(),
+    online: false
+};
 
 const auditoriaEstado = {
     completado: false,
@@ -32,12 +37,10 @@ export const initSocket = (server) => {
             socket.join('servidor_backup');
             // Enviamos solo a ESTE socket la lista actual de tiendas
             //socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
-            servidorOnline = {
-                socketId: socket.id,
-                nombre: data.id_servidor,
-                lastSeen: new Date(),
-                online: true
-            };
+            servidorOnline.socketId = socket.id;
+            servidorOnline.nombre = data.id_servidor
+            servidorOnline.online = true;
+
             console.log("registrar_servidor", servidorOnline);
             console.log(`Servidor conectado: ${data.id_servidor}`);
         });
@@ -104,7 +107,7 @@ export const initSocket = (server) => {
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            }
+            } 
         });
     });
 

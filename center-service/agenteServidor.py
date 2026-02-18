@@ -34,6 +34,9 @@ arConexionSQL = [
 @sio.event
 def connect():
     print("Conectado al servidor central")
+    sio.emit('registrar_servidor', {
+        'id_tienda': 'servidor_backup'
+    })
     
 @sio.on('py_requets_documents_store')
 def on_request(data):
