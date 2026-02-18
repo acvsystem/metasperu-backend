@@ -11,4 +11,7 @@ router.post('/api/store', verifyToken, storeController.createTienda);
 router.put('/api/store', verifyToken, storeController.updateTienda);
 router.delete('/api/store/:id', verifyToken, storeController.deleteTienda);
 
+// --- RUTAS PARA VERIFICACION
+router.get('/api/documents/missing/:socketId', verifyToken, storeController.callDocumentsComparation);
+
 export default router;

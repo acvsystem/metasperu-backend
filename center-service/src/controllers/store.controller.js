@@ -1,4 +1,5 @@
 import { pool } from '../config/db.js';
+import { getIO, tiendasOnline } from '../config/socket.js';
 
 export const storeController = {
 
@@ -70,6 +71,25 @@ export const storeController = {
             res.json({ message: 'Tienda eliminada' });
         } catch (error) {
             res.status(500).json({ message: 'Error al eliminar', error });
+        }
+    },
+
+    // 2. Aquí recibe la lista de IDs del Servidor General (Agente Python/Node en la otra locación)
+    callDocumentsComparation: async (req, res) => {
+        const { socketId } = req.params;
+        try {
+
+            tiendasOnline.map((store) => {
+                getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
+            });
+
+            getIO().to(serie_store).emit('py_request_documents_server');
+
+            res.json({
+                message: 'Se emitio señal de documentos'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
         }
     }
 }

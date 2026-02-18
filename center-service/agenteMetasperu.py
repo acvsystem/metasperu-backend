@@ -40,7 +40,7 @@ if len(configuration) > 0:
             'nombre': 'Sucursal Centro'
         })
 
-    @sio.on('python_dame_documentos')
+    @sio.on('py_requets_documents_store')
     def on_request(data):
         print(f"Dashboard solicita documentos en cola...")
 
@@ -70,7 +70,8 @@ if len(configuration) > 0:
             myobj.append(obj)
         docs_simulados = json.dumps(myobj)
         # Respondemos enviando de vuelta el ID de quien preguntó
-        sio.emit('python_entrega_documentos', {
+        sio.emit('py_response_documents_store', {
+            'serie': serieTienda,
             'enviar_a': data['pedido_por'],
             'documentos': docs_simulados
         })
