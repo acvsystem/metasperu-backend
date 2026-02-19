@@ -100,7 +100,7 @@ export const storeController = {
     callTransactions: async (req, res) => {
         const { socketId } = req.params;
         try {
-            console.log("callTransactions", onlineStore);
+            console.log("callTransactions", tiendasOnline);
             let onlineStore = [...tiendasOnline]
 
             onlineStore.filter((store, i) => {
