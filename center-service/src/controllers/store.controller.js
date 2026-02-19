@@ -78,7 +78,7 @@ export const storeController = {
     callDocumentsComparation: async (req, res) => {
         const { socketId } = req.params;
         try {
-            let onlineStore = [...tiendasOnline]
+            let onlineStore = [tiendasOnline];
             onlineStore.filter((store, i) => {
                 let serie = Object.keys(store)[i];
                 console.log("callDocumentsComparation serie:", serie);
@@ -100,9 +100,9 @@ export const storeController = {
     callTransactions: async (req, res) => {
         const { socketId } = req.params;
         try {
-            console.log("callTransactions", tiendasOnline);
-            let onlineStore = [...tiendasOnline]
 
+            let onlineStore = [tiendasOnline];
+            console.log("callTransactions", onlineStore);
             onlineStore.filter((store, i) => {
                 let serie = Object.keys(store)[i];
                 getIO().to(store[serie].socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
