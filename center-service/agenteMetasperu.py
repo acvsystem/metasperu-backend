@@ -43,7 +43,38 @@ if len(configuration) > 0:
     @sio.event
     def py_request_client_blank(data):
         print(f"Dashboard solicita cliente en blanco...")
+        myobj = []
+        j = {}
+        server = instanciaBD
+        dataBase = nameBD
+        count = extraCliente(data)
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
         
+        querySql="SELECT COUNT(*) FROM CLIENTES WHERE ((NOMBRECLIENTE = '' AND NOMBRECOMERCIAL = '') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'AAAAA') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'aaaaa') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'EEEEE') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'eeeee') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'IIIII') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'iiiii') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'OOOOO') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'ooooo') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'UUUUUU') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'uuuuu') OR  LOWER(NOMBRECLIENTE) LIKE '%bbbbb%' OR LOWER(NOMBRECLIENTE) LIKE '%ccccc%' OR LOWER(NOMBRECLIENTE) LIKE '%ddddd%' OR LOWER(NOMBRECLIENTE) LIKE '%fffff%' OR LOWER(NOMBRECLIENTE) LIKE '%ggggg%' OR LOWER(NOMBRECLIENTE) LIKE '%hhhhh%' OR LOWER(NOMBRECLIENTE) LIKE '%jjjjj%' OR LOWER(NOMBRECLIENTE) LIKE '%kkkkk%' OR LOWER(NOMBRECLIENTE) LIKE '%lllll%' OR LOWER(NOMBRECLIENTE) LIKE '%mmmmm%' OR LOWER(NOMBRECLIENTE) LIKE '%nnnnn%' OR LOWER(NOMBRECLIENTE) LIKE '%ppppp%' OR LOWER(NOMBRECLIENTE) LIKE '%qqqqq%' OR LOWER(NOMBRECLIENTE) LIKE '%rrrrr%' OR LOWER(NOMBRECLIENTE) LIKE '%sssss%' OR LOWER(NOMBRECLIENTE) LIKE '%ttttt%' OR LOWER(NOMBRECLIENTE) LIKE '%vvvvv%' OR LOWER(NOMBRECLIENTE) LIKE '%wwwww%' OR LOWER(NOMBRECLIENTE) LIKE '%xxxxx%' OR LOWER(NOMBRECLIENTE) LIKE '%yyyyy%' OR LOWER(NOMBRECLIENTE) LIKE '%zzzzz%') AND DESCATALOGADO = 'F';"
+        connection = pyodbc.connect(conexion)
+        cursor = connection.cursor()
+        cursor.execute("SELECT @@version;")
+        row = cursor.fetchone()
+        cursor.execute(querySql)
+        rows = cursor.fetchall()
+        for row in rows:
+            count += row[0]
+            
+        obj = collections.OrderedDict()
+
+        obj['clientCant'] = count
+        myobj.append(obj)
+        clients = json.dumps(myobj)
+        print({
+            'serie': serieTienda,
+            'enviar_a': data['pedido_por'],
+            'clients': json.loads(clients)[0]['clientCant'] or 0
+        })
+        sio.emit('py_response_client_blank', {
+            'serie': serieTienda,
+            'enviar_a': data['pedido_por'],
+            'clients': json.loads(clients)[0]['clientCant'] or 0
+        })
 
     @sio.on('py_request_transactions_store')
     def py_requets_transactions_store(data):
@@ -116,6 +147,27 @@ if len(configuration) > 0:
     def disconnect():
         print("Desconectado del servidor")
 
+    def extraCliente(lsCliente):
+        myobj = []
+        j = {}
+        server = instanciaBD
+        dataBase = nameBD
+        count = 0
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
+        
+        for cli in lsCliente:
+            querySql="SELECT count(*) FROM CLIENTES WHERE NOMBRECLIENTE = '"+cli+"' AND DESCATALOGADO = 'F';"
+            connection = pyodbc.connect(conexion)
+            cursor = connection.cursor()
+            cursor.execute("SELECT @@version;")
+            row = cursor.fetchone()
+            cursor.execute(querySql)
+            rows = cursor.fetchall()
+            for row in rows:
+                count += row[0]
+
+        return count
+    
     if __name__ == '__main__':
         try:
             headers = {"code": serieTienda}
