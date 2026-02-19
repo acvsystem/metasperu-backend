@@ -58,6 +58,7 @@ export const initSocket = (server) => {
             socket.join('grupo_tiendas');
 
             if (typeof tiendasActivas[data.id_tienda] == 'undefined') {
+                console.log("tiendasActivas",data.id_tienda);
                 tiendasActivas[data.id_tienda] = {
                     serie: data.id_tienda,
                     socketId: socket.id,
