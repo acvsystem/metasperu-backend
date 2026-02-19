@@ -81,13 +81,30 @@ export const storeController = {
 
             tiendasOnline.filter((store, i) => {
                 let serie = Object.keys(store)[i];
-                console.log(serie);
+                console.log("callDocumentsComparation serie:", serie);
                 getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
             const servidor = servidorOnline;
-            console.log("callDocumentsComparation:", servidor);
+            console.log("callDocumentsComparation servidor:", servidor);
             getIO().to(servidor.socketId).emit('py_request_documents_server');
+
+            res.json({
+                message: 'Se emitio señal de documentos'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
+    },
+
+    callTransactions: async (req, res) => {
+        const { socketId } = req.params;
+        try {
+
+            tiendasOnline.filter((store, i) => {
+                let serie = Object.keys(store)[i];
+                getIO().to(store[serie].socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
+            });
 
             res.json({
                 message: 'Se emitio señal de documentos'

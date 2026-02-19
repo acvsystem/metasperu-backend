@@ -1,12 +1,12 @@
 import { Server } from 'socket.io';
 
 let io;
-let tiendasActivas = {};
+let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
 
 export const tiendasOnline = [];
-export const servidorOnline = {
+export const servidorOnline = { // Aqui se almacena el servidor backup cuando se conecta
     socketId: '',
-    nombre: '',
+    nombre: '',// servidor backup
     lastSeen: new Date(),
     online: false
 };
@@ -28,8 +28,6 @@ export const initSocket = (server) => {
     });
 
 
-
-
     io.on('connection', (socket) => {
         console.log('center-service: Cliente conectado:', socket.id);
 
@@ -41,8 +39,8 @@ export const initSocket = (server) => {
             servidorOnline.nombre = data.id_servidor
             servidorOnline.online = true;
 
-            console.log("registrar_servidor", servidorOnline);
-            console.log(`Servidor conectado: ${data.id_servidor}`);
+            console.log("🚀 registrar_servidor", servidorOnline);
+            console.log(`🚀 Servidor conectado: ${data.id_servidor}`);
         });
 
         socket.on('registrar_dashboard', () => {
@@ -51,7 +49,7 @@ export const initSocket = (server) => {
 
 
             socket.emit('actualizar_dashboard', Object.values(tiendasActivas));
-            console.log('Dashboard refrescado y sincronizado');
+            console.log('🚀 Dashboard refrescado y sincronizado');
         });
 
         // --- Lógica para las Tiendas (Python) ---
@@ -73,17 +71,17 @@ export const initSocket = (server) => {
             }
 
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            console.log(`Tienda conectada: ${data.id_tienda}`);
+            console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
 
-        // --- Retorno de Python store al backend ---
+        // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_documents_store', (data) => {
             // Guardamos los documentos de la tienda usando su serie como llave
             auditoriaEstado.tiendasData[data.serie] = data.documentos;
 
             const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-            console.log(`( ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
+            console.log(`🚀 ( ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
 
             verificarYComparar();
         });
@@ -94,13 +92,17 @@ export const initSocket = (server) => {
             verificarYComparar();
         });
 
+        // --- Retorno de python store al backend transacciones
+        socket.on('py_requets_transactions_store', (data) => {
+            io.emit('transactions_response_dashboard', data);
+        })
 
         socket.on('disconnect', () => {
 
             const store = tiendasActivas[socket.handshake.headers.code];
 
             if (store) {
-                console.log(`Tienda ${store.serie} OFFLINE`);
+                console.log(`🚀 Tienda ${store.serie} OFFLINE`);
 
                 // Notificamos al dashboard que esta tienda ya no está
                 io.emit('actualizar_dashboard', [{ serie: store.serie, online: false }]);
@@ -116,14 +118,13 @@ export const initSocket = (server) => {
 };
 
 export const getIO = () => {
-    if (!io) throw new Error("center-service: Socket.io no ha sido inicializado");
+    if (!io) throw new Error("🚀 center-service: Socket.io no ha sido inicializado");
     return io;
 };
 
 function verificarYComparar() {
-    console.log("ENTRO verificarYComparar", Object.keys(auditoriaEstado.tiendasData).length, auditoriaEstado.serverData);
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-    console.log("totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
+    console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
     if (auditoriaEstado.serverData && totalTiendasRecibidas === auditoriaEstado.totalTiendasEsperadas) {
@@ -137,8 +138,6 @@ function iniciarProcesoComparacion() {
         tiendasOnline.map((store, i) => {
             let serie = Object.keys(store)[i];
             const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
-
-            console.log(resultadosFinales);
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);
         });
@@ -154,8 +153,6 @@ function obtenerFaltantes(serieStore, store, servidor) {
 
     // 2. Filtramos los de la tienda que NO están en el servidor
     const faltantes = JSON.parse(store).filter(t => {
-        // Normalizamos el ID de la tienda: "B7A4" + "-" + "00245813"
-        // padStart(8, '0') asegura que el número tenga 8 dígitos
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
 
         return !idsEnServidor.has(idNormalizadoTienda);
