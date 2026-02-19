@@ -104,6 +104,7 @@ export const storeController = {
             let onlineStore = Object.values(tiendasOnline);
 
             onlineStore.filter((store) => {
+                console.log(store.socketId);
                 getIO().to(store.socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
             });
 
