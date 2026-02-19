@@ -3,7 +3,7 @@ import { Server } from 'socket.io';
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
 
-export const tiendasOnline = [];
+export const tiendasOnline = {};
 export const servidorOnline = { // Aqui se almacena el servidor backup cuando se conecta
     socketId: '',
     nombre: '',// servidor backup
@@ -69,7 +69,6 @@ export const initSocket = (server) => {
             }
 
             tiendasOnline = tiendasActivas;
-
 
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
