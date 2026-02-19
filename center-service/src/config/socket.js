@@ -58,7 +58,7 @@ export const initSocket = (server) => {
             socket.join('grupo_tiendas');
 
             if (typeof tiendasActivas[data.id_tienda] == 'undefined') {
-                console.log("tiendasActivas",data.id_tienda);
+                console.log("tiendasActivas", data.id_tienda);
                 tiendasActivas[data.id_tienda] = {
                     serie: data.id_tienda,
                     socketId: socket.id,
@@ -67,12 +67,9 @@ export const initSocket = (server) => {
                     online: true
                 };
             }
+            
+            tiendasOnline = tiendasActivas;
 
-            const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
-
-            if (index == -1) {
-                (tiendasOnline || []).push(tiendasActivas);
-            }
 
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
