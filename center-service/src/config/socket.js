@@ -94,7 +94,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de python store al backend transacciones
         socket.on('py_requets_transactions_store', (data) => {
-            console.log(data);
+            console.log('py_requets_transactions_store', data);
             io.emit('transactions_response_dashboard', data);
         })
 

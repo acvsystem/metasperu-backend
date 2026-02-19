@@ -122,9 +122,12 @@ export const storeController = {
 
             let onlineStore = Object.values(tiendasOnline);
 
+            let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
+            let listCliente = ((data || [])[0]['LIST_CLIENTE']).split(',');
+            console.log(listCliente);
             onlineStore.filter((store) => {
                 console.log(store.socketId);
-                getIO().to(store.socketId).emit('py_request_client_blank', { pedido_por: socketId, extra_client: "" });
+                getIO().to(store.socketId).emit('py_request_client_blank', { pedido_por: socketId, extra_client: listCliente });
             });
 
             res.json({

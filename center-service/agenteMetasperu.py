@@ -47,7 +47,7 @@ if len(configuration) > 0:
         j = {}
         server = instanciaBD
         dataBase = nameBD
-        count = extraCliente(data)
+        count = extraCliente(data['extra_client'])
         conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
         
         querySql="SELECT COUNT(*) FROM CLIENTES WHERE ((NOMBRECLIENTE = '' AND NOMBRECOMERCIAL = '') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'AAAAA') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'aaaaa') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'EEEEE') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'eeeee') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'IIIII') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'iiiii') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'OOOOO') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'ooooo') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'UUUUUU') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'uuuuu') OR  LOWER(NOMBRECLIENTE) LIKE '%bbbbb%' OR LOWER(NOMBRECLIENTE) LIKE '%ccccc%' OR LOWER(NOMBRECLIENTE) LIKE '%ddddd%' OR LOWER(NOMBRECLIENTE) LIKE '%fffff%' OR LOWER(NOMBRECLIENTE) LIKE '%ggggg%' OR LOWER(NOMBRECLIENTE) LIKE '%hhhhh%' OR LOWER(NOMBRECLIENTE) LIKE '%jjjjj%' OR LOWER(NOMBRECLIENTE) LIKE '%kkkkk%' OR LOWER(NOMBRECLIENTE) LIKE '%lllll%' OR LOWER(NOMBRECLIENTE) LIKE '%mmmmm%' OR LOWER(NOMBRECLIENTE) LIKE '%nnnnn%' OR LOWER(NOMBRECLIENTE) LIKE '%ppppp%' OR LOWER(NOMBRECLIENTE) LIKE '%qqqqq%' OR LOWER(NOMBRECLIENTE) LIKE '%rrrrr%' OR LOWER(NOMBRECLIENTE) LIKE '%sssss%' OR LOWER(NOMBRECLIENTE) LIKE '%ttttt%' OR LOWER(NOMBRECLIENTE) LIKE '%vvvvv%' OR LOWER(NOMBRECLIENTE) LIKE '%wwwww%' OR LOWER(NOMBRECLIENTE) LIKE '%xxxxx%' OR LOWER(NOMBRECLIENTE) LIKE '%yyyyy%' OR LOWER(NOMBRECLIENTE) LIKE '%zzzzz%') AND DESCATALOGADO = 'F';"
@@ -65,11 +65,7 @@ if len(configuration) > 0:
         obj['clientCant'] = count
         myobj.append(obj)
         clients = json.dumps(myobj)
-        print({
-            'serie': serieTienda,
-            'enviar_a': data['pedido_por'],
-            'clients': json.loads(clients)[0]['clientCant'] or 0
-        })
+
         sio.emit('py_response_client_blank', {
             'serie': serieTienda,
             'enviar_a': data['pedido_por'],
