@@ -41,7 +41,8 @@ if len(configuration) > 0:
         })
 
     @sio.on('py_request_client_blank')
-    def consultingClient(data,socketID):
+    def on_request(data):
+        print(f"Dashboard solicita cliente en blanco...")
         myobj = []
         j = {}
         server = instanciaBD

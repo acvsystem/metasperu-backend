@@ -121,10 +121,9 @@ export const storeController = {
         try {
 
             let onlineStore = Object.values(tiendasOnline);
-
+            console.log(onlineStore);
             onlineStore.filter((store) => {
-                console.log(store.socketId);
-                getIO().to(store.socketId).emit('py_request_client_blank ', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_client_blank ', { pedido_por: socketId, extra_cliente: '' });
             });
 
             res.json({
