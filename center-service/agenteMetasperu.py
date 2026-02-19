@@ -5,8 +5,11 @@ import json
 import pyodbc
 import requests
 import collections
+import os
+import time
 from datetime import datetime,timedelta
 from getmac import get_mac_address as gma
+
 
 sio = socketio.Client()
 
@@ -143,9 +146,31 @@ if len(configuration) > 0:
     def disconnect():
         print("Desconectado del servidor")
 
+
+    # --- FUNCIÓN DE MONITOREO DE RED ---
+    def task_monitoreo_red():
+        while True:
+            if sio.connected:
+                resultados = []
+                for disp in trafficCounters:
+                    # 'n' para Windows, 'c' para Linux
+                    param = "-n" if os.name == "nt" else "-c"
+                    comando = f"ping {param} 1 -w 1000 {disp['ip']} > {'nul' if os.name == 'nt' else '/dev/null'}"
+                    response = os.system(comando)
+                    
+                    resultados.append({
+                        "nombre": disp["nombre"],
+                        "ip": disp["ip"],
+                        "online": response == 0
+                    })
+                
+                sio.emit('py_update_devices_status', {
+                    'serie': serieTienda,
+                    'devices': resultados
+                })
+            time.sleep(15) # Escanear cada 15 segundos
+
     def extraCliente(lsCliente):
-        myobj = []
-        j = {}
         server = instanciaBD
         dataBase = nameBD
         count = 0
