@@ -124,11 +124,11 @@ export const storeController = {
 
             onlineStore.filter((store) => {
                 console.log(store.socketId);
-                getIO().to(store.socketId).emit('py_request_client_blank', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_client_blank', { pedido_por: socketId, extra_client: "" });
             });
 
             res.json({
-                message: 'Se emitio señal de transacciones'
+                message: 'Se emitio señal de clientes en blanco'
             });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
