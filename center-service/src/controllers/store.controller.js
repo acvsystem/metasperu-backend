@@ -80,10 +80,9 @@ export const storeController = {
         try {
             let onlineStore = Object.values(tiendasOnline);
             console.log("callDocumentsComparation onlineStore:", onlineStore);
-            onlineStore.filter((store, i) => {
-                let serie = Object.keys(store)[i];
-                console.log("callDocumentsComparation serie:", serie);
-                getIO().to(store[serie].socketId).emit('py_requets_documents_store', { pedido_por: socketId });
+            onlineStore.filter((store) => {
+                console.log("callDocumentsComparation serie:", store.serie);
+                getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
             });
 
             const servidor = servidorOnline;
