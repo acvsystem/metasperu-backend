@@ -68,12 +68,8 @@ export const initSocket = (server) => {
                 };
             }
 
-            const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
+            tiendasOnline = tiendasActivas;
 
-            if (index == -1) {
-                tiendasOnline = [];
-                (tiendasOnline || []).push(tiendasActivas);
-            }
 
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
@@ -141,7 +137,8 @@ function verificarYComparar() {
 
 function iniciarProcesoComparacion() {
     if (Object.keys(tiendasOnline).length) {
-        tiendasOnline.map((store, i) => {
+        let onlineStore = [...tiendasOnline];
+        onlineStore.map((store, i) => {
             let serie = Object.keys(store)[i];
             const resultadosFinales = obtenerFaltantes(serie, auditoriaEstado.tiendasData[serie], auditoriaEstado.serverData.documentos);
             // Enviamos el resultado final al Frontend (Angular)
