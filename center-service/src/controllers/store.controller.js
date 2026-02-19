@@ -78,7 +78,7 @@ export const storeController = {
     callDocumentsComparation: async (req, res) => {
         const { socketId } = req.params;
         try {
-            let onlineStore = [tiendasOnline];
+            let onlineStore = [Object.values(tiendasOnline)];
             console.log("callDocumentsComparation onlineStore:", onlineStore);
             onlineStore.filter((store, i) => {
                 let serie = Object.keys(store)[i];
@@ -102,7 +102,7 @@ export const storeController = {
         const { socketId } = req.params;
         try {
 
-            let onlineStore = [tiendasOnline];
+            let onlineStore = [Object.values(tiendasOnline)];
 
             onlineStore.filter((store, i) => {
                 let serie = Object.keys(store)[i];
