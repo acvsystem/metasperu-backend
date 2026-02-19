@@ -40,10 +40,6 @@ if len(configuration) > 0:
             'nombre': 'Sucursal Centro'
         })
 
-    @sio.on('*')
-    def catch_all(event, data):
-        print(f"EVENTO RECIBIDO: {event} | DATOS: {data}")
-
     @sio.event
     def py_request_client_blank(data):
         print(f"Dashboard solicita cliente en blanco...")
