@@ -64,12 +64,12 @@ if len(configuration) > 0:
             obj['remCount'] = row[0]
             myobj.append(obj)
         transactions = json.dumps(myobj)
-        sio.emit('py_response_documents_store', {
+        sio.emit('py_requets_transactions_store', {
             'serie': serieTienda,
             'enviar_a': data['pedido_por'],
             'transactions': transactions
         })
-        
+
     @sio.on('py_requets_documents_store')
     def on_request(data):
         print(f"Dashboard solicita documentos en cola...")
