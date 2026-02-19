@@ -56,13 +56,16 @@ export const initSocket = (server) => {
         socket.on('tienda_identificarse', (data) => {
 
             socket.join('grupo_tiendas');
-            tiendasActivas[data.id_tienda] = {
-                serie: data.id_tienda,
-                socketId: socket.id,
-                nombre: data.nombre,
-                lastSeen: new Date(),
-                online: true
-            };
+
+            if (!Object.values(tiendasActivas[data.id_tienda])) {
+                tiendasActivas[data.id_tienda] = {
+                    serie: data.id_tienda,
+                    socketId: socket.id,
+                    nombre: data.nombre,
+                    lastSeen: new Date(),
+                    online: true
+                };
+            }
 
             const index = tiendasOnline.findIndex((store) => store.serie == data.id_tienda);
 
@@ -109,6 +112,7 @@ export const initSocket = (server) => {
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
+                console.log('disconnect', tiendasActivas);
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             }
         });

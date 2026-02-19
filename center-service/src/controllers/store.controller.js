@@ -100,7 +100,7 @@ export const storeController = {
     callTransactions: async (req, res) => {
         const { socketId } = req.params;
         try {
-            console.log("callTransactions", tiendasOnline);
+           // console.log("callTransactions", tiendasOnline);
             tiendasOnline.filter((store, i) => {
                 let serie = Object.keys(store)[i];
                 getIO().to(store[serie].socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
