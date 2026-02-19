@@ -3,7 +3,7 @@ import { Server } from 'socket.io';
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
 
-export const tiendasOnline = {};
+export let tiendasOnline = {};
 export const servidorOnline = { // Aqui se almacena el servidor backup cuando se conecta
     socketId: '',
     nombre: '',// servidor backup
