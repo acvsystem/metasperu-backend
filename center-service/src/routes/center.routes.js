@@ -14,5 +14,6 @@ router.delete('/api/store/:id', verifyToken, storeController.deleteTienda);
 // --- RUTAS PARA VERIFICACION
 router.get('/api/documents/missing/:socketId', verifyToken, storeController.callDocumentsComparation);
 router.get('/api/transactions/frontretail/:socketId', verifyToken, storeController.callTransactions);
+router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
 
 export default router;

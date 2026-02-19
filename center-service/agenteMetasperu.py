@@ -40,6 +40,35 @@ if len(configuration) > 0:
             'nombre': 'Sucursal Centro'
         })
 
+    @sio.on('py_request_client_blank')
+    def consultingClient(data,socketID):
+        myobj = []
+        j = {}
+        server = instanciaBD
+        dataBase = nameBD
+        count = extraCliente(data['extra_cliente'])
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
+        
+        querySql="SELECT COUNT(*) FROM CLIENTES WHERE ((NOMBRECLIENTE = '' AND NOMBRECOMERCIAL = '') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'AAAAA') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'aaaaa') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'EEEEE') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'eeeee') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'IIIII') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'iiiii') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'OOOOO') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'ooooo') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'UUUUUU') OR (SUBSTRING(NOMBRECLIENTE,1,5) = 'uuuuu') OR  LOWER(NOMBRECLIENTE) LIKE '%bbbbb%' OR LOWER(NOMBRECLIENTE) LIKE '%ccccc%' OR LOWER(NOMBRECLIENTE) LIKE '%ddddd%' OR LOWER(NOMBRECLIENTE) LIKE '%fffff%' OR LOWER(NOMBRECLIENTE) LIKE '%ggggg%' OR LOWER(NOMBRECLIENTE) LIKE '%hhhhh%' OR LOWER(NOMBRECLIENTE) LIKE '%jjjjj%' OR LOWER(NOMBRECLIENTE) LIKE '%kkkkk%' OR LOWER(NOMBRECLIENTE) LIKE '%lllll%' OR LOWER(NOMBRECLIENTE) LIKE '%mmmmm%' OR LOWER(NOMBRECLIENTE) LIKE '%nnnnn%' OR LOWER(NOMBRECLIENTE) LIKE '%ppppp%' OR LOWER(NOMBRECLIENTE) LIKE '%qqqqq%' OR LOWER(NOMBRECLIENTE) LIKE '%rrrrr%' OR LOWER(NOMBRECLIENTE) LIKE '%sssss%' OR LOWER(NOMBRECLIENTE) LIKE '%ttttt%' OR LOWER(NOMBRECLIENTE) LIKE '%vvvvv%' OR LOWER(NOMBRECLIENTE) LIKE '%wwwww%' OR LOWER(NOMBRECLIENTE) LIKE '%xxxxx%' OR LOWER(NOMBRECLIENTE) LIKE '%yyyyy%' OR LOWER(NOMBRECLIENTE) LIKE '%zzzzz%') AND DESCATALOGADO = 'F';"
+        connection = pyodbc.connect(conexion)
+        cursor = connection.cursor()
+        cursor.execute("SELECT @@version;")
+        row = cursor.fetchone()
+        cursor.execute(querySql)
+        rows = cursor.fetchall()
+        for row in rows:
+            count += row[0]
+            
+        obj = collections.OrderedDict()
+        obj['clientCant'] = count
+        myobj.append(obj)
+        clientes = json.dumps(myobj)
+        sio.emit('py_requets_transactions_store', {
+            'serie': serieTienda,
+            'enviar_a': data['pedido_por'],
+            'clientes': json.loads(clientes)[0]['clientCant']
+        })
+
     @sio.on('py_requets_transactions_store')
     def on_request(data):
         print(f"Dashboard solicita trasacciones en cola...")
@@ -64,10 +93,11 @@ if len(configuration) > 0:
             obj['remCount'] = row[0]
             myobj.append(obj)
         transactions = json.dumps(myobj)
+        # Respondemos enviando de vuelta el ID de quien preguntó
         sio.emit('py_requets_transactions_store', {
             'serie': serieTienda,
             'enviar_a': data['pedido_por'],
-            'transactions': transactions
+            'transactions': json.loads(transactions)[0]['remCount']
         })
 
     @sio.on('py_requets_documents_store')
@@ -99,7 +129,6 @@ if len(configuration) > 0:
             obj['cmpFecha'] = row[3]
             myobj.append(obj)
         docs_simulados = json.dumps(myobj)
-        print(docs_simulados)
         # Respondemos enviando de vuelta el ID de quien preguntó
         sio.emit('py_response_documents_store', {
             'serie': serieTienda,
@@ -107,6 +136,27 @@ if len(configuration) > 0:
             'documentos': docs_simulados
         })
 
+    def extraCliente(lsCliente):
+        myobj = []
+        j = {}
+        server = instanciaBD
+        dataBase = nameBD
+        count = 0
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
+        
+        for cli in lsCliente:
+            querySql="SELECT count(*) FROM CLIENTES WHERE NOMBRECLIENTE = '"+cli+"' AND DESCATALOGADO = 'F';"
+            connection = pyodbc.connect(conexion)
+            cursor = connection.cursor()
+            cursor.execute("SELECT @@version;")
+            row = cursor.fetchone()
+            cursor.execute(querySql)
+            rows = cursor.fetchall()
+            for row in rows:
+                count += row[0]
+
+        return count
+    
     @sio.event
     def disconnect():
         print("Desconectado del servidor")
