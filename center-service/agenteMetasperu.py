@@ -40,40 +40,17 @@ if len(configuration) > 0:
             'nombre': 'Sucursal Centro'
         })
 
-    @sio.on('py_requets_transactions_store')
-    def on_request(data):
-        print(f"Dashboard solicita trasacciones en cola...")
-        myobj = []
-        j = {}
-        server = instanciaBD
-        dataBase = nameBD
-        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
-        nowDate=datetime.today().strftime('%Y-%m-%d')
-        lastDate = datetime.today()+timedelta(days=-1)
-        shift = timedelta(max(1, (lastDate.weekday() + 6) % 7))
-        lastDate = lastDate.strftime('%Y-%m-%d')
-        querySql="SELECT COUNT(ID) AS ID FROM REM_TRANSACCIONES;"
-        connection = pyodbc.connect(conexion)
-        cursor = connection.cursor()
-        cursor.execute("SELECT @@version;")
-        row = cursor.fetchone()
-        cursor.execute(querySql)
-        rows = cursor.fetchall()
-        for row in rows:
-            obj = collections.OrderedDict()
-            obj['remCount'] = row[0]
-            myobj.append(obj)
-        transactions = json.dumps(myobj)
-        # Respondemos enviando de vuelta el ID de quien preguntó
-        sio.emit('py_requets_transactions_store', {
-            'serie': serieTienda,
-            'enviar_a': data['pedido_por'],
-            'transactions': json.loads(transactions)[0]['remCount']
-        })
+    @sio.on('*')
+    def catch_all(event, data):
+        print(f"EVENTO RECIBIDO: {event} | DATOS: {data}")
+
+    @sio.on('py_request_client_blank')
+    def py_request_client_blank(data):
+        print(f"Dashboard solicita cliente en blanco...")
         
 
-    @sio.on('py_requets_transactions_store')
-    def on_request(data):
+    @sio.on('py_request_transactions_store')
+    def py_requets_transactions_store(data):
         print(f"Dashboard solicita trasacciones en cola...")
         myobj = []
         j = {}
@@ -103,8 +80,8 @@ if len(configuration) > 0:
             'transactions': json.loads(transactions)[0]['remCount']
         })
 
-    @sio.on('py_requets_documents_store')
-    def on_request(data):
+    @sio.on('py_request_documents_store')
+    def py_requets_documents_store(data):
         print(f"Dashboard solicita documentos en cola...")
 
         myobj = []

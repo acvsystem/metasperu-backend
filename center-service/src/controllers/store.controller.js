@@ -82,7 +82,7 @@ export const storeController = {
             console.log("callDocumentsComparation onlineStore:", onlineStore);
             onlineStore.filter((store) => {
                 console.log("callDocumentsComparation serie:", store.serie);
-                getIO().to(store.socketId).emit('py_requets_documents_store', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_documents_store', { pedido_por: socketId });
             });
 
             const servidor = servidorOnline;
@@ -105,7 +105,7 @@ export const storeController = {
 
             onlineStore.filter((store) => {
                 console.log(store.socketId);
-                getIO().to(store.socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_transactions_store', { pedido_por: socketId });
             });
 
             res.json({
