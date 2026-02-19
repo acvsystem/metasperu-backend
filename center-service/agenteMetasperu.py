@@ -44,7 +44,7 @@ if len(configuration) > 0:
     def catch_all(event, data):
         print(f"EVENTO RECIBIDO: {event} | DATOS: {data}")
 
-    @sio.on('py_request_client_blank')
+    @sio.event
     def py_request_client_blank(data):
         print(f"Dashboard solicita cliente en blanco...")
         
