@@ -100,7 +100,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de python store al backend clientes en blanco
         socket.on('py_response_client_blank', (data) => {
-            console.log(data);
+            console.log('py_response_client_blank', data);
             io.emit('client_blank_response_dashboard', data);
         })
 
