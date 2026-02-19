@@ -102,9 +102,10 @@ export const storeController = {
         try {
 
             let onlineStore = [tiendasOnline];
-            console.log("callTransactions", onlineStore);
+           
             onlineStore.filter((store, i) => {
                 let serie = Object.keys(store)[i];
+                 console.log("callTransactions", store[serie].socketId);
                 getIO().to(store[serie].socketId).emit('py_requets_transactions_store', { pedido_por: socketId });
             });
 
