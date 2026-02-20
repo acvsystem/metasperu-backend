@@ -5,7 +5,6 @@ export const storeController = {
 
     getTiendas: async (req, res) => {
         try {
-            // Usamos JSON_ARRAYAGG para crear la estructura de objetos directamente en SQL
             const query = `
             SELECT 
                 t.*, 
@@ -15,7 +14,14 @@ export const storeController = {
                     )
                     FROM tb_traffic_counter_tienda
                     WHERE CODIGO_TIENDA = t.SERIE_TIENDA
-                ) as traffic_json
+                ) as traffic_json,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT('ip', IP, 'nombre', NOMBRE_TERMINAL, 'active', false)
+                    )
+                    FROM tb_teminales_store
+                    WHERE SERIE_TIENDA = t.SERIE_TIENDA
+                ) as terminales_json
             FROM bd_metasperu.tb_lista_tienda t
             WHERE t.ESTATUS = "ACTIVO"
             ORDER BY t.DESCRIPCION ASC;
@@ -23,25 +29,31 @@ export const storeController = {
 
             const [rows] = await pool.execute(query);
 
-            const tiendasMapeadas = rows.map(t => ({
-                id: t.ID_TIENDA,
-                serie: t.SERIE_TIENDA,
-                nombre: t.DESCRIPCION,
-                codigo_almacen: t.COD_ALMACEN,
-                unidad_servicio: t.UNID_SERVICIO,
-                marca: t.TIPO_TIENDA,
-                email: t.EMAIL,
-                codigo_ejb: t.COD_TIENDA_EJB,
-                estado: t.ESTATUS,
-                online: false,
-                // Si traffic_json es nulo (no hay contadores), devolvemos array vacío
-                traffic: typeof t.traffic_json === 'string'
-                    ? JSON.parse(t.traffic_json)
-                    : (t.traffic_json || []),
-                comprobantes: 0,
-                transacciones: 0,
-                clientes: 0
-            }));
+            const tiendasMapeadas = rows.map(t => {
+                // Función auxiliar para parsear JSON de forma segura
+                const parseJsonField = (field) => {
+                    if (!field) return [];
+                    return typeof field === 'string' ? JSON.parse(field) : field;
+                };
+
+                return {
+                    id: t.ID_TIENDA,
+                    serie: t.SERIE_TIENDA,
+                    nombre: t.DESCRIPCION,
+                    codigo_almacen: t.COD_ALMACEN,
+                    unidad_servicio: t.UNID_SERVICIO,
+                    marca: t.TIPO_TIENDA,
+                    email: t.EMAIL,
+                    codigo_ejb: t.COD_TIENDA_EJB,
+                    estado: t.ESTATUS,
+                    online: false,
+                    traffic: parseJsonField(t.traffic_json),
+                    terminales: parseJsonField(t.terminales_json), // Nueva lista de terminales
+                    comprobantes: 0,
+                    transacciones: 0,
+                    clientes: 0
+                };
+            });
 
             res.json(tiendasMapeadas);
         } catch (error) {
