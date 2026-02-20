@@ -6,7 +6,7 @@ export const configurationController = {
         const { serie, mac } = req.body;
 
         try {
-            const [parameters] = await pool.execute(`SELECT * FROM TB_PARAMETROS_TIENDA WHERE MAC='${mac}).toUpperCase()}';`);
+            const [parameters] = await pool.execute(`SELECT * FROM TB_PARAMETROS_TIENDA WHERE MAC='${(mac).toUpperCase()}';`);
             console.log(parameters);
             if (parameters.length) {
                 const [sqlTraffics] = await pool.query(`SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = '${serie}';`) || [];
