@@ -5,41 +5,42 @@ export const storeController = {
 
     getTiendas: async (req, res) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM bd_metasperu.tb_lista_tienda where ESTATUS = "ACTIVO" order by DESCRIPCION ASC;');
+            // Usamos GROUP_CONCAT para traer todas las IPs en una sola consulta
+            const query = `
+            SELECT 
+                t.*, 
+                GROUP_CONCAT(tr.IP) as traffic_list
+            FROM bd_metasperu.tb_lista_tienda t
+            LEFT JOIN tb_traffic_counter_tienda tr ON t.SERIE_TIENDA = tr.CODIGO_TIENDA
+            WHERE t.ESTATUS = "ACTIVO"
+            GROUP BY t.ID_TIENDA
+            ORDER BY t.DESCRIPCION ASC;
+        `;
 
+            const [rows] = await pool.execute(query);
 
-            const tiendasMapeadas = rows.map(async t => {
-
-                // Buscamos los contadores de tráfico asociados a la serie
-                const [sqlTraffics] = await pool.query(
-                    'SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = ?',
-                    [t.SERIE_TIENDA]
-                );
-
-                // Simplificamos el mapeo de IPs
-                const traffics = sqlTraffics.map(t => t.IP);
-
-                return {
-                    id: t.ID_TIENDA,
-                    serie: t.SERIE_TIENDA,
-                    nombre: t.DESCRIPCION,
-                    codigo_almacen: t.COD_ALMACEN,
-                    unidad_servicio: t.UNID_SERVICIO,
-                    marca: t.TIPO_TIENDA,
-                    email: t.EMAIL,
-                    codigo_ejb: t.COD_TIENDA_EJB,
-                    estado: t.ESTATUS,
-                    online: false,
-                    traffic: traffics,
-                    comprobantes: 0,
-                    transacciones: 0,
-                    clientes: 0
-                };
-            });
+            const tiendasMapeadas = rows.map(t => ({
+                id: t.ID_TIENDA,
+                serie: t.SERIE_TIENDA,
+                nombre: t.DESCRIPCION,
+                codigo_almacen: t.COD_ALMACEN,
+                unidad_servicio: t.UNID_SERVICIO,
+                marca: t.TIPO_TIENDA,
+                email: t.EMAIL,
+                codigo_ejb: t.COD_TIENDA_EJB,
+                estado: t.ESTATUS,
+                online: false,
+                // Convertimos el string de GROUP_CONCAT en un array
+                traffic: t.traffic_list ? t.traffic_list.split(',') : [],
+                comprobantes: 0,
+                transacciones: 0,
+                clientes: 0
+            }));
 
             res.json(tiendasMapeadas);
         } catch (error) {
-            res.status(500).json({ message: 'Error al obtener tiendas', error });
+            console.error("Error en getTiendas:", error);
+            res.status(500).json({ message: 'Error al obtener tiendas', error: error.message });
         }
     },
 
