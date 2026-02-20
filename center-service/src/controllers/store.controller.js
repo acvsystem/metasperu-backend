@@ -5,15 +5,19 @@ export const storeController = {
 
     getTiendas: async (req, res) => {
         try {
-            // Usamos GROUP_CONCAT para traer todas las IPs en una sola consulta
+            // Usamos JSON_ARRAYAGG para crear la estructura de objetos directamente en SQL
             const query = `
             SELECT 
                 t.*, 
-                GROUP_CONCAT(tr.IP) as traffic_list
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT('ip', IP, 'active', false)
+                    )
+                    FROM tb_traffic_counter_tienda
+                    WHERE CODIGO_TIENDA = t.SERIE_TIENDA
+                ) as traffic_json
             FROM bd_metasperu.tb_lista_tienda t
-            LEFT JOIN tb_traffic_counter_tienda tr ON t.SERIE_TIENDA = tr.CODIGO_TIENDA
             WHERE t.ESTATUS = "ACTIVO"
-            GROUP BY t.ID_TIENDA
             ORDER BY t.DESCRIPCION ASC;
         `;
 
@@ -30,8 +34,10 @@ export const storeController = {
                 codigo_ejb: t.COD_TIENDA_EJB,
                 estado: t.ESTATUS,
                 online: false,
-                // Convertimos el string de GROUP_CONCAT en un array
-                traffic: t.traffic_list ? t.traffic_list.split(',') : [],
+                // Si traffic_json es nulo (no hay contadores), devolvemos array vacío
+                traffic: typeof t.traffic_json === 'string'
+                    ? JSON.parse(t.traffic_json)
+                    : (t.traffic_json || []),
                 comprobantes: 0,
                 transacciones: 0,
                 clientes: 0
@@ -40,7 +46,10 @@ export const storeController = {
             res.json(tiendasMapeadas);
         } catch (error) {
             console.error("Error en getTiendas:", error);
-            res.status(500).json({ message: 'Error al obtener tiendas', error: error.message });
+            res.status(500).json({
+                message: 'Error al obtener tiendas',
+                error: error.message
+            });
         }
     },
 
