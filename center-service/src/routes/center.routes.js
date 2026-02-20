@@ -18,6 +18,6 @@ router.get('/api/transactions/frontretail/:socketId', verifyToken, storeControll
 router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
 
 // ---RUTAS DE CONFIGURACION
-router.post('/api/parameters/store', verifyToken, configurationController.postParametersStore);
+router.post('/api/parameters/store', configurationController.postParametersStore);
 
 export default router;

@@ -18,7 +18,7 @@ URL_METAS = 'https://api.metasperu.net.pe'
 SOCKET_PATH = '/s1/socket/'
 
 
-res = requests.post(URL_METAS + '/frontRetail/search/configuration/agente',data={"mac":gma()})
+res = requests.post(URL_METAS + '/s1/center/api/parameters/store',data={"mac":gma()})
 configuration = res.json()
 print('configuration',configuration)
 
