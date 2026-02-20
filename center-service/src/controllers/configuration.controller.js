@@ -4,7 +4,7 @@ export const configurationController = {
 
     postParametersStore: async (req, res) => {
         const { serie, mac } = req.body;
-
+        console.log(serie, mac);
         try {
             const [parameters] = await pool.execute(`SELECT * FROM TB_PARAMETROS_TIENDA WHERE MAC='${mac}).toUpperCase()}';`);
 
