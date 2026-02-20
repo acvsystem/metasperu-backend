@@ -19,8 +19,8 @@ export const storeController = {
                     SELECT JSON_ARRAYAGG(
                         JSON_OBJECT('ip', IP, 'nombre', NOMBRE_TERMINAL, 'active', false)
                     )
-                    FROM tb_teminales_store
-                    WHERE SERIE_TIENDA = t.SERIE_TIENDA
+                    FROM tb_terminales_store
+                    WHERE SERIE = t.SERIE_TIENDA
                 ) as terminales_json
             FROM bd_metasperu.tb_lista_tienda t
             WHERE t.ESTATUS = "ACTIVO"
