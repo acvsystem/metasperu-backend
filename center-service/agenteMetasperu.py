@@ -7,6 +7,7 @@ import requests
 import collections
 import os
 import time
+import threading
 from datetime import datetime,timedelta
 from getmac import get_mac_address as gma
 
@@ -148,19 +149,19 @@ if len(configuration) > 0:
 
 
     # --- FUNCIÓN DE MONITOREO DE RED ---
-    def task_monitoreo_red():
+    def  task_monitoreo_red():
         while True:
             if sio.connected:
                 resultados = []
                 for disp in trafficCounters:
                     # 'n' para Windows, 'c' para Linux
                     param = "-n" if os.name == "nt" else "-c"
-                    comando = f"ping {param} 1 -w 1000 {disp['ip']} > {'nul' if os.name == 'nt' else '/dev/null'}"
+                    comando = f"ping {param} 1 -w 1000 {disp} > {'nul' if os.name == 'nt' else '/dev/null'}"
                     response = os.system(comando)
                     
                     resultados.append({
-                        "nombre": disp["nombre"],
-                        "ip": disp["ip"],
+                        "nombre": disp,
+                        "ip": disp,
                         "online": response == 0
                     })
                 
@@ -191,6 +192,8 @@ if len(configuration) > 0:
     
     if __name__ == '__main__':
         try:
+            # Iniciar hilo de monitoreo de red
+            threading.Thread(target=task_monitoreo_red, daemon=True).start()
             headers = {"code": serieTienda}
             sio.connect(
             URL_METAS, 
