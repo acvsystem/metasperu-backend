@@ -51,7 +51,10 @@ export const storeController = {
                     terminales: parseJsonField(t.terminales_json), // Nueva lista de terminales
                     comprobantes: 0,
                     transacciones: 0,
-                    clientes: 0
+                    clientes: 0,
+                    clientesLoading: false,
+                    transaccionesLoading: false,
+                    comprobantesLoading: false
                 };
             });
 
