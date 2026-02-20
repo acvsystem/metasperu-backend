@@ -7,7 +7,18 @@ export const storeController = {
         try {
             const [rows] = await pool.execute('SELECT * FROM bd_metasperu.tb_lista_tienda where ESTATUS = "ACTIVO" order by DESCRIPCION ASC;');
 
-            const tiendasMapeadas = rows.map(t => {
+
+            const tiendasMapeadas = rows.map(async t => {
+
+                // Buscamos los contadores de tráfico asociados a la serie
+                const [sqlTraffics] = await pool.query(
+                    'SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = ?',
+                    [t.SERIE_TIENDA]
+                );
+
+                // Simplificamos el mapeo de IPs
+                const traffics = sqlTraffics.map(t => t.IP);
+
                 return {
                     id: t.ID_TIENDA,
                     serie: t.SERIE_TIENDA,
@@ -19,7 +30,7 @@ export const storeController = {
                     codigo_ejb: t.COD_TIENDA_EJB,
                     estado: t.ESTATUS,
                     online: false,
-                    traffic: 0,
+                    traffic: traffics,
                     comprobantes: 0,
                     transacciones: 0,
                     clientes: 0

@@ -20,4 +20,5 @@ router.get('/api/client/blank/:socketId', verifyToken, storeController.callClien
 // ---RUTAS DE CONFIGURACION
 router.post('/api/parameters/store', configurationController.postParametersStore);
 
+
 export default router;
