@@ -110,6 +110,11 @@ export const storeController = {
             console.log("callDocumentsComparation servidor:", servidor);
             getIO().to(servidor.socketId).emit('py_request_documents_server');
 
+            if (!servidor.online) {
+                res.status(500).json({ message: 'Servidor Backup OFFLINE' });
+                return;
+            }
+
             res.json({
                 message: 'Se emitio señal de documentos'
             });
