@@ -2,11 +2,11 @@ import { pool } from '../config/db.js';
 
 export const configurationController = {
     postParametersStore: async (req, res) => {
-        const { serie, mac } = req.body;
+        const { mac } = req.body;
 
         // Validación básica de entrada
-        if (!mac || !serie) {
-            return res.status(400).json({ message: 'MAC y Serie son requeridos' });
+        if (!mac) {
+            return res.status(400).json({ message: 'MAC son requeridos' });
         }
 
         try {
@@ -21,7 +21,7 @@ export const configurationController = {
                 // Buscamos los contadores de tráfico asociados a la serie
                 const [sqlTraffics] = await pool.query(
                     'SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = ?',
-                    [serie]
+                    [parameters[0]['SERIE_TIENDA']]
                 );
 
                 // Simplificamos el mapeo de IPs
