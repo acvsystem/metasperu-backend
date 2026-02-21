@@ -17,7 +17,7 @@ export const storeController = {
                 ) as traffic_json,
                 (
                     SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT('id', ID, 'serie', SERIE, 'nombre', NOMBRE)
+                        JSON_OBJECT('id', ID, 'serie', SERIE, 'nombre', NOMBRE, 'cantidad', 0)
                     )
                     FROM tb_terminales_store
                     WHERE SERIE = t.SERIE_TIENDA
