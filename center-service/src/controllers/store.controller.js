@@ -183,7 +183,7 @@ export const storeController = {
 
             let onlineStore = Object.values(tiendasOnline);
 
-            const store = onlineStore.map((store) => store.serie, serie);
+            const store = onlineStore.map((store) => store.serie == serie);
             console.log(store);
             getIO().to(store.socketId).emit('py_transfer_terminal', { pedido_por: socketId, serie: serie, terminalIn: terminalIn, terminalOut: terminalOut });
 
