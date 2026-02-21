@@ -77,35 +77,54 @@ if len(configuration) > 0:
         })
 
     @sio.on('py_request_transactions_store')
-    def py_requets_transactions_store(data):
-        print(f"Dashboard solicita trasacciones en cola...")
-        myobj = []
-        j = {}
-        server = instanciaBD
-        dataBase = nameBD
-        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
-        nowDate=datetime.today().strftime('%Y-%m-%d')
-        lastDate = datetime.today()+timedelta(days=-1)
-        shift = timedelta(max(1, (lastDate.weekday() + 6) % 7))
-        lastDate = lastDate.strftime('%Y-%m-%d')
-        querySql="SELECT COUNT(ID) AS ID FROM REM_TRANSACCIONES;"
-        connection = pyodbc.connect(conexion)
-        cursor = connection.cursor()
-        cursor.execute("SELECT @@version;")
-        row = cursor.fetchone()
-        cursor.execute(querySql)
-        rows = cursor.fetchall()
-        for row in rows:
-            obj = collections.OrderedDict()
-            obj['remCount'] = row[0]
-            myobj.append(obj)
-        transactions = json.dumps(myobj)
-        # Respondemos enviando de vuelta el ID de quien preguntó
-        sio.emit('py_requets_transactions_store', {
-            'serie': serieTienda,
-            'enviar_a': data['pedido_por'],
-            'transactions': json.loads(transactions)[0]['remCount']
-        })
+    def handle_transactions_store(data):
+        print(f"Dashboard solicita transacciones en cola para la serie: {serieTienda}")
+
+        conexion = f'DRIVER={{SQL Server}};SERVER={instanciaBD};DATABASE={nameBD};UID=ICGAdmin;PWD=masterkey'
+
+        try:
+            # Usamos "with" para que la conexión se cierre sola pase lo que pase
+            with pyodbc.connect(conexion, timeout=5) as conn:
+                cursor = conn.cursor()
+
+                # 1. Obtener el conteo total de transacciones
+                cursor.execute("SELECT COUNT(ID) FROM REM_TRANSACCIONES;")
+                row_total = cursor.fetchone()
+                total_transactions = row_total[0] if row_total else 0
+
+                # 2. Obtener el detalle por terminal (solo las que no han subido: IDCENTRAL = -1)
+                query_terminals = """
+                    SELECT TERMINAL, COUNT(*) 
+                    FROM REM_TRANSACCIONES 
+                    WHERE IDCENTRAL = -1 
+                    GROUP BY TERMINAL;
+                """
+                cursor.execute(query_terminals)
+                rows = cursor.fetchall()
+
+                # Mapeamos los resultados de forma limpia
+                lista_terminales = []
+                for row in rows:
+                    lista_terminales.append({
+                        'terminal': row[0],
+                        'cantidad': row[1],
+                        'serieStore': serieTienda
+                    })
+
+                # Si no hay terminales con deuda, enviamos al menos la serie
+                if not lista_terminales:
+                    lista_terminales.append({'serieStore': serieTienda, 'cantidad': 0})
+
+                # 3. Emitir respuesta (Evitamos json.dumps/loads innecesarios)
+                sio.emit('py_requets_transactions_store', {
+                    'serie': serieTienda,
+                    'enviar_a': data.get('pedido_por'),
+                    'transactions': total_transactions,
+                    'terminales': lista_terminales # Se envía como lista de objetos directamente
+                })
+
+        except Exception as e:
+            print(f"Error en consulta de transacciones: {e}")
 
     @sio.on('py_request_documents_store')
     def py_requets_documents_store(data):

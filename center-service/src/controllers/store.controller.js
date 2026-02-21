@@ -145,7 +145,6 @@ export const storeController = {
             let onlineStore = Object.values(tiendasOnline);
 
             onlineStore.filter((store) => {
-                console.log(store.socketId);
                 getIO().to(store.socketId).emit('py_request_transactions_store', { pedido_por: socketId });
             });
 
@@ -173,6 +172,22 @@ export const storeController = {
 
             res.json({
                 message: 'Se emitio señal de clientes en blanco'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
+    },
+    callTransferTerminal: async (req, res) => {
+        const { socketId, serie, terminalIn, terminalOut } = req.params;
+        try {
+
+            let onlineStore = Object.values(tiendasOnline);
+
+            const store = onlineStore.map((store) => store.serie, serie);
+            getIO().to(store.socketId).emit('py_transfer_terminal', { pedido_por: socketId, serie: serie, terminalIn: terminalIn, terminalOut: terminalOut });
+
+            res.json({
+                message: 'Se emitio señal de transferencia de cola.'
             });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
