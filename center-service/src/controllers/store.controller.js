@@ -178,7 +178,7 @@ export const storeController = {
         }
     },
     callTransferTerminal: async (req, res) => {
-        const { socketId, serie, terminalIn, terminalOut } = req.params;
+        const { socketId, serie, terminalIn, terminalOut } = req.body;
         try {
 
             let onlineStore = Object.values(tiendasOnline);

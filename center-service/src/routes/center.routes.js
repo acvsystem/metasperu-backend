@@ -16,7 +16,7 @@ router.delete('/api/store/:id', verifyToken, storeController.deleteTienda);
 router.get('/api/documents/missing/:socketId', verifyToken, storeController.callDocumentsComparation);
 router.get('/api/transactions/frontretail/:socketId', verifyToken, storeController.callTransactions);
 router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
-router.get('/api/transactions/transfer/terminal/:socketId', verifyToken, storeController.callTransferTerminal);
+router.post('/api/transactions/transfer/terminal', verifyToken, storeController.callTransferTerminal);
 
 // ---RUTAS DE CONFIGURACION
 router.post('/api/parameters/store', configurationController.postParametersStore);
