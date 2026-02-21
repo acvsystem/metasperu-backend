@@ -110,6 +110,11 @@ export const initSocket = (server) => {
             io.emit('traffic_response_dashboard', data);
         })
 
+        socket, on('py_response_transfer_terminal', (data) => {
+            console.log('py_response_transfer_terminal', data);
+            io.emit('transfer_response_dashboard', data);
+        });
+
         socket.on('disconnect', () => {
 
             const store = tiendasActivas[socket.handshake.headers.code];

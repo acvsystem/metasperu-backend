@@ -76,6 +76,43 @@ if len(configuration) > 0:
             'clients': json.loads(clients)[0]['clientCant'] or 0
         })
 
+    @sio.on('py_transfer_terminal')
+    def handle_transfer_terminal(data):
+        terminal_nueva = data['terminalOut']
+        terminal_vieja = data['terminalIn']
+    
+        print(f"Transfiriendo transacciones de {terminal_vieja} a {terminal_nueva}...")
+    
+        conexion = f'DRIVER={{SQL Server}};SERVER={instanciaBD};DATABASE={nameBD};UID=ICGAdmin;PWD=masterkey'
+        
+        # Usamos parámetros (?) para evitar Inyección SQL
+        query_sql = """
+            UPDATE REM_TRANSACCIONES 
+            SET TERMINAL = ? 
+            WHERE IDCENTRAL = -1 AND TERMINAL = ?;
+        """
+    
+        try:
+            # El uso de 'with' asegura que la conexión se cierre automáticamente
+            with pyodbc.connect(conexion, timeout=10) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query_sql, (terminal_nueva, terminal_vieja))
+                    
+                    filas_afectadas = cursor.rowcount
+                    conn.commit()
+                    
+                    print(f"Éxito: Se actualizaron {filas_afectadas} registros.")
+                    
+                    # Opcional: Notificar al dashboard que terminó
+                    sio.emit('py_response_transfer_terminal', {
+                        'status': 'success',
+                        'updated': filas_afectadas,
+                        'serie': serieTienda
+                    })
+    
+        except pyodbc.Error as e:
+            print(f"Error de SQL Server: {e}")
+
     @sio.on('py_request_transactions_store')
     def handle_transactions_store(data):
         print(f"Dashboard solicita transacciones en cola para la serie: {serieTienda}")
