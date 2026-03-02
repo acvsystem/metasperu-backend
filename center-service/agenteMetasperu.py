@@ -46,7 +46,6 @@ if len(configuration) > 0:
 
     @sio.event
     def py_request_client_blank(data):
-        print(data)
         print(f"Dashboard solicita cliente en blanco...")
         myobj = []
         j = {}
@@ -79,6 +78,7 @@ if len(configuration) > 0:
 
     @sio.on('py_delete_client')
     def py_delete_client(data):
+        print(f"Dashboard solicita borrar clientes...")
         handle_delete_not_facture(data)
         handle_delete_client_visibility(data)
         handle_delete_client_discontinued(data)
