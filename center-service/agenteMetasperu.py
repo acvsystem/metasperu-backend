@@ -46,6 +46,7 @@ if len(configuration) > 0:
 
     @sio.event
     def py_request_client_blank(data):
+        print(data)
         print(f"Dashboard solicita cliente en blanco...")
         myobj = []
         j = {}

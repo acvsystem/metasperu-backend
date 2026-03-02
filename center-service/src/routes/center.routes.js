@@ -18,7 +18,7 @@ router.get('/api/transactions/frontretail/:socketId', verifyToken, storeControll
 router.post('/api/transactions/transfer/terminal', verifyToken, storeController.callTransferTerminal);
 
 // ---RUTAS CLIENTE
-router.get('/api/client/blank/:sokcetId', verifyToken, storeController.callClientBlank);
+router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
 router.get('/api/delete/client/:socketId', verifyToken, storeController.callClientDelete);
 
 // ---RUTAS DE CONFIGURACION
