@@ -184,9 +184,9 @@ export const storeController = {
 
             let onlineStore = Object.values(tiendasOnline);
 
-            const store = onlineStore.find((store) => store.serie == serie);
-
-            getIO().to(store.socketId).emit('py_delete_client', { pedido_por: socketId, serie: serie });
+            onlineStore.filter((store) => {
+                getIO().to(store.socketId).emit('py_delete_client', { pedido_por: socketId });
+            });
 
             res.json({
                 message: 'Se emitio señal de eliminacion de cliente.'
