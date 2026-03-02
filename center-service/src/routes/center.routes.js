@@ -19,7 +19,7 @@ router.post('/api/transactions/transfer/terminal', verifyToken, storeController.
 
 // ---RUTAS CLIENTE
 router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
-router.post('/api/delete/client/:socketId', verifyToken, storeController.callClientDelete);
+router.get('/api/delete/client/:socketId', verifyToken, storeController.callClientDelete);
 
 // ---RUTAS DE CONFIGURACION
 router.post('/api/parameters/store', configurationController.postParametersStore);
