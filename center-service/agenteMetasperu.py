@@ -76,6 +76,12 @@ if len(configuration) > 0:
             'clients': json.loads(clients)[0]['clientCant'] or 0
         })
 
+    @sio.on('py_delete_client')
+    def py_delete_client(data):
+        handle_delete_not_facture(data)
+        handle_delete_client_visibility(data)
+        handle_delete_client_discontinued(data)
+
     @sio.on('py_transfer_terminal')
     def handle_transfer_terminal(data):
         terminal_nueva = data['terminalOut']
@@ -105,7 +111,7 @@ if len(configuration) > 0:
                     
                     # Opcional: Notificar al dashboard que terminó
                     sio.emit('py_response_transfer_terminal', {
-                        'status': 'success',
+                        'status': 'Transferencia de transacciones exitoso.',
                         'updated': filas_afectadas,
                         'serie': serieTienda
                     })
@@ -141,16 +147,18 @@ if len(configuration) > 0:
 
                 # Mapeamos los resultados de forma limpia
                 lista_terminales = []
-                for row in rows:
-                    lista_terminales.append({
-                        'terminal': row[0],
-                        'cantidad': row[1],
-                        'serieStore': serieTienda
-                    })
+                print(len(rows))
+                if len(rows) > 0:
+                    for row in rows:
+                        lista_terminales.append({
+                            'terminal': row[0],
+                            'cantidad': row[1],
+                            'serieStore': serieTienda
+                        })
 
-                # Si no hay terminales con deuda, enviamos al menos la serie
-                if not lista_terminales:
-                    lista_terminales.append({'serieStore': serieTienda, 'cantidad': 0})
+                    # Si no hay terminales con deuda, enviamos al menos la serie
+                    if not lista_terminales:
+                        lista_terminales.append({'serieStore': serieTienda, 'cantidad': 0})
 
                 # 3. Emitir respuesta (Evitamos json.dumps/loads innecesarios)
                 sio.emit('py_requets_transactions_store', {
@@ -245,6 +253,131 @@ if len(configuration) > 0:
                 count += row[0]
 
         return count
+    
+    
+    def handle_delete_not_facture(data):
+        server = instanciaBD
+        dataBase = nameBD
+        conexion = f"DRIVER={{SQL Server}};SERVER={server};DATABASE={dataBase};UID=ICGAdmin;PWD=masterkey"
+
+        # Filtro de búsqueda (simplificado con patrones de SQL)
+        # SQL Server no distingue mayúsculas por defecto en muchas configuraciones, 
+        # pero usamos LIKE para cubrir los patrones de repetición.
+        filtro_nombres = """
+            (NOMBRECLIENTE = '' AND NOMBRECOMERCIAL = '') OR 
+            NOMBRECLIENTE LIKE 'aaaaa%' OR NOMBRECLIENTE LIKE 'eeeee%' OR 
+            NOMBRECLIENTE LIKE 'iiiii%' OR NOMBRECLIENTE LIKE 'ooooo%' OR 
+            NOMBRECLIENTE LIKE 'uuuuu%' OR
+            NOMBRECLIENTE LIKE '%bbbbb%' OR NOMBRECLIENTE LIKE '%ccccc%' OR 
+            NOMBRECLIENTE LIKE '%ddddd%' OR NOMBRECLIENTE LIKE '%fffff%'
+        """ 
+        # Nota: Puedes extender el LIKE '%xxxxx%' según necesites, 
+        # pero lo ideal es usar un regex o una tabla de patrones si son muchos.
+
+        try:
+            connection = pyodbc.connect(conexion)
+            cursor = connection.cursor()
+            print("Iniciando limpieza masiva de clientes 'NotFound'...")
+
+            # 1. ACTUALIZACIÓN MASIVA: Descatalogar clientes con facturas
+            query_update = f"""
+                UPDATE CLIENTES 
+                SET DESCATALOGADO = 'T' 
+                WHERE ({filtro_nombres}) 
+                AND DESCATALOGADO = 'F'
+                AND EXISTS (SELECT 1 FROM FACTURASVENTA WHERE FACTURASVENTA.CODCLIENTE = CLIENTES.CODCLIENTE);
+            """
+            cursor.execute(query_update)
+            updated_count = cursor.rowcount
+
+            # 2. ELIMINACIÓN MASIVA: Borrar clientes sin facturas
+            query_delete = f"""
+                DELETE FROM CLIENTES 
+                WHERE ({filtro_nombres}) 
+                AND DESCATALOGADO = 'F'
+                AND NOT EXISTS (SELECT 1 FROM FACTURASVENTA WHERE FACTURASVENTA.CODCLIENTE = CLIENTES.CODCLIENTE);
+            """
+            cursor.execute(query_delete)
+            deleted_count = cursor.rowcount
+
+            connection.commit()
+            print(f"Éxito: {updated_count} actualizados, {deleted_count} eliminados.")
+
+            # NOTIFICAR AL DASHBOARD
+            sio.emit('py_response_delete_client', {
+                'process': 'consultingNotFound',
+                'updated': updated_count,
+                'deleted': deleted_count,
+                'enviar_a': data.get('pedido_por')
+            })
+
+        except Exception as e:
+            print(f"Error en consultingNotFound: {e}")
+        finally:
+            if 'connection' in locals():
+                connection.close()
+
+    def handle_delete_client_visibility(data):
+        # Variables de conexión (asumiendo que están definidas globalmente)
+        conn_str = f"DRIVER={{SQL Server}};SERVER={instanciaBD};DATABASE={nameBD};UID=ICGAdmin;PWD=masterkey"
+
+        # Query optimizada: Borra clientes donde CODVISIBLE != 8 Y no existan en FACTURASVENTA
+        query_delete = """
+        DELETE FROM CLIENTES 
+        WHERE CODVISIBLE != 8 
+        AND CODCLIENTE NOT IN (
+            SELECT DISTINCT CODCLIENTE 
+            FROM FACTURASVENTA
+        );
+        """
+
+        try:
+            with pyodbc.connect(conn_str) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query_delete)
+                deleted_count = cursor.rowcount
+                conn.commit()
+
+                print(f"Limpieza completada. Clientes eliminados: {deleted_count}")
+                sio.emit('py_response_delete_client', {
+                    'process': 'Visibilidad',
+                    'serie': serieTienda,
+                    'enviar_a': data.get('pedido_por'),
+                    'eliminados': deleted_count
+                })
+        except pyodbc.Error as e:
+            print(f"Error al procesar la eliminación: {e}")
+
+    def handle_delete_client_discontinued(data):
+            # 1. Configuración de conexión (idealmente fuera de la función o en un .env)
+        conn_str = f"DRIVER={{SQL Server}};SERVER={instanciaBD};DATABASE={nameBD};UID=ICGAdmin;PWD=masterkey"
+
+        try:
+            with pyodbc.connect(conn_str) as conn:
+                cursor = conn.cursor()
+
+                # 2. SQL de "Eliminar clientes descatalogados que NO tengan facturas"
+                # Es mucho más eficiente dejar que SQL haga el trabajo sucio.
+                query_delete = """
+                DELETE FROM CLIENTES 
+                WHERE DESCATALOGADO = 'T' 
+                AND CODCLIENTE NOT IN (SELECT DISTINCT CODCLIENTE FROM FACTURASVENTA)
+                """
+
+                cursor.execute(query_delete)
+                rows_affected = cursor.rowcount
+                conn.commit()
+
+                print(f"Proceso finalizado. Clientes eliminados: {rows_affected}")
+
+                sio.emit('py_response_delete_client', {
+                    'process': 'Descatalogado',
+                    'serie': serieTienda,
+                    'enviar_a': data.get('pedido_por'),
+                    'eliminados': rows_affected
+                })
+        except pyodbc.Error as e:
+            print(f"Error en la base de datos: {e}")
     
     if __name__ == '__main__':
         try:

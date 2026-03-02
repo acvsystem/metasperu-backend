@@ -115,6 +115,11 @@ export const initSocket = (server) => {
             io.emit('transfer_response_dashboard', data);
         });
 
+        socket.on('py_response_delete_client', (data) => {
+            console.log('py_response_delete_client', data);
+            io.emit('delete_client_esponse_dashboard', data);
+        });
+
         socket.on('disconnect', () => {
 
             const store = tiendasActivas[socket.handshake.headers.code];

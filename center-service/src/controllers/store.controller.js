@@ -177,6 +177,25 @@ export const storeController = {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
     },
+
+    callClientDelete: async (req, res) => {
+        const { socketId, serie} = req.body;
+        try {
+
+            let onlineStore = Object.values(tiendasOnline);
+
+            const store = onlineStore.find((store) => store.serie == serie);
+           
+            getIO().to(store.socketId).emit('py_delete_client', { pedido_por: socketId, serie: serie});
+
+            res.json({
+                message: 'Se emitio señal de eliminacion de cliente.'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
+    },
+
     callTransferTerminal: async (req, res) => {
         const { socketId, serie, terminalIn, terminalOut } = req.body;
         try {
