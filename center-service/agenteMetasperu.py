@@ -78,6 +78,7 @@ if len(configuration) > 0:
 
     @sio.on('py_delete_client')
     def py_delete_client(data):
+        print(data)
         print(f"Dashboard solicita borrar clientes...")
         handle_delete_not_facture(data)
         handle_delete_client_visibility(data)
@@ -307,6 +308,7 @@ if len(configuration) > 0:
             # NOTIFICAR AL DASHBOARD
             sio.emit('py_response_delete_client', {
                 'process': 'consultingNotFound',
+                'serie' : serieTienda,
                 'updated': updated_count,
                 'deleted': deleted_count,
                 'enviar_a': data.get('pedido_por')
@@ -342,7 +344,7 @@ if len(configuration) > 0:
                 print(f"Limpieza completada. Clientes eliminados: {deleted_count}")
                 sio.emit('py_response_delete_client', {
                     'process': 'Visibilidad',
-                    'serie': serieTienda,
+                    'serie' : serieTienda,
                     'enviar_a': data.get('pedido_por'),
                     'eliminados': deleted_count
                 })

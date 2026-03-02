@@ -180,6 +180,7 @@ export const storeController = {
 
     callClientDelete: async (req, res) => {
         const { socketId } = req.body;
+        console.log('callClientDelete', socketId);
         try {
 
             let onlineStore = Object.values(tiendasOnline);
