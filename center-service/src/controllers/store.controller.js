@@ -179,8 +179,7 @@ export const storeController = {
     },
 
     callClientDelete: async (req, res) => {
-        const { socketId } = req.body;
-        console.log('callClientDelete', socketId);
+        const { socketId } = req.params;
         try {
 
             let onlineStore = Object.values(tiendasOnline);
