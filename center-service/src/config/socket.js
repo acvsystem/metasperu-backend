@@ -110,14 +110,25 @@ export const initSocket = (server) => {
             io.emit('traffic_response_dashboard', data);
         })
 
+        // --- Retorno de python store al backend transferencia de cola entre cajas
         socket.on('py_response_transfer_terminal', (data) => {
             console.log('py_response_transfer_terminal', data);
             io.emit('transfer_response_dashboard', data);
         });
 
+        // --- Retorno de python store al backend de limpieza de clientes
         socket.on('py_response_delete_client', (data) => {
             console.log('py_response_delete_client', data);
             io.emit('delete_client_esponse_dashboard', data);
+        });
+
+        socket.on('py_response_delete_cola_panama', (data) => {
+            console.log('py_response_delete_cola_panama', data);
+            io.emit('delete_cola_panama_dashboard', data);
+        });
+
+        socket.on('py_status_server_backup', (data) => {
+            io.emit('status_server_backup_dashboard', data);
         });
 
         socket.on('disconnect', () => {

@@ -21,6 +21,9 @@ router.post('/api/transactions/transfer/terminal', verifyToken, storeController.
 router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
 router.get('/api/delete/client/:socketId', verifyToken, storeController.callClientDelete);
 
+// ---PANAMA 
+router.get('/api/delete/cola/panama/:socketId', verifyToken, storeController.callDeletePanamaCola);
+
 // ---RUTAS DE CONFIGURACION
 router.post('/api/parameters/store', configurationController.postParametersStore);
 

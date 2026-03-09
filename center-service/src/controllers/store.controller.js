@@ -212,5 +212,22 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
+    },
+
+    callDeletePanamaCola: async (req, res) => {
+        const { socketId } = req.params;
+        try {
+
+            let onlineStore = Object.values(tiendasOnline);
+
+            onlineStore.filter((store) => {
+                getIO().to(store.socketId).emit('py_delete_cola_panama', { pedido_por: socketId });
+            });
+            res.json({
+                message: 'Se emitio señal de eliminar cola panama.'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
     }
 }

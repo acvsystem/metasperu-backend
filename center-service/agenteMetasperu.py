@@ -76,6 +76,23 @@ if len(configuration) > 0:
             'clients': json.loads(clients)[0]['clientCant'] or 0
         })
 
+    @sio.on('py_delete_cola_panama')
+    def deleteColaPanama(data):
+        server = instanciaBD
+        dataBase = nameBD
+        conexion='DRIVER={SQL Server};SERVER='+server+';DATABASE='+dataBase+';UID=ICGAdmin;PWD=masterkey'
+        querySql="DELETE FROM REM_TRANSACCIONES WHERE TIPO = 12;"
+        connection = pyodbc.connect(conexion)
+        cursor = connection.cursor()
+        cursor.execute("SELECT @@version;")
+        row = cursor.fetchone()
+        cursor.execute(querySql)
+        connection.commit()
+        sio.emit('py_response_delete_cola_panama', {
+            'serie': serieTienda,
+            'enviar_a': data['pedido_por']
+        })
+
     @sio.on('py_delete_client')
     def py_delete_client(data):
         print(data)
