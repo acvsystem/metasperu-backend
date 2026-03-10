@@ -1,6 +1,6 @@
 import { pool } from '../config/db.js';
 import { getIO, tiendasOnline, servidorOnline } from '../config/socket.js';
-
+import { emailService } from '../services/email.service.js';
 export const storeController = {
 
     getTiendas: async (req, res) => {
@@ -112,7 +112,16 @@ export const storeController = {
 
     // 2. Aquí recibe la lista de IDs del Servidor General (Agente Python/Node en la otra locación)
     callDocumentsComparation: async (req, res) => {
+
         const { socketId } = req.params;
+
+        emailService.pushToEmailQueue({
+            email:'andrecanalesv@gmail.com',
+            subject: 'Bienvenido',
+            template: 'welcome',
+            variables: { name: 'Andrés Canales' }
+        });
+        
         try {
             let onlineStore = Object.values(tiendasOnline);
             console.log("callDocumentsComparation onlineStore:", onlineStore);

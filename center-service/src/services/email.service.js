@@ -1,0 +1,28 @@
+import amqp from 'amqplib';
+
+export const emailService = {
+
+    async pushToEmailQueue(data) {
+        const conn = await amqp.connect('amqp://localhost');
+        const channel = await conn.createChannel();
+        const queue = 'email_queue';
+
+        await channel.assertQueue(queue, { durable: true });
+
+        // El payload debe coincidir con lo que espera el worker
+        const payload = {
+            to: data.email,
+            subject: data.subject,
+            template: data.template, // ej: 'welcome'
+            context: data.variables   // ej: { name: 'Usuario', store: 'Lince' }
+        };
+
+        channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
+            persistent: true // El mensaje se guarda en disco
+        });
+
+        console.log("Mensaje enviado a la cola de correos");
+        setTimeout(() => conn.close(), 500);
+    }
+
+}
