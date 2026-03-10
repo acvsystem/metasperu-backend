@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
-
-const hbs = require('nodemailer-express-handlebars');
-const path = require('path');
+import hbs from 'nodemailer-express-handlebars'; // <-- Cambiado de require a import
+import path from 'path';
 
 const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,

@@ -1,5 +1,6 @@
 import { mailer } from './mailer.js';
-const amqp = require('amqplib');
+import 'dotenv/config'; // Carga las variables del .env
+import amqp from 'amqplib';
 
 async function startWorker() {
     try {
