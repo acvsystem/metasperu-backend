@@ -10,9 +10,16 @@ const transporter = nodemailer.createTransport({
     }
 })
 
+const viewPath = path.resolve(__dirname, './templates/');
+
 // Configurar plantillas
 transporter.use('compile', hbs({
-    viewPath: path.resolve('./src/templates/'),
+    viewEngine: {
+        partialsDir: viewPath,
+        defaultLayout: false,
+    },
+    viewPath: viewPath,
+    extName: '.hbs'
 }));
 
 
