@@ -24,6 +24,7 @@ async function startWorker() {
         channel.consume(queue, async (msg) => {
             if (msg !== null) {
                 const payload = JSON.parse(msg.content.toString());
+                console.log(`[📩 Nuevo mensaje] Payload recibido:`, payload);
                 const { to, subject, template, context } = payload;
 
                 console.log(`[📩 Procesando] Enviando correo a: ${to} - Plantilla: ${template}`);
