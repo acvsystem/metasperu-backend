@@ -20,7 +20,7 @@ transporter.use('compile', hbs({
     viewPath: path.resolve('./src/templates/'),
 }));
 
-export const sendMail = async (to, subject, template, context) => {
+const sendMail = async (to, subject, template, context) => {
     await transporter.sendMail({
         from: '"Metas Perú" <noreply@metasperu.com>',
         to,
@@ -29,3 +29,5 @@ export const sendMail = async (to, subject, template, context) => {
         context   // variables para el HTML (nombre del usuario, etc)
     });
 };
+
+module.exports = { sendMail };
