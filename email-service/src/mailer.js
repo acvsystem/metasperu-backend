@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import hbs from 'nodemailer-express-handlebars'; // <-- Cambiado de require a import
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 const transporter = nodemailer.createTransport({
     service: "Gmail",
