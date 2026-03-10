@@ -1,4 +1,4 @@
-import { sendMail } from './mailer.js';
+import { mailer } from './mailer.js';
 const amqp = require('amqplib');
 
 async function startWorker() {
@@ -29,7 +29,7 @@ async function startWorker() {
 
                 try {
                     // Llamamos a la función de mailer.js que configuramos antes
-                    await sendMail(to, subject, template, context);
+                    await mailer.sendMail(to, subject, template, context);
 
                     // Confirmar que el mensaje fue procesado con éxito
                     channel.ack(msg);
