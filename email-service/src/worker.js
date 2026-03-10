@@ -5,8 +5,9 @@ import amqp from 'amqplib';
 async function startWorker() {
     try {
         // 1. Conexión al servidor de mensajería (RabbitMQ)
+        console.log("[🔌 Email Worker] Conectando a RabbitMQ...", process.env.RABBITMQ_URL || 'amqp://localhost');
         const connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost');
-        const channel = await connection.createChannel();
+            const channel = await connection.createChannel();
 
         const queue = 'email_queue';
 
