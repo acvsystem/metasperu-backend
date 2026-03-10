@@ -3,11 +3,11 @@ import hbs from 'nodemailer-express-handlebars'; // <-- Cambiado de require a im
 import path from 'path';
 
 const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
+    host: smtp.gmail.com,
+    port: 465,
     auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
+        user: 'itperu@metasperu.com',
+        pass: 'lpieqykwqpdzkhgt'
     }
 });
 
