@@ -1,4 +1,5 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
+
 const hbs = require('nodemailer-express-handlebars');
 const path = require('path');
 
@@ -20,14 +21,16 @@ transporter.use('compile', hbs({
     viewPath: path.resolve('./src/templates/'),
 }));
 
-const sendMail = async (to, subject, template, context) => {
-    await transporter.sendMail({
-        from: '"Metas Perú" <noreply@metasperu.com>',
-        to,
-        subject,
-        template, // nombre del archivo .hbs
-        context   // variables para el HTML (nombre del usuario, etc)
-    });
-};
 
-module.exports = { sendMail };
+export const mailer = {
+    sendMail: async (to, subject, template, context) => {
+        await transporter.sendMail({
+            from: '"Metas Perú" <noreply@metasperu.com>',
+            to,
+            subject,
+            template, // nombre del archivo .hbs
+            context   // variables para el HTML (nombre del usuario, etc)
+        });
+    }
+}
+

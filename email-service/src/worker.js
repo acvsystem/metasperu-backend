@@ -1,4 +1,4 @@
-const { sendMail } = require('./mailer');
+import { sendMail } from './mailer.js';
 const amqp = require('amqplib');
 
 async function startWorker() {
