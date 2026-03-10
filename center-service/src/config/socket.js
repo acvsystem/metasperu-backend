@@ -122,11 +122,25 @@ export const initSocket = (server) => {
             io.emit('delete_client_esponse_dashboard', data);
         });
 
+        // --- Retorno de python store al backend eliminar cola panama
         socket.on('py_response_delete_cola_panama', (data) => {
             console.log('py_response_delete_cola_panama', data);
             io.emit('delete_cola_panama_dashboard', data);
         });
 
+        // --- Retorno de python server al backend comparacion de documentos
+        socket.on('py_response_comparation_documents_server', (data) => {
+            console.log('py_response_comparation_documents_server', data);
+            io.emit('comparation_documents_server_dashboard', data);
+        });
+
+        // --- Retorno de python server al backend documentos pendientes de comparacion
+        socket.on('py_response_documents_pending_server', (data) => {
+            console.log('py_response_documents_pending_server', data);
+            io.emit('documents_pending_server_dashboard', data);
+        });
+
+        // --- Retorno de python server al backend status de servidor backup
         socket.on('py_status_server_backup', (data) => {
             io.emit('status_server_backup_dashboard', data);
         });
