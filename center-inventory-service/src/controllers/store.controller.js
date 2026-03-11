@@ -5,7 +5,7 @@ export const storeController = {
         const { stockData } = req.body;
 
         // Validación básica de entrada
-        if (!globalInventory) {
+        if (!stockData) {
             return res.status(400).json({ message: 'Inventario global es requerido' });
         }
 
