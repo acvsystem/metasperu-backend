@@ -1,5 +1,7 @@
 import { getIO } from '../config/socket.js';
 
+const inventarioGlobal = new Map();
+
 export const storeController = {
     postReqInventory: async (req, res) => {
         const { stockData } = req.body;
@@ -39,13 +41,13 @@ export const storeController = {
 
 function actualizarMapaGlobal(serieStore, data) {
     data.forEach(item => {
-        if (!globalStockMap.has(item.sku)) {
-            globalStockMap.set(item.sku, { n: item.nombre, s: {} });
+        if (!inventarioGlobal.has(item.sku)) {
+            inventarioGlobal.set(item.sku, { n: item.nombre, s: {} });
         }
-        globalStockMap.get(item.sku).s[serieStore] = item.cantidad;
+        inventarioGlobal.get(item.sku).s[serieStore] = item.cantidad;
     });
 
-    console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${globalStockMap.size}`);
+    console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${inventarioGlobal.size}`);
     // Una vez procesado, avisamos por Socket al Dashboard de Angular
    // getIO().emit('update_inventory', { storeId });
 
