@@ -43,7 +43,6 @@ function actualizarMapaGlobal(serieStore, data) {
     data.forEach(item => {
         if (!inventarioGlobal.has(item.cCodigoBarra)) {
             inventarioGlobal.set(item.cCodigoBarra, {
-                'cCodigoTienda': serieTienda,
                 'cCodigoArticulo': item.cCodigoArticulo,
                 'cReferencia': item.cReferencia,
                 'cCodigoBarra': item.cCodigoBarra,
