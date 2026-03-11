@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        .body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #fef2f2;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.1);
+            border: 1px solid #fee2e2;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 24px;
+            letter-spacing: 1px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .alert-container {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .alert-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .alert-title {
+            color: #991b1b;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Estilo para la lista de sedes */
+        .info-box {
+            background: #fff5f5;
+            border: 1px dashed #f87171;
+            border-radius: 8px;
+            margin: 0 20px 25px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .periodo-header {
+            background: #fee2e2;
+            padding: 15px;
+            border-bottom: 1px solid #f87171;
+            text-align: center;
+            color: #991b1b;
+            font-size: 14px;
+        }
+
+        .sede-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sede-item {
+            border-bottom: 1px solid #fee2e2;
+        }
+
+        .sede-item:last-child {
+            border-bottom: none;
+        }
+
+        .sede-name {
+            padding: 12px 20px;
+            color: #450a0a;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .sede-status {
+            padding: 12px 20px;
+            text-align: right;
+            color: #b91c1c;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-action {
+            display: inline-block;
+            background-color: #dc2626;
+            color: #ffffff !important;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+        }
+
+        .footer {
+            background: #fdf2f2;
+            padding: 20px;
+            text-align: center;
+            color: #991b1b;
+            font-size: 12px;
+            border-top: 1px solid #fee2e2;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <div class="wrapper">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+        </div>
+
+        <div class="alert-container">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-title">ALERTA: SEDES SIN HORARIO</div>
+            <p style="color: #7f1d1d; font-size: 14px; margin: 0;">Se han detectado omisiones en el registro de horarios
+                para el próximo periodo.</p>
+        </div>
+
+        <div class="info-box">
+            <div class="periodo-header">
+                <strong>PERIODO:</strong> {{periodo}}<br>
+            </div>
+            <table class="sede-table">
+                <tbody>
+                    {{#each sedes}}
+                    <tr class="sede-item">
+                        <td class="sede-name">• {{this.nombre}}</td>
+                        <td class="sede-status">PENDIENTE</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align: center; padding-bottom: 35px;">
+            <p style="font-size: 14px; color: #450a0a; margin-bottom: 20px; padding: 0 40px;">Por favor, contactar con
+                los encargados de estas sedes para regularizar.</p>
+        </div>
+
+        <div class="footer">
+            <strong>NOTIFICACIÓN CRÍTICA DE RECURSOS HUMANOS</strong><br>
+            Este reporte consolidado se genera automáticamente según el estado del sistema.
+        </div>
+    </div>
+</body>
+
+</html>

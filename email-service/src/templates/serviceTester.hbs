@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        .test-box { 
+            font-family: sans-serif; 
+            border: 2px dashed #0056b3; 
+            padding: 20px; 
+            background-color: #f0f7ff; 
+            border-radius: 10px;
+        }
+        .status-ok { color: #28a745; font-weight: bold; }
+        .data-list { background: white; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1 style="color: #0056b3;">🧪 Prueba de Servicio de Email</h1>
+        <p>Este es un correo de diagnóstico para el sistema de <strong>Metas Perú S.A.C</strong>.</p>
+        
+        <div class="data-list">
+            <p><strong>Estado del Worker:</strong> <span class="status-ok">ACTIVO</span></p>
+            <p><strong>Servidor de Origen:</strong> {{servidor}}</p>
+            <p><strong>Tienda detectada:</strong> {{tienda}}</p>
+            <p><strong>Fecha de envío:</strong> {{timestamp}}</p>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            Si estás viendo este mensaje, la integración con RabbitMQ y el Microservicio de Email es exitosa.
+        </p>
+    </div>
+</body>
+</html>

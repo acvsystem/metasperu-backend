@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        .body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #d1d9e0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #004a99 0%, #0066cc 100%);
+            padding: 35px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 26px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-container {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: #e6fffa;
+            color: #2c7a7b;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 14px;
+            border: 1px solid #b2f5ea;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            background: #f8fafc;
+            margin: 0 25px 25px;
+            border-radius: 8px;
+            border: 1px solid #edf2f7;
+            padding: 0;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table th {
+            background: #edf2f7;
+            color: #4a5568;
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 12px 15px;
+            border-bottom: 2px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .info-table td {
+            padding: 18px 15px;
+            color: #2d3748;
+            font-size: 14px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .info-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .store-name {
+            font-weight: bold;
+            color: #004a99;
+            font-size: 15px;
+        }
+
+        .date-range {
+            color: #4a5568;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        .footer {
+            background: #f1f5f9;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .footer strong {
+            color: #475569;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <div class="wrapper">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+        </div>
+
+        <div class="status-container">
+            <div class="status-badge">✓ HORARIO REGISTRADO CON ÉXITO</div>
+            <p style="color: #718096; font-size: 14px; margin: 0;">Se ha procesado el registro de horario para la
+                siguiente sede:</p>
+        </div>
+
+        <div class="info-card">
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th>TIENDA / SEDE</th>
+                        <th>RANGO DE DÍAS</th>
+                        <th>REGISTRO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="store-name">{{tienda}}</span><br>
+                            <small style="color: #a0aec0;">ID: {{storeId}}</small>
+                        </td>
+                        <td>
+                            <span class="date-range">{{rangoDias}}</span>
+                        </td>
+                        <td style="font-size: 12px; color: #718096;">
+                            {{fechaHora}}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Este es un comprobante automático del <strong>Sistema de Gestión de Personal</strong>.<br>
+            &copy; 2026 Metas Perú S.A.C | Operaciones Retail
+        </div>
+    </div>
+</body>
+
+</html>
