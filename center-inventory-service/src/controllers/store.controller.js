@@ -53,7 +53,7 @@ function actualizarMapaGlobal(serieStore, data) {
                 'cSubFamilia': item.cSubFamilia,
                 'cTalla': item.cTalla,
                 'cColor': item.cColor,
-                'cStock': item.cStock,
+                'cStock': {},
                 'cTemporada': item.cTemporada
             });
         }
