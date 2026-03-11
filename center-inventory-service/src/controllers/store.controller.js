@@ -36,6 +36,15 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
+    },
+
+    getConsolidatedInventory: async (req, res) => {
+        try {
+            const consolidated = Array.from(inventarioGlobal.values());
+            res.json({ inventory: consolidated });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al obtener inventario consolidado', error });
+        }
     }
 };
 
@@ -60,9 +69,8 @@ function actualizarMapaGlobal(serieStore, data) {
         inventarioGlobal.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
     });
 
-    console.log(inventarioGlobal);
     console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${inventarioGlobal.size}`);
     // Una vez procesado, avisamos por Socket al Dashboard de Angular
-    // getIO().emit('update_inventory', { storeId });
+    getIO().emit('update_inventory', { serieStore });
 
 }
