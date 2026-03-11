@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        .body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 20px; }
+        .container { max-width: 600px; background: #ffffff; margin: 0 auto; border-radius: 8px; overflow: hidden; border: 1px solid #e1e8ed; }
+        .header { background-color: #0056b3; color: white; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; font-size: 18px; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th { background-color: #edf2f7; color: #4a5568; text-align: left; padding: 12px; font-size: 13px; border-bottom: 2px solid #cbd5e0; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; font-size: 14px; }
+        .status-badge { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #718096; font-size: 12px; }
+    </style>
+</head>
+<body class="body">
+    <div class="container">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+            <p style="margin-top: 5px; opacity: 0.8;">Gestión de Documentos Pendientes</p>
+        </div>
+        
+        <div class="content">
+            <h2>Reporte de Documentos Faltantes</h2>
+            <p>Hola, se han detectado los siguientes documentos pendientes:</p>
+            
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>DOCUMENTO</th>
+                        <th>CREACIÓN</th>
+                        <th>ESTADO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each documentos}}
+                    <tr>
+                        <td><strong>{{this.id}}</strong><br><span style="font-size: 11px; color: #a0aec0;">{{this.tipo}}</span></td>
+                        <td>{{this.fecha}}</td>
+                        <td><span class="status-badge">PENDIENTE</span></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-size: 14px;">
+                <strong>Nota:</strong> Favor de regularizar estos documentos a la brevedad para evitar rechazos en sunat.
+            </div>
+        </div>
+        
+        <div class="footer">
+            Este es un mensaje automático generado por el Sistema de Monitoreo.<br>
+            &copy; 2026 Metas Perú S.A.C - Lima, Perú.
+        </div>
+    </div>
+</body>
+</html>
