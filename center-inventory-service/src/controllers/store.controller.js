@@ -42,14 +42,28 @@ export const storeController = {
 function actualizarMapaGlobal(serieStore, data) {
     data.forEach(item => {
         if (!inventarioGlobal.has(item.cCodigoBarra)) {
-            inventarioGlobal.set(item.cCodigoBarra, { n: item.cDescripcion, s: {} });
+            inventarioGlobal.set(item.cCodigoBarra, {
+                'cCodigoTienda': serieTienda,
+                'cCodigoArticulo': item.cCodigoArticulo,
+                'cReferencia': item.cReferencia,
+                'cCodigoBarra': item.cCodigoBarra,
+                'cDescripcion': item.cDescripcion,
+                'cDepartamento': item.cDepartamento,
+                'cSeccion': item.cSeccion,
+                'cFamilia': item.cFamilia,
+                'cSubFamilia': item.cSubFamilia,
+                'cTalla': item.cTalla,
+                'cColor': item.cColor,
+                'cStock': item.cStock,
+                'cTemporada': item.cTemporada
+            });
         }
-        inventarioGlobal.get(item.cCodigoBarra).s[serieStore] = item.cStock;
+        inventarioGlobal.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
     });
 
     console.log(inventarioGlobal);
     console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${inventarioGlobal.size}`);
     // Una vez procesado, avisamos por Socket al Dashboard de Angular
-   // getIO().emit('update_inventory', { storeId });
+    // getIO().emit('update_inventory', { storeId });
 
 }
