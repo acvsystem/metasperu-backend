@@ -45,7 +45,8 @@ function actualizarMapaGlobal(serieStore, data) {
         globalStockMap.get(item.sku).s[serieStore] = item.cantidad;
     });
 
+    console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${globalStockMap.size}`);
     // Una vez procesado, avisamos por Socket al Dashboard de Angular
-    getIO().emit('update_inventory', { storeId });
+   // getIO().emit('update_inventory', { storeId });
 
 }
