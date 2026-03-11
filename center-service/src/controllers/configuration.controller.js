@@ -13,7 +13,10 @@ export const configurationController = {
             // 1. Uso de Prepared Statements (?) para evitar Inyección SQL
             // 2. Solo traemos los campos necesarios en lugar de SELECT *
             const [parameters] = await pool.execute(
-                'SELECT * FROM TB_PARAMETROS_TIENDA WHERE MAC = ?',
+                `SELECT lt.SERIE_TIENDA,lt.DESCRIPCION,lt.ESTATUS,lt.UNID_SERVICIO,pt.MAC,pt.DATABASE_INSTANCE,pt.DATABASE_NAME,pt.COD_TIPO_FAC,pt.COD_TIPO_BOL,
+                pt.PROPERTY_STOCK,pt.NAME_EXCEL_REPORT_STOCK,pt.ASUNTO_EMAIL_REPORT_STOCK FROM tb_lista_tienda lt 
+                INNER JOIN tb_parametros_tienda pt on lt.SERIE_TIENDA = pt.SERIE_TIENDA
+                WHERE pt.MAC = ?`,
                 [mac.toUpperCase()]
             );
 
