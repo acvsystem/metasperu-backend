@@ -41,10 +41,10 @@ export const storeController = {
 
 function actualizarMapaGlobal(serieStore, data) {
     data.forEach(item => {
-        if (!inventarioGlobal.has(item.sku)) {
-            inventarioGlobal.set(item.sku, { n: item.nombre, s: {} });
+        if (!inventarioGlobal.has(item.cCodigoBarra)) {
+            inventarioGlobal.set(item.cCodigoBarra, { n: item.cDescripcion, s: {} });
         }
-        inventarioGlobal.get(item.sku).s[serieStore] = item.cantidad;
+        inventarioGlobal.get(item.cCodigoBarra).s[serieStore] = item.cStock;
     });
 
     console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${inventarioGlobal.size}`);
