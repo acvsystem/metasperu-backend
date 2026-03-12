@@ -63,7 +63,8 @@ function actualizarMapaGlobal(serieStore, data) {
                 'cTalla': item.cTalla,
                 'cColor': item.cColor,
                 'cStock': {},
-                'cTemporada': item.cTemporada
+                'cTemporada': item.cTemporada,
+                'cOnline': getActiveStoresByBrand('BBW')
             });
         }
         inventarioGlobal.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
@@ -73,4 +74,17 @@ function actualizarMapaGlobal(serieStore, data) {
     // Una vez procesado, avisamos por Socket al Dashboard de Angular
     getIO().emit('update_inventory', { serieStore });
 
+}
+
+async function getActiveStoresByBrand(marca) {
+    // Obtenemos todos los sockets que están en la sala (VICTORIA o BATH_BODY)
+    const sockets = await getIO().in(marca).fetchSockets();
+
+    // Extraemos el tiendaId que guardamos al momento del register_store
+    const onlineStores = sockets.map(socket => ({
+        tiendaId: socket.tiendaId, // El ID que asignamos en el evento 'register_store'
+        lastConnected: new Date()
+    }));
+
+    return onlineStores;
 }
