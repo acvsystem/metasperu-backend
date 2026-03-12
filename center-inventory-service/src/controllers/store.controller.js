@@ -41,7 +41,7 @@ export const storeController = {
     getConsolidatedInventory: async (req, res) => {
         try {
             const consolidated = Array.from(inventarioGlobal.values());
-            res.json({ inventory: consolidated });
+            res.json({ inventory: consolidated, online: await getActiveStoresByBrand('BBW') });
         } catch (error) {
             res.status(500).json({ message: 'Error al obtener inventario consolidado', error });
         }
@@ -49,8 +49,10 @@ export const storeController = {
 };
 
 function actualizarMapaGlobal(serieStore, data) {
+
     data.forEach(item => {
         if (!inventarioGlobal.has(item.cCodigoBarra)) {
+
             inventarioGlobal.set(item.cCodigoBarra, {
                 'cCodigoArticulo': item.cCodigoArticulo,
                 'cReferencia': item.cReferencia,
@@ -63,8 +65,7 @@ function actualizarMapaGlobal(serieStore, data) {
                 'cTalla': item.cTalla,
                 'cColor': item.cColor,
                 'cStock': {},
-                'cTemporada': item.cTemporada,
-                'cOnline': getActiveStoresByBrand('BBW')
+                'cTemporada': item.cTemporada
             });
         }
         inventarioGlobal.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
