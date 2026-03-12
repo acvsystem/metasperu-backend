@@ -85,6 +85,6 @@ async function getActiveStoresByBrand(marca) {
         tiendaId: socket.tiendaId, // El ID que asignamos en el evento 'register_store'
         lastConnected: new Date()
     }));
-
+    console.log(`Tiendas activas para marca ${marca}:`, onlineStores);
     return onlineStores;
 }
