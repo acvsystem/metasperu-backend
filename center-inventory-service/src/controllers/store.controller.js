@@ -28,7 +28,7 @@ export const storeController = {
     },
 
     callInventoryStore: async (req, res) => { // Cuando el Dashboard de Angular pide actualizar
-        const { marca } = req.body;
+        const { marca } = req.params;
         try {
             console.log(`📢 Pidiendo inventario a todas las tiendas de: ${marca}`);
             getIO().to(marca).emit('py_request_inventory');
