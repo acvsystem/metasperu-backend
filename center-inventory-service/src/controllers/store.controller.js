@@ -31,7 +31,7 @@ export const storeController = {
         try {
             console.log(`📢 Pidiendo inventario a todas las tiendas de: ${marca}`);
             getIO().to(marca).emit('py_request_inventory');
-            res.json({ message: 'Se emitio señal de comprobacion.' });
+            res.json({ message: 'Se emitio señal de comprobacion.', online: await getActiveStoresByBrand(marca) });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
@@ -41,7 +41,7 @@ export const storeController = {
         const { marca } = req.params; // Viene de la URL /inventory/:marca
         try {
             const mapaMarca = inventariosPorMarca.get(marca);
-           
+
             if (!mapaMarca) {
                 return res.json({ inventory: [], online: await getActiveStoresByBrand(marca) });
             }
