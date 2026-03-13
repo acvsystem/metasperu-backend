@@ -7,5 +7,5 @@ const router = Router();
 // --- RUTAS PARA INVENTARIO TIENDAS
 router.post('/api/inventory/store', storeController.postReqInventory);
 router.get('/api/inventory/store/:marca', storeController.callInventoryStore);
-router.get('/api/inventory/consolidated', storeController.getConsolidatedInventory);
+router.get('/api/inventory/consolidated/:marca', storeController.getConsolidatedInventory);
 export default router;

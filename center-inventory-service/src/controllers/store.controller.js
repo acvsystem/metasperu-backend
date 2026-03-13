@@ -41,7 +41,7 @@ export const storeController = {
         const { marca } = req.params; // Viene de la URL /inventory/:marca
         try {
             const mapaMarca = inventariosPorMarca.get(marca);
-
+           
             if (!mapaMarca) {
                 return res.json({ inventory: [], online: await getActiveStoresByBrand(marca) });
             }
