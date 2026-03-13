@@ -1,29 +1,28 @@
 import { getIO } from '../config/socket.js';
 
-const inventarioGlobal = new Map();
+const inventariosPorMarca = new Map();
 
 export const storeController = {
     postReqInventory: async (req, res) => {
-        const { stockData } = req.body;
+        const { stockData, marca } = req.body; // Asegúrate que Python envíe la marca
 
-        // Validación básica de entrada
-        if (!stockData) {
-            return res.status(400).json({ message: 'Inventario global es requerido' });
+        if (!stockData || !marca) {
+            return res.status(400).json({ message: 'Data y Marca son requeridos' });
         }
 
         try {
+            // Inicializar el mapa para la marca si no existe
+            if (!inventariosPorMarca.has(marca)) {
+                inventariosPorMarca.set(marca, new Map());
+            }
 
-            // Procesamiento asíncrono para no bloquear el API
             setImmediate(() => {
-                actualizarMapaGlobal(stockData[0].cCodigoTienda, stockData);
+                actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData);
             });
 
+            res.status(200).json({ message: 'Procesando...' });
         } catch (error) {
-            console.error('Error en postReqInventory:', error); // Log para debug
-            res.status(500).json({
-                message: 'Error interno del servidor',
-                error: process.env.NODE_ENV === 'development' ? error : {}
-            });
+            res.status(500).json({ message: 'Error interno' });
         }
     },
 
@@ -39,43 +38,24 @@ export const storeController = {
     },
 
     getConsolidatedInventory: async (req, res) => {
+        const { marca } = req.params; // Viene de la URL /inventory/:marca
         try {
-            const consolidated = Array.from(inventarioGlobal.values());
-            res.json({ inventory: consolidated, online: await getActiveStoresByBrand('BBW') });
+            const mapaMarca = inventariosPorMarca.get(marca);
+
+            if (!mapaMarca) {
+                return res.json({ inventory: [], online: await getActiveStoresByBrand(marca) });
+            }
+
+            const consolidated = Array.from(mapaMarca.values());
+            res.json({
+                inventory: consolidated,
+                online: await getActiveStoresByBrand(marca)
+            });
         } catch (error) {
-            res.status(500).json({ message: 'Error al obtener inventario consolidado', error });
+            res.status(500).json({ message: 'Error', error });
         }
     }
 };
-
-function actualizarMapaGlobal(serieStore, data) {
-
-    data.forEach(item => {
-        if (!inventarioGlobal.has(item.cCodigoBarra)) {
-
-            inventarioGlobal.set(item.cCodigoBarra, {
-                'cCodigoArticulo': item.cCodigoArticulo,
-                'cReferencia': item.cReferencia,
-                'cCodigoBarra': item.cCodigoBarra,
-                'cDescripcion': item.cDescripcion,
-                'cDepartamento': item.cDepartamento,
-                'cSeccion': item.cSeccion,
-                'cFamilia': item.cFamilia,
-                'cSubFamilia': item.cSubFamilia,
-                'cTalla': item.cTalla,
-                'cColor': item.cColor,
-                'cStock': {},
-                'cTemporada': item.cTemporada
-            });
-        }
-        inventarioGlobal.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
-    });
-
-    console.log(`✅ Inventario actualizado para tienda ${serieStore}. Total SKUs en mapa: ${inventarioGlobal.size}`);
-    // Una vez procesado, avisamos por Socket al Dashboard de Angular
-    getIO().emit('update_inventory', { serieStore });
-
-}
 
 async function getActiveStoresByBrand(marca) {
     // Obtenemos todos los sockets que están en la sala (VICTORIA o BATH_BODY)
@@ -88,4 +68,33 @@ async function getActiveStoresByBrand(marca) {
     }));
     console.log(`Tiendas activas para marca ${marca}:`, onlineStores);
     return onlineStores;
+}
+
+function actualizarMapaPorMarca(marca, serieStore, data) {
+    const mapaMarca = inventariosPorMarca.get(marca);
+
+    data.forEach(item => {
+        if (!mapaMarca.has(item.cCodigoBarra)) {
+            mapaMarca.set(item.cCodigoBarra, {
+                'cCodigoArticulo': item.cCodigoArticulo,
+                'cReferencia': item.cReferencia,
+                'cCodigoBarra': item.cCodigoBarra,
+                'cDescripcion': item.cDescripcion,
+                'cDepartamento': item.cDepartamento,
+                'cSeccion': item.cSeccion,
+                'cFamilia': item.cFamilia,
+                'cSubFamilia': item.cSubFamilia,
+                'cTalla': item.cTalla,
+                'cColor': item.cColor,
+                'cTemporada': item.cTemporada,
+                'cStock': {}, // Aquí guardaremos los stocks de cada tienda
+                'marca': marca
+            });
+        }
+        // Asignamos el stock de la tienda específica
+        mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
+    });
+
+    console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
+    getIO().to(marca).emit('update_inventory', { serieStore, marca });
 }
