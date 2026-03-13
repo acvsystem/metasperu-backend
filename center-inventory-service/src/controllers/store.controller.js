@@ -38,7 +38,7 @@ export const storeController = {
     },
 
     getConsolidatedInventory: async (req, res) => {
-        const { marca } = req.params; // Viene de la URL /inventory/:marca
+        const { marca, serieStore } = req.params; // Viene de la URL /inventory/:marca
         try {
             const mapaMarca = inventariosPorMarca.get(marca);
 
@@ -48,6 +48,7 @@ export const storeController = {
 
             const consolidated = Array.from(mapaMarca.values());
             res.json({
+                serie: serieStore,
                 inventory: consolidated,
                 online: await getActiveStoresByBrand(marca)
             });
