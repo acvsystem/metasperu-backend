@@ -96,5 +96,5 @@ function actualizarMapaPorMarca(marca, serieStore, data) {
     });
 
     console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
-    getIO().to(marca).emit('update_inventory', { serieStore, marca });
+    getIO().emit('update_inventory', { serieStore, marca });
 }
