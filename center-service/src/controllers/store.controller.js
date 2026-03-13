@@ -42,7 +42,7 @@ export const storeController = {
                     nombre: t.DESCRIPCION,
                     codigo_almacen: t.COD_ALMACEN,
                     unidad_servicio: t.UNID_SERVICIO,
-                    marca: t.TIPO_TIENDA,
+                    marca: t.UNID_SERVICIO,
                     email: t.EMAIL,
                     codigo_ejb: t.COD_TIENDA_EJB,
                     estado: t.ESTATUS,
