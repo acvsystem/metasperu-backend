@@ -29,7 +29,7 @@ export const storeController = {
 
     postSendInventoryStoreEmail: async (req, res) => {
         const { email, stores } = req.body;
-
+        console.log("Solicitud de envío de inventario a email:", email, stores);
         // Validación temprana
         if (!stores || !Array.isArray(stores) || stores.length === 0) {
             return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
