@@ -14,13 +14,18 @@ export const emailService = {
         const payload = {
             to: data.email,
             subject: data.subject,
-            template: data.template, // ej: 'welcome'
+            template: data.template,
             context: data.variables,
-            archivo: data.archivo
+            archivo: {
+                filename: data.archivo.filename,
+                // Convertimos el Buffer a string Base64
+                content: data.archivo.content.toString('base64'),
+                encoding: 'base64' // Añadimos esta pista para el worker
+            }
         };
 
         channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
-            persistent: true // El mensaje se guarda en disco
+            persistent: true
         });
 
         console.log("Mensaje enviado a la cola de correos");

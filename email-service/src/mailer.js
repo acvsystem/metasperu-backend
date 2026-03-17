@@ -39,8 +39,9 @@ export const mailer = {
         // Si existe un archivo, lo añadimos al array de adjuntos
         if (archivo && archivo.content) {
             mailOptions.attachments.push({
-                filename: archivo.filename || 'reporte.xlsx',
-                content: archivo.content, // Aquí va el Buffer generado por XLSX.write
+                filename: archivo.filename,
+                content: archivo.content,
+                encoding: 'base64', // <--- IMPORTANTE: Nodemailer sabrá qué hacer
                 contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
         }
