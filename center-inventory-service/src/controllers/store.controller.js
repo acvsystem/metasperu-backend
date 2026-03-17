@@ -56,10 +56,10 @@ export const storeController = {
                     tienda: nombre,
                     fecha: new Date().toLocaleDateString('es-PE')
                 },
+                // En lugar de enviar solo el buffer, enviamos un objeto descriptivo
                 archivo: {
-                    filename: `inventario_${nombre || 'reporte'}.xlsx`,
-                    content: Buffer.from(xlsFile),
-                    contentType: 'application/octet-stream'
+                    filename: `inventario_${nombre.replace(/\s+/g, '_')}.xlsx`,
+                    content: xlsFile // Este es el Buffer generado por XLSX.write
                 }
             });
 

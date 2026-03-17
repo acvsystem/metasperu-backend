@@ -27,23 +27,32 @@ transporter.use('compile', hbs({
 
 export const mailer = {
     sendMail: async (to, subject, template, context, archivo = null) => {
-
-
-        let mail = {
-            from: '"Metas Perú" <noreply@metasperu.com>',
+        let mailOptions = {
+            from: '"Metas Perú" <itperu@metasperu.com>', // Usamos el correo autenticado para evitar spam
             to: to,
-            subject: `${subject}`,
+            subject: subject,
             template: template,
             context: context,
             attachments: []
+        };
+
+        // Si existe un archivo, lo añadimos al array de adjuntos
+        if (archivo && archivo.content) {
+            mailOptions.attachments.push({
+                filename: archivo.filename || 'reporte.xlsx',
+                content: archivo.content, // Aquí va el Buffer generado por XLSX.write
+                contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
         }
 
-
-        if (archivo != null) {
-            (mail || {}).attachments = [archivo]
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log("Email enviado con éxito: %s", info.messageId);
+            return info;
+        } catch (error) {
+            console.error("Error al enviar email:", error);
+            throw error;
         }
-
-        await transporter.sendMail(mail);
     }
 }
 
