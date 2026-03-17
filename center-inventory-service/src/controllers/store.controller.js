@@ -1,5 +1,6 @@
 import { getIO } from '../config/socket.js';
 import * as XLSX from 'xlsx';
+import { emailService } from '../services/email.service.js';
 
 const inventariosPorMarca = new Map();
 
@@ -46,7 +47,7 @@ export const storeController = {
             const xlsFile = XLSX.write(workBook, { bookType: "xlsx", type: "buffer" });
 
             // 2. Encolar el email
-            const results = service.pushToEmailQueue({
+            const results = emailService.pushToEmailQueue({
                 email: email,
                 subject: `Inventario - ${nombre}`,
                 template: 'solicitudInventario',
