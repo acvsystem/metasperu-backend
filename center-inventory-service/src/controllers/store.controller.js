@@ -28,7 +28,7 @@ export const storeController = {
     },
 
     postSendInventoryStoreEmail: async (req, res) => {
-        const { email, nombre, serie } = req.body;
+        const { stockData, email, nombre, serie } = req.body;
         console.log("Solicitud de envío de inventario a email:", email, nombre, serie);
 
         try {
@@ -38,7 +38,7 @@ export const storeController = {
             }
 
             // 1. Generar el Excel (Asumiendo que dataNotFound viene de algún proceso previo o del store)
-            const dataToExport = store.inventario || []; // Usa los datos reales de la tienda
+            const dataToExport = stockData || []; // Usa los datos reales de la tienda
             const workSheet = XLSX.utils.json_to_sheet(dataToExport);
             const workBook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workBook, workSheet, "Inventario");
