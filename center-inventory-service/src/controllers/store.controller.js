@@ -28,44 +28,39 @@ export const storeController = {
     },
 
     postSendInventoryStoreEmail: async (req, res) => {
-        const { email, stores } = req.body;
-        console.log("Solicitud de envío de inventario a email:", email, stores);
-        // Validación temprana
-        if (!stores || !Array.isArray(stores) || stores.length === 0) {
-            return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
-        }
+        const { email, nombre, serie } = req.body;
+        console.log("Solicitud de envío de inventario a email:", email, serie);
 
         try {
-            // Usamos Promise.all para procesar todas las tiendas en paralelo de forma correcta
-            const emailPromises = stores.map(async (store) => {
 
-                // 1. Generar el Excel (Asumiendo que dataNotFound viene de algún proceso previo o del store)
-                const dataToExport = store.inventario || []; // Usa los datos reales de la tienda
-                const workSheet = XLSX.utils.json_to_sheet(dataToExport);
-                const workBook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workBook, workSheet, "Inventario");
+            if (!email || !nombre || serie) {
+                return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
+            }
 
-                const xlsFile = XLSX.write(workBook, { bookType: "xlsx", type: "buffer" });
+            // 1. Generar el Excel (Asumiendo que dataNotFound viene de algún proceso previo o del store)
+            const dataToExport = store.inventario || []; // Usa los datos reales de la tienda
+            const workSheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workBook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workBook, workSheet, "Inventario");
 
-                // 2. Encolar el email
-                return service.pushToEmailQueue({
+            const xlsFile = XLSX.write(workBook, { bookType: "xlsx", type: "buffer" });
+
+            // 2. Encolar el email
+            const results = service.pushToEmailQueue({
+                email: email,
+                subject: `Inventario - ${nombre}`,
+                template: 'solicitudInventario',
+                variables: {
                     email: email,
-                    subject: `Inventario - ${store.nombre}`,
-                    template: 'solicitudInventario',
-                    variables: {
-                        email: email,
-                        tienda: store.nombre,
-                        fecha: new Date().toLocaleDateString('es-PE')
-                    },
-                    archivo: {
-                        filename: `inventario_${store.serie || 'reporte'}.xlsx`,
-                        content: xlsFile
-                    }
-                });
+                    tienda: nombre,
+                    fecha: new Date().toLocaleDateString('es-PE')
+                },
+                archivo: {
+                    filename: `inventario_${store.serie || 'reporte'}.xlsx`,
+                    content: xlsFile
+                }
             });
 
-            // Esperamos a que todas las promesas se resuelvan
-            const results = await Promise.all(emailPromises);
 
             // Respondemos UNA sola vez al finalizar todo
             return res.status(200).json({
@@ -111,13 +106,13 @@ export const storeController = {
     },
 
     callSendInventoryStoreEmail: async (req, res) => {
-        const { email, serieStore } = req.body; 
+        const { email, serieStore } = req.body;
         try {
             if (!serieStore.length || !email) {
                 return res.json({ message: 'Email y Serie de tienda son requeridos' });
             }
 
-            serieStore.map( (store) => {
+            serieStore.map((store) => {
                 getIO().to(store.serie).emit('py_request_inventory', { email: email });
             });
 
