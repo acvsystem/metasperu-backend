@@ -57,8 +57,9 @@ export const storeController = {
                     fecha: new Date().toLocaleDateString('es-PE')
                 },
                 archivo: {
-                    filename: `inventario_${serie || 'reporte'}.xlsx`,
-                    content: xlsFile
+                    filename: `inventario_${nombre || 'reporte'}.xlsx`,
+                    content: Buffer.from(xlsFile),
+                    contentType: 'application/octet-stream'
                 }
             });
 

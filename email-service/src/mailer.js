@@ -40,12 +40,7 @@ export const mailer = {
 
 
         if (archivo != null) {
-            (mail || {}).attachments = [
-                {
-                    content: Buffer.from(archivo),
-                    contentType: 'application/octet-stream',
-                }
-            ]
+            (mail || {}).attachments = [archivo]
         }
 
         await transporter.sendMail(mail);
