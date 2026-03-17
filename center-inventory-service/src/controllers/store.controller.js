@@ -111,13 +111,13 @@ export const storeController = {
     },
 
     callSendInventoryStoreEmail: async (req, res) => {
-        const { email, serieStore } = req.body; // Viene de la URL /inventory/:marca
+        const { email, serieStore } = req.body; 
         try {
             if (!serieStore.length || !email) {
                 return res.json({ message: 'Email y Serie de tienda son requeridos' });
             }
 
-            stores.map( (store) => {
+            serieStore.map( (store) => {
                 getIO().to(store.serie).emit('py_request_inventory', { email: email });
             });
 
