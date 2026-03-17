@@ -34,7 +34,7 @@ export const storeController = {
 
         try {
 
-            if (!email || !nombre || !serie) {
+            if (!stockData || !email || !nombre || !serie) {
                 return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
             }
 
@@ -57,7 +57,7 @@ export const storeController = {
                     fecha: new Date().toLocaleDateString('es-PE')
                 },
                 archivo: {
-                    filename: `inventario_${store.serie || 'reporte'}.xlsx`,
+                    filename: `inventario_${serie || 'reporte'}.xlsx`,
                     content: xlsFile
                 }
             });
