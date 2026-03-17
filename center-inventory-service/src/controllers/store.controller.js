@@ -29,11 +29,11 @@ export const storeController = {
 
     postSendInventoryStoreEmail: async (req, res) => {
         const { email, nombre, serie } = req.body;
-        console.log("Solicitud de envío de inventario a email:", email, serie);
+        console.log("Solicitud de envío de inventario a email:", email, nombre, serie);
 
         try {
 
-            if (!email || !nombre || serie) {
+            if (!email || !nombre || !serie) {
                 return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
             }
 
