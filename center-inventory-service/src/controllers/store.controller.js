@@ -80,7 +80,7 @@ export const storeController = {
         const { marca } = req.params;
         try {
             console.log(`📢 Pidiendo inventario a todas las tiendas de: ${marca}`);
-            getIO().to(marca).emit('py_request_inventory', { email: "" }); // El email es opcional aquí, solo queremos que respondan con su stock actual
+            getIO().to(marca).emit('py_request_inventory', { email: "ss" }); // El email es opcional aquí, solo queremos que respondan con su stock actual
             res.json({ message: 'Se emitio señal de comprobacion.', online: await getActiveStoresByBrand(marca) });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
