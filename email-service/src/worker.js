@@ -6,7 +6,7 @@ async function startWorker() {
     try {
         // 1. Conexión al servidor de mensajería (RabbitMQ)
         const connection = await amqp.connect('amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672');
-            const channel = await connection.createChannel();
+        const channel = await connection.createChannel();
 
         const queue = 'email_queue';
 
@@ -25,13 +25,13 @@ async function startWorker() {
             if (msg !== null) {
                 const payload = JSON.parse(msg.content.toString());
                 console.log(`[📩 Nuevo mensaje] Payload recibido:`, payload);
-                const { to, subject, template, context } = payload;
+                const { to, subject, template, context, archivo } = payload;
 
                 console.log(`[📩 Procesando] Enviando correo a: ${to} - Plantilla: ${template}`);
 
                 try {
                     // Llamamos a la función de mailer.js que configuramos antes
-                    await mailer.sendMail(to, subject, template, context);
+                    await mailer.sendMail(to, subject, template, context, archivo);
 
                     // Confirmar que el mensaje fue procesado con éxito
                     channel.ack(msg);

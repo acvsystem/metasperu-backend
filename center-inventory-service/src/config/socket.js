@@ -33,6 +33,7 @@ export const initSocket = (server) => {
 
         // Registro de tienda
         socket.on('py_register_store', (info) => {
+            socket.join(info.id); // Unimos la tienda a una "sala" por su ID única
             socket.join(info.marca); // Unimos la tienda a una "sala" por marca
             socket.tiendaId = info.id;
             console.log(`🏪 Tienda ${info.nombre} registrada en sala ${info.marca}`);

@@ -6,6 +6,8 @@ const router = Router();
 
 // --- RUTAS PARA INVENTARIO TIENDAS
 router.post('/api/inventory/store', storeController.postReqInventory);
+router.post('/api/inventory/send/email', storeController.postSendInventoryStoreEmail);
+router.post('/api/inventory/application/inventary/email', storeController.callSendInventoryStoreEmail);
 router.get('/api/inventory/store/:marca', storeController.callInventoryStore);
 router.get('/api/inventory/consolidated/:marca/:serieStore', storeController.getConsolidatedInventory);
 export default router;

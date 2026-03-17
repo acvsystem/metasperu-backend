@@ -25,16 +25,30 @@ transporter.use('compile', hbs({
     extName: '.hbs'
 }));
 
-
 export const mailer = {
-    sendMail: async (to, subject, template, context) => {
-        await transporter.sendMail({
+    sendMail: async (to, subject, template, context, archivo = null) => {
+
+
+        let mail = {
             from: '"Metas Perú" <noreply@metasperu.com>',
-            to,
-            subject,
-            template, // nombre del archivo .hbs
-            context   // variables para el HTML (nombre del usuario, etc)
-        });
+            to: to,
+            subject: `${subject}`,
+            template: template,
+            context: context,
+            attachments: []
+        }
+
+
+        if (archivo != null) {
+            (mail || {}).attachments = [
+                {
+                    content: Buffer.from(archivo),
+                    contentType: 'application/octet-stream',
+                }
+            ]
+        }
+
+        await transporter.sendMail(mail);
     }
 }
 

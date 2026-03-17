@@ -2,7 +2,7 @@ import amqp from 'amqplib';
 
 export const emailService = {
 
-    async pushToEmailQueue(data) {
+    async pushToEmailQueue(data, archivo = null) {
         console.log("Enviando mensaje a la cola de correos:", data);
         const conn = await amqp.connect('amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672');
         const channel = await conn.createChannel();
@@ -25,6 +25,9 @@ export const emailService = {
 
         console.log("Mensaje enviado a la cola de correos");
         setTimeout(() => conn.close(), 500);
+
+        return "Los correos se enviaron a la cola de envios"; // Puedes retornar algo si quieres confirmar que se envió a la cola
+
     }
 
 }

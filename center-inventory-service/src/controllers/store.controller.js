@@ -1,4 +1,5 @@
 import { getIO } from '../config/socket.js';
+import * as XLSX from 'xlsx';
 
 const inventariosPorMarca = new Map();
 
@@ -23,6 +24,57 @@ export const storeController = {
             res.status(200).json({ message: 'Procesando...' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
+        }
+    },
+
+    postSendInventoryStoreEmail: async (req, res) => {
+        const { email, stores } = req.body;
+
+        // Validación temprana
+        if (!stores || !Array.isArray(stores) || stores.length === 0) {
+            return res.status(400).json({ message: 'No se proporcionaron sedes válidas.' });
+        }
+
+        try {
+            // Usamos Promise.all para procesar todas las tiendas en paralelo de forma correcta
+            const emailPromises = stores.map(async (store) => {
+
+                // 1. Generar el Excel (Asumiendo que dataNotFound viene de algún proceso previo o del store)
+                const dataToExport = store.inventario || []; // Usa los datos reales de la tienda
+                const workSheet = XLSX.utils.json_to_sheet(dataToExport);
+                const workBook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workBook, workSheet, "Inventario");
+
+                const xlsFile = XLSX.write(workBook, { bookType: "xlsx", type: "buffer" });
+
+                // 2. Encolar el email
+                return service.pushToEmailQueue({
+                    email: email,
+                    subject: `Inventario - ${store.nombre}`,
+                    template: 'solicitudInventario',
+                    variables: {
+                        tienda: store.nombre,
+                        fecha: new Date().toLocaleDateString('es-PE')
+                    },
+                    archivo: {
+                        filename: `inventario_${store.serie || 'reporte'}.xlsx`,
+                        content: xlsFile
+                    }
+                });
+            });
+
+            // Esperamos a que todas las promesas se resuelvan
+            const results = await Promise.all(emailPromises);
+
+            // Respondemos UNA sola vez al finalizar todo
+            return res.status(200).json({
+                message: 'Correos encolados exitosamente',
+                detalles: results
+            });
+
+        } catch (error) {
+            console.error('Error en postSendInventoryStoreEmail:', error);
+            return res.status(500).json({ message: 'Error al procesar el envío de inventarios' });
         }
     },
 
@@ -51,6 +103,25 @@ export const storeController = {
                 serie: serieStore,
                 inventory: consolidated,
                 online: await getActiveStoresByBrand(marca)
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error', error });
+        }
+    },
+
+    callSendInventoryStoreEmail: async (req, res) => {
+        const { email, serieStore } = req.body; // Viene de la URL /inventory/:marca
+        try {
+            if (!serieStore.length || !email) {
+                return res.json({ message: 'Email y Serie de tienda son requeridos' });
+            }
+
+            stores.map( (store) => {
+                getIO().to(store.serie).emit('py_request_inventory', { email: email });
+            });
+
+            res.json({
+                message: 'Se realizo la solicitud de envio de inventario.'
             });
         } catch (error) {
             res.status(500).json({ message: 'Error', error });
