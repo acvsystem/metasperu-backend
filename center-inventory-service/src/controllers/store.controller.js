@@ -53,6 +53,7 @@ export const storeController = {
                     subject: `Inventario - ${store.nombre}`,
                     template: 'solicitudInventario',
                     variables: {
+                        email: email,
                         tienda: store.nombre,
                         fecha: new Date().toLocaleDateString('es-PE')
                     },
