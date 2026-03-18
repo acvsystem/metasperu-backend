@@ -9,6 +9,6 @@ router.post('/api/asistence/employes/store', storeController.callAsistenceEmploy
 router.post('/api/asistence/employes/store/response', storeController.postAsistenciaEmployesStore);
 
 // --- RUTAS REGISTRO EMPLEADOS EJB ---
-router.post('/api/asistence/ejb/register/employes', storeController.callRegisterEmployesStore);
+router.get('/api/asistence/ejb/register/employes', storeController.callRegisterEmployesStore);
 router.post('/api/asistence/ejb/register/employes/response', storeController.postEjbRegisterEmployes);
 export default router;

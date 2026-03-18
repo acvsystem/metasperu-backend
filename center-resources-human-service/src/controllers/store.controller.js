@@ -17,14 +17,8 @@ export const storeController = {
         }
     },
     callRegisterEmployesStore: async (req, res) => {
-        const { data } = req.body;
-
-        if (!data) {
-            return res.status(400).json({ message: 'Data es requerido' });
-        }
-
         try {
-            getIO().to('servidor_ejb').emit('py_registro_empleados', { fecha, tipoConsulta });
+            getIO().to('servidor_ejb').emit('py_registro_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
