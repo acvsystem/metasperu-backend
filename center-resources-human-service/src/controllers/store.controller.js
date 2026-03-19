@@ -56,8 +56,16 @@ export const storeController = {
         }
 
         try {
-
-            arDataAsistenciaEmpleados[0].ejb = data;
+            const empleadosUnicos = Array.from(
+                new Map(
+                    data.map(empleado => [
+                        empleado.NUMDOC.trim(), // La llave del Map será el DNI limpio
+                        empleado                // El valor será el objeto completo
+                    ])
+                ).values()
+            );
+            
+            arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
