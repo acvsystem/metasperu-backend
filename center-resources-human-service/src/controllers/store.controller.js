@@ -41,6 +41,7 @@ export const storeController = {
 
         try {
             arDataAsistenciaEmpleados[0][`${propertyUnique}`] = data;
+            console.log(arDataAsistenciaEmpleados);
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
