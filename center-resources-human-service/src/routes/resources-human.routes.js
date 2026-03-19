@@ -7,7 +7,7 @@ const router = Router();
 // --- RUTAS ASISTENCIA EMPLEADOS ---
 router.post('/api/asistence/employes/store', storeController.callAsistenceEmployesStore);
 router.post('/api/asistence/employes/store/response', storeController.postAsistenciaEmployesStore);
-router.get('/api/asistence/employes/store/refresh', storeController.getRefresAsistenciaEmpleados);
+router.post('/api/asistence/employes/store/refresh', storeController.postRefresAsistenciaEmpleados);
 
 // --- RUTAS REGISTRO EMPLEADOS EJB ---
 router.get('/api/asistence/ejb/register/employes', storeController.callRegisterEmployesStore);

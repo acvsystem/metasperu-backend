@@ -64,8 +64,7 @@ export const storeController = {
             res.status(500).json({ message: 'Error interno' });
         }
     },
-    getRefresAsistenciaEmpleados: (req, res) => {
-        console.log(req);
+    postRefresAsistenciaEmpleados: (req, res) => {
         const { property } = req.params;
 
         try {
