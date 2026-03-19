@@ -64,19 +64,20 @@ export const storeController = {
             res.status(500).json({ message: 'Error interno' });
         }
     },
-    getRefresAsistenciaEmpleados: async (req, res) => {
-        const { property } = req.params;
+    getRefresAsistenciaEmpleados: (req, res) => {
         console.log(req);
+        const { property } = req.params;
+
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
-                
+
                 if (key == property || key == 'ejb') {
                     response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
                 }
             }
 
-            
+
             res.status(200).json({ asistencia: response });
             delete arDataAsistenciaEmpleados[0][property];
         } catch (error) {
