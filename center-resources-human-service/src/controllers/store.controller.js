@@ -66,10 +66,11 @@ export const storeController = {
     },
     getRefresAsistenciaEmpleados: async (req, res) => {
         const { property } = req.params;
+        console.log(req);
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
-                console.log(key,property);
+                
                 if (key == property || key == 'ejb') {
                     response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
                 }
