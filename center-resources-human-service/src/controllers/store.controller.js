@@ -85,6 +85,7 @@ export const storeController = {
                     data: currentData[key]
                 }));
 
+            console.log(response);
             // 3. Responder al cliente
             res.status(200).json({ asistencia: response });
 
