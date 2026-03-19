@@ -71,7 +71,7 @@ export const storeController = {
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
-
+                console.log(key);
                 if (key == property || key == 'ejb') {
                     response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
                 }
