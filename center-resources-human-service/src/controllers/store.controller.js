@@ -1,7 +1,12 @@
 import { getIO } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 
+const arDataAsistenciaEmpleados = [{
+    ejb: []
+}];
+
 export const storeController = {
+
     callAsistenceEmployesStore: async (req, res) => {
         const { fecha, tipoConsulta } = req.body; // Asegúrate que Python envíe la marca
 
@@ -10,14 +15,17 @@ export const storeController = {
         }
 
         try {
-            getIO().to('servidor_backup').emit('py_asistencia_empleados', { fecha, tipoConsulta });
-            res.status(200).json({ message: 'Se envio la solicitud con exito' });
+            const propertyUnique = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            getIO().to('servidor_backup').emit('py_asistencia_empleados', { fecha, tipoConsulta, propertyUnique });
+            res.status(200).json({ property: propertyUnique, message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
         }
     },
     callRegisterEmployesStore: async (req, res) => {
         try {
+
             getIO().to('servidor_ejb').emit('py_registro_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
@@ -25,14 +33,15 @@ export const storeController = {
         }
     },
     postAsistenciaEmployesStore: async (req, res) => {
-        const { data } = req.body;
+        const { propertyUnique, data } = req.body;
 
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
         }
 
         try {
-            getIO().emit('dashboard_asistencia_empleados', { asistencia: data });
+            arDataAsistenciaEmpleados[0][`${propertyUnique}`] = data;
+            getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
@@ -47,8 +56,26 @@ export const storeController = {
         }
 
         try {
-            getIO().emit('dashboard_asistencia_empleados', { asistencia: data });
+
+            arDataAsistenciaEmpleados[0].ejb = data;
+            getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error interno' });
+        }
+    },
+    getRefresAsistenciaEmpleados: async (req, res) => {
+        const { property } = req.params;
+        try {
+            const response = [];
+            for (const key in arDataAsistenciaEmpleados[0]) {
+                if (key == property || key == 'ejb') {
+                    response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
+                }
+            }
+
+            delete arDataAsistenciaEmpleados[0][property];
+            res.status(200).json({ asistencia: response });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
         }
