@@ -69,12 +69,13 @@ export const storeController = {
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
+                console.log(key,property);
                 if (key == property || key == 'ejb') {
                     response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
                 }
             }
 
-            console.log(arDataAsistenciaEmpleados);
+            
             res.status(200).json({ asistencia: response });
             delete arDataAsistenciaEmpleados[0][property];
         } catch (error) {
