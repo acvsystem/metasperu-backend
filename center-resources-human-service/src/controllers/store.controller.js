@@ -67,19 +67,36 @@ export const storeController = {
     },
     getRefresAsistenciaEmpleados: async (req, res) => {
         const { property } = req.params;
+
         try {
-            const response = [];
-            for (const key in arDataAsistenciaEmpleados[0]) {
-                if (key == property || key == 'ejb') {
-                    response.push({ property: key, data: arDataAsistenciaEmpleados[0][key] });
-                }
+            // 1. Validación de seguridad (Early Return)
+            const currentData = arDataAsistenciaEmpleados[0];
+            if (!currentData) {
+                return res.status(200).json({ asistencia: [] });
             }
 
-            console.log('getRefresAsistenciaEmpleados', arDataAsistenciaEmpleados);
-            delete arDataAsistenciaEmpleados[0][property];
+            // 2. Construcción de respuesta eficiente
+            // Solo incluimos la propiedad solicitada y 'ejb' si existen
+            const keysToInclude = [property, 'ejb'];
+            const response = keysToInclude
+                .filter(key => currentData.hasOwnProperty(key))
+                .map(key => ({
+                    property: key,
+                    data: currentData[key]
+                }));
+
+            // 3. Responder al cliente
             res.status(200).json({ asistencia: response });
+
+            // 4. Limpieza de memoria (Side Effect)
+            // Solo borramos si la propiedad no es la base 'ejb' (opcional, según tu lógica)
+            if (property !== 'ejb') {
+                delete currentData[property];
+            }
+
         } catch (error) {
-            res.status(500).json({ message: 'Error interno' });
+            console.error('Error en Refresh Asistencia:', error);
+            res.status(500).json({ message: 'Error interno del servidor' });
         }
     }
 };
