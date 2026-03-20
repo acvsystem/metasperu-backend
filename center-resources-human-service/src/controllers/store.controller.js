@@ -245,15 +245,14 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 1. Filtrar marcaciones de este empleado
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
-        if(susMarcaciones.length === 0){
-            return;
-        }
+
         // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
             acc[curr.dia].push(curr);
             return acc;
         }, {});
+
 
         // 3. Procesar cada día (esto es lo que consulta a la DB)
         const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
@@ -287,12 +286,14 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-            return analizarMetricasMadrugada(registro, registro.entradaOficial);
+            if (analizarMetricasMadrugada(registro, registro.entradaOficial).length > 0) {
+                return analizarMetricasMadrugada(registro, registro.entradaOficial);
+            }
         }));
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
-        
+
         return asistenciaDiaria;
     }));
 
