@@ -42,7 +42,7 @@ export const storeController = {
 
         try {
 
-            console.log(arDataAsistenciaEmpleados);
+            console.log(procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data));
             arDataAsistenciaEmpleados[0][`${propertyUnique}`] = procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data);
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
@@ -260,6 +260,6 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         };
     }));
 
-    console.log(resultadosProcesados);
+    
     return { asistencia: resultadosProcesados };
 };
