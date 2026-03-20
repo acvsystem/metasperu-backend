@@ -89,7 +89,6 @@ export const storeController = {
                 }
             }
 
-            console.log(response);
             res.status(200).json({ asistencia: response });
             delete arDataAsistenciaEmpleados[0][property];
         } catch (error) {
@@ -298,5 +297,5 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     }));
 
 
-    return { asistencia: resultadosProcesados };
+    return resultadosProcesados ;
 };
