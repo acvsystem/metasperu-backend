@@ -234,7 +234,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
-            console.log(fechaSQL, dni, horarioDB);
+
             const registro = {
                 fecha,
                 entrada: b1.hrIn,
@@ -248,7 +248,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
-
+        console.log(asistenciaDiaria);
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
         return {
