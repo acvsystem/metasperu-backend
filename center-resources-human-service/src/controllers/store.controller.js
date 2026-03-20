@@ -200,38 +200,59 @@ const searchHorarioEmpleado = async (fecha, documento) => {
 }
 
 // --- PROCESADOR PRINCIPAL ---
-const procesarReporteBackend = (empleados, marcaciones) => {
-    return empleados.map(emp => {
+const procesarReporteBackend = async (empleados, marcaciones) => {
+    console.log("Iniciando procesamiento de", empleados.length, "empleados...");
+
+    // 1. Usamos Promise.all para esperar a que todos los mapas asíncronos terminen
+    const reporteCompleto = await Promise.all(empleados.map(async (emp) => {
         const dni = emp.NUMDOC.trim();
-
-
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
 
+        // Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
             acc[curr.dia].push(curr);
             return acc;
         }, {});
 
-        const asistenciaDiaria = Object.keys(grupos).map(async fecha => {
+        // 2. Procesamos cada día de forma asíncrona
+        const diasProcesados = await Promise.all(Object.keys(grupos).map(async (fecha) => {
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
-            const b1 = lista[0] || {};
-            const b2 = lista[1] || {};
-            const horaDBServidor = await searchHorarioEmpleado(b1.dia, b1.nroDocumento) || '08:00:00';
+
+            const b1 = lista[0] || null;
+            const b2 = lista[1] || null;
+
+            if (!b1) return null; // Saltar si no hay datos
+
+            // IMPORTANTE: Convertir fecha '2026-03-20' a '20260320' para tu FECHA_NUMBER
+            const fechaParaDB = fecha.replace(/-/g, '');
+
+            // ESPERAR a la base de datos
+            const horarioDB = await searchHorarioEmpleado(fechaParaDB, dni);
 
             const registro = {
                 fecha,
                 entrada: b1.hrIn,
-                salidaBreak: b1.hrOut,
-                retornoBreak: b2.hrIn,
-                salidaFinal: b2.hrOut,
-                entradaOficial: horaDBServidor.entradaOficial || "09:30",
-                rango: horaDBServidor.rango || "09:30 a 18:30"
+                salidaBreak: b1.hrOut || '--:--:--',
+                retornoBreak: b2 ? b2.hrIn : '--:--:--',
+                salidaFinal: b2 ? b2.hrOut : b1.hrOut,
+                entradaOficial: horarioDB.entradaOficial || "08:00",
+                rango: horarioDB.rango || "Sin horario"
             };
 
-            return analizarMetricasMadrugada(registro, horaDBServidor.entradaOficial);
-        });
+            // Calcular métricas (Tardanza, Horas, etc.)
+            return analizarMetricasMadrugada(registro, registro.entradaOficial);
+        }));
 
-        return { ...emp, NUMDOC: dni, asistenciaDiaria };
-    });
+        // Limpiar días nulos
+        const asistenciaDiaria = diasProcesados.filter(d => d !== null);
+
+        return {
+            ...emp,
+            NUMDOC: dni,
+            asistenciaDiaria
+        };
+    }));
+
+    return reporteCompleto;
 };
