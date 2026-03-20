@@ -268,7 +268,12 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
 
             const registro = {
-                fecha,
+                documento: emp.NUMDOC,
+                nombre: b1.nombreCompleto,
+                ejb: emp.CODEJB,
+                tienda: emp.UNDSERVICIO,
+                dia: fecha,
+                fecha: fecha,
                 entrada: b1.hrIn,
                 salidaBreak: b1.hrOut || '--:--:--',
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
