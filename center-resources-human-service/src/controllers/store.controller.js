@@ -298,5 +298,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     }));
 
 
-    return resultadosProcesados;
+    if (resultadosProcesados.length > 0) {
+        return resultadosProcesados;
+    }
 };
