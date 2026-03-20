@@ -290,9 +290,13 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
-        return asistenciaDiaria;
+
+        if (asistenciaDiaria.length > 0) {
+            return asistenciaDiaria;
+        }
+
     }));
 
 
-    return { asistencia: resultadosProcesados };
+    return resultadosProcesados;
 };
