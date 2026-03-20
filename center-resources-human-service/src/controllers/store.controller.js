@@ -44,9 +44,9 @@ export const storeController = {
 
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                console.log(asistencia);
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
             });
+
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
@@ -168,6 +168,34 @@ const fmt = (min) => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
 
+
+const searchPapeletaEmpleado = async (fecha, documento) => {
+    try {
+        const query = `
+            SELECT CODIGO_PAPELETA FROM TB_HEAD_PAPELETA 
+            WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
+        `;
+
+        const [rows] = await pool.query(query, [documento.trim(), fecha]);
+
+        if (rows && rows.length > 0) {
+            const rangoCompleto = rows[0].CODIGO_PAPELETA;
+
+            return {
+                codigoPapeleta: rangoCompleto || "",
+                isPapeleta: rangoCompleto.length > 0 ? true : false
+            };
+        }
+
+        return { codigoPapeleta: "", isPapeleta: false }; // Valor por defecto
+
+    } catch (error) {
+        console.error("Error en searchPapeletaEmpleado:", error);
+        return { codigoPapeleta: "", isPapeleta: false };
+    }
+}
+
+
 const searchHorarioEmpleado = async (fecha, documento) => {
     try {
         const query = `
@@ -237,6 +265,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
+            const papeletaDB = await searchPapeletaEmpleado(fechaSQL, dni);
 
             const registro = {
                 fecha,
@@ -245,7 +274,9 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
                 salidaFinal: b2 ? b2.hrOut : b1.hrOut,
                 entradaOficial: horarioDB.entradaOficial || "08:30",
-                rango: horarioDB.rango || "Sin Horario"
+                rango: horarioDB.rango || "Sin Horario",
+                codigoPapeleta: papeletaDB.codigoPapeleta || "",
+                isPapeleta: papeletaDB.isPapeleta ? true : false
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
