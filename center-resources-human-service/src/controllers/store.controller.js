@@ -44,7 +44,6 @@ export const storeController = {
 
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                console.log(asistencia);
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
             });
 
@@ -101,8 +100,8 @@ export const storeController = {
 
 
 const CONFIG = {
-    MIN_TOLERANCIA_ENTRADA: 10,
-    MIN_BREAK_PERMITIDO: 45,
+    MIN_TOLERANCIA_ENTRADA: 5,
+    MIN_BREAK_PERMITIDO: 60,
     MIN_TOLERANCIA_BREAK: 5,
     HORAS_LABORALES_META: 8
 };
