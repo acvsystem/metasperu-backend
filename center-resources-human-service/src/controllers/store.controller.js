@@ -245,7 +245,9 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 1. Filtrar marcaciones de este empleado
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
-
+        if(susMarcaciones.length === 0){
+            return;
+        }
         // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
@@ -290,15 +292,10 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
-
-        if (asistenciaDiaria.length > 0 && asistenciaDiaria != null) {
-            return asistenciaDiaria;
-        }
-
+        
+        return asistenciaDiaria;
     }));
 
 
-    if (resultadosProcesados.length > 0 && resultadosProcesados != null) {
-        return resultadosProcesados;
-    }
+    return resultadosProcesados;
 };
