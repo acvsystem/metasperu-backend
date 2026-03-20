@@ -44,6 +44,7 @@ export const storeController = {
 
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
+                console.log(asistencia);
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
             });
 
