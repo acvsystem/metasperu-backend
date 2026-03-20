@@ -42,8 +42,11 @@ export const storeController = {
 
         try {
 
-            console.log(procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data));
-            arDataAsistenciaEmpleados[0][`${propertyUnique}`] = procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data);
+
+            procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
+                console.log(asistencia);
+                arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
+            });
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
@@ -248,7 +251,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
-        
+
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
         return {
@@ -260,6 +263,6 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         };
     }));
 
-    
+
     return { asistencia: resultadosProcesados };
 };
