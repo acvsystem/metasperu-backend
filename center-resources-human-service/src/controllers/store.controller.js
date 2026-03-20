@@ -40,8 +40,8 @@ export const storeController = {
         }
 
         try {
-            
 
+            console.log(data);
             arDataAsistenciaEmpleados[0][`${propertyUnique}`] = procesarAsistencia(arDataAsistenciaEmpleados[0][`ejb`], data);
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
