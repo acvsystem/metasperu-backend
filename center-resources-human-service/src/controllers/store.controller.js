@@ -199,6 +199,13 @@ const searchHorarioEmpleado = async (fecha, documento) => {
     }
 }
 
+const formatearFechaParaDB = (fechaISO) => {
+    // fechaISO viene como "2025-01-27"
+    const [anio, mes, dia] = fechaISO.split('-');
+    // Retornamos "27-1-2025" (quitando ceros a la izquierda del mes/día si es necesario)
+    return `${parseInt(dia)}-${parseInt(mes)}-${anio}`;
+};
+
 // --- PROCESADOR PRINCIPAL ---
 const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     // Usamos Promise.all para manejar la asincronía de la DB
@@ -223,7 +230,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const b2 = lista[1] || null;
 
             // Formatear fecha para el query (QUITAR GUIONES: 2026-03-20 -> 20260320)
-            const fechaSQL = fecha.replace(/-/g, '');
+            const fechaSQL = formatearFechaParaDB(fecha.replace(/-/g, ''));
 
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
