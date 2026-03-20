@@ -248,17 +248,18 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
-        console.log(asistenciaDiaria);
+        
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
         return {
             property: emp.CODEJB ? emp.CODEJB.trim() : dni,
             data: {
                 ...emp,
-                asistenciaDiaria: asistenciaDiaria.filter(d => d !== null)
+                asistenciaDiaria: asistenciaDiaria
             }
         };
     }));
 
+    console.log(resultadosProcesados);
     return { asistencia: resultadosProcesados };
 };
