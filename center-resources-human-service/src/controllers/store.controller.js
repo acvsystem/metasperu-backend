@@ -175,7 +175,7 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
             SELECT CODIGO_PAPELETA FROM TB_HEAD_PAPELETA 
             WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
         `;
-
+        console.log(documento.trim(), fecha);
         const [rows] = await pool.query(query, [documento.trim(), fecha]);
 
         if (rows && rows.length > 0) {
@@ -245,14 +245,13 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 1. Filtrar marcaciones de este empleado
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
- 
+
         // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
             acc[curr.dia].push(curr);
             return acc;
         }, {});
-
 
         // 3. Procesar cada día (esto es lo que consulta a la DB)
         const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
@@ -286,16 +285,20 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-            console.log(analizarMetricasMadrugada(registro, registro.entradaOficial));
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
-        
-        return asistenciaDiaria;
+        return {
+            property: emp.CODEJB ? emp.CODEJB.trim() : dni,
+            data: {
+                ...emp,
+                asistenciaDiaria: asistenciaDiaria
+            }
+        };
     }));
 
 
-    return resultadosProcesados;
+    return { asistencia: resultadosProcesados };
 };
