@@ -289,10 +289,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         // Usamos el código de empleado o DNI como "property"
         return {
             property: emp.CODEJB ? emp.CODEJB.trim() : dni,
-            data: {
-                ...emp,
-                asistenciaDiaria: asistenciaDiaria
-            }
+            data:asistenciaDiaria            
         };
     }));
 
