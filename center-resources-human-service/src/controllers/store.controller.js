@@ -175,7 +175,7 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
             SELECT CODIGO_PAPELETA FROM TB_HEAD_PAPELETA 
             WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
         `;
-
+        console.log(documento.trim(), fecha);
         const [rows] = await pool.query(query, [documento.trim(), fecha]);
 
         if (rows && rows.length > 0) {
