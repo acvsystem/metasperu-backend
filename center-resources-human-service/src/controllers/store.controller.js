@@ -153,11 +153,9 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
         ...dia,
         tiempoBreak: fmt(minBreak),
         horasEfectivas: fmt(minTrabajados),
-        alertas: {
-            tardanza: esTardanza,
-            excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
-            jornadaIncompleta: (minTrabajados / 60) < CONFIG.HORAS_LABORALES_META
-        }
+        tardanza: esTardanza,
+        excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
+        jornadaIncompleta: (minTrabajados / 60) < CONFIG.HORAS_LABORALES_META
     };
 };
 
