@@ -230,7 +230,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const b2 = lista[1] || null;
 
             // Formatear fecha para el query (QUITAR GUIONES: 2026-03-20 -> 20260320)
-            const fechaSQL = formatearFechaParaDB(fecha.replace(/-/g, ''));
+            const fechaSQL = formatearFechaParaDB(fecha);
 
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
