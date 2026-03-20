@@ -80,7 +80,7 @@ export const storeController = {
     },
     postRefresAsistenciaEmpleados: (req, res) => {
         const { property } = req.body;
-        console.log(property);
+        
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
@@ -89,7 +89,7 @@ export const storeController = {
                 }
             }
 
-
+            console.log(response);
             res.status(200).json({ asistencia: response });
             delete arDataAsistenciaEmpleados[0][property];
         } catch (error) {
