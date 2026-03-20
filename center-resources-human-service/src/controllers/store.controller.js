@@ -1,5 +1,6 @@
 import { getIO } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
+import { pool } from '../config/db.js';
 
 const arDataAsistenciaEmpleados = [{
     ejb: []
