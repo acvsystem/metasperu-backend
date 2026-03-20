@@ -200,11 +200,10 @@ const searchHorarioEmpleado = async (fecha, documento) => {
 }
 
 // --- PROCESADOR PRINCIPAL ---
-const procesarReporteBackend = (empleados, marcaciones) => {
-    return empleados.map(emp => {
+const procesarReporteBackend = async (empleados, marcaciones) => {
+    // Usamos Promise.all porque ahora el map devolverá una lista de promesas
+    const reporteCompleto = await Promise.all(empleados.map(async (emp) => {
         const dni = emp.NUMDOC.trim();
-
-
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
 
         const grupos = susMarcaciones.reduce((acc, curr) => {
@@ -213,11 +212,15 @@ const procesarReporteBackend = (empleados, marcaciones) => {
             return acc;
         }, {});
 
-        const asistenciaDiaria = Object.keys(grupos).map(fecha => {
+        // También necesitamos Promise.all para los días, ya que cada día consulta a la DB
+        const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
             const b1 = lista[0] || {};
             const b2 = lista[1] || {};
-            const horaDBServidor = searchHorarioEmpleado(b1.dia, b1.nroDocumento) || '08:00:00';
+
+            // AHORA SÍ: Esperamos la respuesta de la base de datos
+            // b1.dia es la fecha y b1.nroDocumento el DNI
+            const horaDBServidor = await searchHorarioEmpleado(fecha.replace(/-/g, ''), dni);
 
             const registro = {
                 fecha,
@@ -225,13 +228,17 @@ const procesarReporteBackend = (empleados, marcaciones) => {
                 salidaBreak: b1.hrOut,
                 retornoBreak: b2.hrIn,
                 salidaFinal: b2.hrOut,
-                entradaOficial: horaDBServidor.entradaOficial,
-                rango: horaDBServidor.rango
+                // Usamos los valores que vienen de la función que mejoramos antes
+                entradaOficial: horaDBServidor.entradaOficial || "08:30",
+                rango: horaDBServidor.rango || "No definido"
             };
 
-            return analizarMetricasMadrugada(registro, horaDBServidor.entradaOficial);
-        });
+            // Pasamos la hora oficial recuperada de la DB para el cálculo de tardanza
+            return analizarMetricasMadrugada(registro, registro.entradaOficial);
+        }));
 
         return { ...emp, NUMDOC: dni, asistenciaDiaria };
-    });
+    }));
+
+    return reporteCompleto;
 };
