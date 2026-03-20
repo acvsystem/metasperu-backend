@@ -199,36 +199,33 @@ const searchHorarioEmpleado = async (fecha, documento) => {
     }
 }
 
-// --- PROCESADOR PRINCIPAL ---
-const procesarReporteBackend = async (empleados, marcaciones) => {
-    console.log("Iniciando procesamiento de", empleados.length, "empleados...");
-
-    // 1. Usamos Promise.all para esperar a que todos los mapas asíncronos terminen
-    const reporteCompleto = await Promise.all(empleados.map(async (emp) => {
+const procesarAsistenciaFinal = async (empleados, marcaciones) => {
+    // Usamos Promise.all para manejar la asincronía de la DB
+    const resultadosProcesados = await Promise.all(empleados.map(async (emp) => {
         const dni = emp.NUMDOC.trim();
+
+        // 1. Filtrar marcaciones de este empleado
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
 
-        // Agrupar por día
+        // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
             acc[curr.dia].push(curr);
             return acc;
         }, {});
 
-        // 2. Procesamos cada día de forma asíncrona
-        const diasProcesados = await Promise.all(Object.keys(grupos).map(async (fecha) => {
+        // 3. Procesar cada día (esto es lo que consulta a la DB)
+        const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
 
-            const b1 = lista[0] || null;
+            const b1 = lista[0];
             const b2 = lista[1] || null;
 
-            if (!b1) return null; // Saltar si no hay datos
+            // Formatear fecha para el query (QUITAR GUIONES: 2026-03-20 -> 20260320)
+            const fechaSQL = fecha.replace(/-/g, '');
 
-            // IMPORTANTE: Convertir fecha '2026-03-20' a '20260320' para tu FECHA_NUMBER
-            const fechaParaDB = fecha.replace(/-/g, '');
-
-            // ESPERAR a la base de datos
-            const horarioDB = await searchHorarioEmpleado(fechaParaDB, dni);
+            // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
+            const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
 
             const registro = {
                 fecha,
@@ -236,23 +233,24 @@ const procesarReporteBackend = async (empleados, marcaciones) => {
                 salidaBreak: b1.hrOut || '--:--:--',
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
                 salidaFinal: b2 ? b2.hrOut : b1.hrOut,
-                entradaOficial: horarioDB.entradaOficial || "08:00",
-                rango: horarioDB.rango || "Sin horario"
+                entradaOficial: horarioDB.entradaOficial || "08:30",
+                rango: horarioDB.rango || "Sin Horario"
             };
 
-            // Calcular métricas (Tardanza, Horas, etc.)
+            // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
 
-        // Limpiar días nulos
-        const asistenciaDiaria = diasProcesados.filter(d => d !== null);
-
+        // 4. RETORNAMOS EL FORMATO QUE NECESITAS
+        // Usamos el código de empleado o DNI como "property"
         return {
-            ...emp,
-            NUMDOC: dni,
-            asistenciaDiaria
+            property: emp.CODEJB ? emp.CODEJB.trim() : dni,
+            data: {
+                ...emp,
+                asistenciaDiaria: asistenciaDiaria.filter(d => d !== null)
+            }
         };
     }));
 
-    return reporteCompleto;
+    return { asistencia: resultadosProcesados };
 };
