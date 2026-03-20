@@ -80,7 +80,7 @@ export const storeController = {
     },
     postRefresAsistenciaEmpleados: (req, res) => {
         const { property } = req.body;
-        
+
         try {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
@@ -172,7 +172,7 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
             SELECT CODIGO_PAPELETA FROM TB_HEAD_PAPELETA 
             WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
         `;
-       
+
         const [rows] = await pool.query(query, [documento.trim(), fecha]);
 
         if (rows && rows.length > 0) {
@@ -297,5 +297,5 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     }));
 
 
-    return { asistencia: resultadosProcesados };
+    return resultadosProcesados;
 };
