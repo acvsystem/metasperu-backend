@@ -56,7 +56,7 @@ export const storeController = {
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
         }
-        
+
         try {
             const empleadosUnicos = Array.from(
                 new Map(
@@ -141,8 +141,8 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     }
 
     // Cálculo de Tardanza
-    const esTardanza = dEntrada && dOficial 
-        ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA 
+    const esTardanza = dEntrada && dOficial
+        ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA
         : false;
 
     return {
@@ -158,20 +158,54 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
 };
 
 const fmt = (min) => {
-    if (min <= 0) return "00h 00m";
+    if (min <= 0) return "00:00";
     const h = Math.floor(min / 60);
     const m = Math.round(min % 60);
-    return `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m`;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
+
+const searchHorarioEmpleado = async (fecha, documento) => {
+    try {
+        const query = `
+            SELECT RH.RANGO_HORA 
+            FROM TB_DIAS_TRABAJO DT
+            INNER JOIN TB_RANGO_HORA RH ON RH.ID_RANGO_HORA = DT.ID_TRB_RANGO_HORA 
+            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DT.ID_TRB_DIAS 
+            WHERE DH.FECHA_NUMBER = ? AND DT.NUMERO_DOCUMENTO = ?
+            LIMIT 1;
+        `;
+
+        const [rows] = await pool.query(query, [fecha, documento.trim()]);
+
+        if (rows && rows.length > 0) {
+            const rangoCompleto = rows[0].RANGO_HORA; // Ejemplo: "08:30 a 17:30"
+
+            // Dividimos por la " a " y tomamos el primer elemento [0]
+            // Usamos .trim() por si hay espacios extra alrededor
+            const horaEntrada = rangoCompleto.split(' a ')[0].trim();
+
+            return {
+                rango: rangoCompleto,
+                entradaOficial: horaEntrada // Esto devolverá "08:30"
+            };
+        }
+
+        return { rango: "", entradaOficial: "08:00" }; // Valor por defecto
+
+    } catch (error) {
+        console.error("Error en searchHorarioEmpleado:", error);
+        return { rango: "", entradaOficial: "08:00" };
+    }
+}
 
 // --- PROCESADOR PRINCIPAL ---
 const procesarReporteBackend = (empleados, marcaciones) => {
     return empleados.map(emp => {
         const dni = emp.NUMDOC.trim();
-        const horaDBServidor = emp.HORA_ENTRADA || '08:00:00';
+
 
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
-        
+
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
             acc[curr.dia].push(curr);
@@ -182,16 +216,19 @@ const procesarReporteBackend = (empleados, marcaciones) => {
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
             const b1 = lista[0] || {};
             const b2 = lista[1] || {};
+            const horaDBServidor = searchHorarioEmpleado(b1.dia, b1.nroDocumento) || '08:00:00';
 
             const registro = {
                 fecha,
                 entrada: b1.hrIn,
                 salidaBreak: b1.hrOut,
                 retornoBreak: b2.hrIn,
-                salidaFinal: b2.hrOut
+                salidaFinal: b2.hrOut,
+                entradaOficial: horaDBServidor.entradaOficial,
+                rango: horaDBServidor.rango
             };
 
-            return analizarMetricasMadrugada(registro, horaDBServidor);
+            return analizarMetricasMadrugada(registro, horaDBServidor.entradaOficial);
         });
 
         return { ...emp, NUMDOC: dni, asistenciaDiaria };
