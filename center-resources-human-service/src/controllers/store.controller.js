@@ -44,7 +44,6 @@ export const storeController = {
 
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                console.log(asistencia);
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
             });
 
@@ -287,7 +286,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-
+            console.log(analizarMetricasMadrugada(registro, registro.entradaOficial));
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
 
