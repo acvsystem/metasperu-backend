@@ -56,7 +56,7 @@ export const storeController = {
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
         }
-
+        console.log(data);
         try {
             const empleadosUnicos = Array.from(
                 new Map(
