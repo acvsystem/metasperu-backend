@@ -44,7 +44,12 @@ export const storeController = {
 
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
+                asistencia.forEach((row) => {
+                    if (row.length > 0) {
+                        console.log(row);
+                        arDataAsistenciaEmpleados[0][`${propertyUnique}`].push(row);
+                    }
+                });
             });
 
             getIO().emit('dashboard_refresh_empleados');
