@@ -297,5 +297,5 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     }));
 
 
-    return resultadosProcesados ;
+    return { asistencia: resultadosProcesados };
 };
