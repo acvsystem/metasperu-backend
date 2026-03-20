@@ -43,7 +43,7 @@ export const storeController = {
         try {
 
             console.log(arDataAsistenciaEmpleados);
-            arDataAsistenciaEmpleados[0][`${propertyUnique}`] = procesarReporteBackend(arDataAsistenciaEmpleados[0][`ejb`], data);
+            arDataAsistenciaEmpleados[0][`${propertyUnique}`] = procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data);
             getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
@@ -199,11 +199,12 @@ const searchHorarioEmpleado = async (fecha, documento) => {
     }
 }
 
+// --- PROCESADOR PRINCIPAL ---
 const procesarAsistenciaFinal = async (empleados, marcaciones) => {
     // Usamos Promise.all para manejar la asincronía de la DB
     const resultadosProcesados = await Promise.all(empleados.map(async (emp) => {
         const dni = emp.NUMDOC.trim();
-
+        
         // 1. Filtrar marcaciones de este empleado
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
 
@@ -217,13 +218,13 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         // 3. Procesar cada día (esto es lo que consulta a la DB)
         const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
-
+            
             const b1 = lista[0];
             const b2 = lista[1] || null;
 
             // Formatear fecha para el query (QUITAR GUIONES: 2026-03-20 -> 20260320)
             const fechaSQL = fecha.replace(/-/g, '');
-
+            
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
 
@@ -244,7 +245,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
         // Usamos el código de empleado o DNI como "property"
         return {
-            property: emp.CODEJB ? emp.CODEJB.trim() : dni,
+            property: emp.CODEJB ? emp.CODEJB.trim() : dni, 
             data: {
                 ...emp,
                 asistenciaDiaria: asistenciaDiaria.filter(d => d !== null)
