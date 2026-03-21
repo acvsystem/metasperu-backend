@@ -42,14 +42,11 @@ export const storeController = {
 
         try {
 
-
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                console.log(asistencia);
-
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
+                getIO().emit('dashboard_refresh_empleados');
             });
 
-            getIO().emit('dashboard_refresh_empleados');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
