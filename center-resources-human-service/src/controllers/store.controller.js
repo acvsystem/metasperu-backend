@@ -86,7 +86,30 @@ export const storeController = {
             const response = [];
             for (const key in arDataAsistenciaEmpleados[0]) {
                 if (key == property || key == 'ejb') {
-                    response.push({ property: key, data: arDataAsistenciaEmpleados[0][key].flat() });
+
+                    if (key != 'ejb') {
+                        // 1. Aplanamos el array de arrays para tener una lista única de objetos
+                        const asistenciaPlana = arDataAsistenciaEmpleados[0][key].flat().filter(item => item && item.fecha);
+
+                        // 2. Ordenamos por fecha (de la más antigua a la más reciente)
+                        asistenciaPlana.sort((a, b) => {
+                            // Convertimos las fechas a objetos Date para una comparación precisa
+                            const fechaA = new Date(a.fecha);
+                            const fechaB = new Date(b.fecha);
+
+                            // Si las fechas son iguales, podemos ordenar por hora de entrada como segundo criterio
+                            if (fechaA.getTime() === fechaB.getTime()) {
+                                return a.entrada.localeCompare(b.entrada);
+                            }
+
+                            return fechaA - fechaB;
+                        });
+
+                        response.push({ property: key, data: asistenciaPlana });
+                    } else {
+                        response.push({ property: key, data: arDataAsistenciaEmpleados[0][key].flat() });
+                    }
+
                 }
             }
 
