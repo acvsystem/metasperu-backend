@@ -317,8 +317,11 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
             const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
-            console.log(fechaSQL);
+
             const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
+            if (dni == '004176446') {
+                console.log(diaDescanso);
+            }
 
             const registro = {
                 documento: emp.NUMDOC,
