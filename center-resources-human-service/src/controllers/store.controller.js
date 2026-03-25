@@ -299,7 +299,8 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 entradaOficial: horarioDB.entradaOficial || "08:30",
                 rango: horarioDB.rango || "Sin Horario",
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
-                isPapeleta: papeletaDB.isPapeleta ? true : false
+                isPapeleta: papeletaDB.isPapeleta ? true : false,
+                marcaciones: lista
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
