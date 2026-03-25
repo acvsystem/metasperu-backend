@@ -136,7 +136,7 @@ const analizarMetricasLineales = (dia, horaOficial) => {
     // 1. Convertir todas las horas a objetos Date para operar
     // Asumimos que dia.marcaciones es un array: [{hora: "08:00"}, {hora: "10:00"}, ...]
     const marcaciones = dia.marcaciones
-        .map(m => crearFecha(dia.fecha, m.hora))
+        .map(m => crearFecha(dia.fecha, m.hrWorking))
         .sort((a, b) => a - b); // Nos aseguramos que estén en orden cronológico
 
     let minTrabajados = 0;
