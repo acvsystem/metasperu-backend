@@ -132,55 +132,58 @@ const crearFecha = (fechaStr, horaStr) => {
     return new Date(`${fechaStr}T${horaStr}`);
 };
 
-const analizarMetricasLineales = (dia, horaOficial) => {
-    // 1. Convertir todas las horas a objetos Date para operar
-    // Asumimos que dia.marcaciones es un array: [{hora: "08:00"}, {hora: "10:00"}, ...]
-    const marcaciones = dia.marcaciones
-        .map(m => crearFecha(dia.fecha, m.hrWorking))
-        .sort((a, b) => a - b); // Nos aseguramos que estén en orden cronológico
-
-    let minTrabajados = 0;
-    let minBreak = 0;
-
-    // 2. Sumamos bloques de dos en dos (Parejas de Entrada - Salida)
-    for (let i = 0; i < marcaciones.length; i += 2) {
-        const entradaBloque = marcaciones[i];
-        const salidaBloque = marcaciones[i + 1];
-
-        if (entradaBloque && salidaBloque) {
-            const diferencia = (salidaBloque - entradaBloque) / 60000;
-            minTrabajados += diferencia;
+const procesarMarcacionesConsolidadas = (marcacionesRaw, horaOficial) => {
+    // 1. Agrupamos por Empleado + Día para manejar los múltiples bloques
+    const grupos = marcacionesRaw.reduce((acc, curr) => {
+        const key = `${curr.nroDocumento}_${curr.dia}`;
+        if (!acc[key]) {
+            acc[key] = {
+                nroDocumento: curr.nroDocumento,
+                nombreCompleto: curr.nombreCompleto,
+                dia: curr.dia,
+                bloques: []
+            };
         }
-    }
+        acc[key].bloques.push(curr);
+        return acc;
+    }, {});
 
-    // 3. El tiempo de "Break" es el tiempo entre bloques
-    // (Desde la salida del bloque anterior hasta la entrada del siguiente)
-    for (let i = 1; i < marcaciones.length - 1; i += 2) {
-        const salidaAnterior = marcaciones[i];
-        const entradaSiguiente = marcaciones[i + 1];
+    // 2. Procesamos cada grupo para calcular totales
+    return Object.values(grupos).map(grupo => {
+        let minutosTrabajadosTotales = 0;
+        let minutosBreakTotales = 0;
 
-        if (salidaAnterior && entradaSiguiente) {
-            minBreak += (entradaSiguiente - salidaAnterior) / 60000;
-        }
-    }
+        // Ordenamos los bloques por hora de entrada por si acaso
+        const bloquesOrdenados = grupo.bloques.sort((a, b) => a.hrIn.localeCompare(b.hrIn));
 
-    // 4. Cálculo de Tardanza (Solo con la primera marcación del día)
-    const dOficial = crearFecha(dia.fecha, horaOficial);
-    const dPrimeraEntrada = marcaciones[0];
+        bloquesOrdenados.forEach((bloque, index) => {
+            // Sumamos el tiempo trabajado de este bloque (usando tu hrWorking o calculando hrOut - hrIn)
+            // Aquí lo calculamos de nuevo para mayor precisión:
+            const inicio = crearFecha(grupo.dia, bloque.hrIn);
+            const fin = crearFecha(grupo.dia, bloque.hrOut);
+            minutosTrabajadosTotales += (fin - inicio) / 60000;
 
-    const minTardanza = (dPrimeraEntrada && dOficial)
-        ? (dPrimeraEntrada - dOficial) / 60000
-        : 0;
+            // Calculamos el break (espacio entre este bloque y el anterior)
+            if (index > 0) {
+                const finAnterior = crearFecha(grupo.dia, bloquesOrdenados[index - 1].hrOut);
+                minutosBreakTotales += (inicio - finAnterior) / 60000;
+            }
+        });
 
-    return {
-        ...dia,
-        totalMarcaciones: marcaciones.length,
-        tiempoBreak: fmt(minBreak),
-        horasEfectivas: fmt(minTrabajados),
-        tardanza: minTardanza > CONFIG.MIN_TOLERANCIA_ENTRADA,
-        excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
-        jornadaIncompleta: (minTrabajados / 60) < CONFIG.HORAS_LABORALES_META
-    };
+        // 3. Métricas de la primera entrada (Tardanza)
+        const dPrimeraEntrada = crearFecha(grupo.dia, bloquesOrdenados[0].hrIn);
+        const dOficial = crearFecha(grupo.dia, horaOficial);
+        const minTardanza = (dPrimeraEntrada - dOficial) / 60000;
+
+        return {
+            ...dia,
+            horasEfectivas: fmt(minutosTrabajadosTotales), // Formato HH:mm
+            tiempoBreak: Math.round(minutosBreakTotales),
+            excesoBreak: Math.round(minutosBreakTotales) > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
+            tardanza: minTardanza > CONFIG.MIN_TOLERANCIA_ENTRADA,
+            jornadaIncompleta: (minutosTrabajadosTotales / 60) < CONFIG.HORAS_LABORALES_META
+        };
+    });
 };
 
 const fmt = (min) => {
