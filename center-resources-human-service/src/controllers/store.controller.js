@@ -143,7 +143,7 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     // 2. LÓGICA DE CRUCE DE MEDIANOCHE
     // Si la salida es menor que la entrada, le sumamos 1 día a la salida
     if (dSalida && dEntrada && dSalida < dEntrada) {
-        dSalida.setDate(dSalida.getDate() + 1);
+        dSalida.setDate(dSalida.getDate());
     }
     // Lo mismo para el retorno del break si ocurrió de madrugada
     /*  if (dRBr && dSBr && dRBr < dSBr) {
@@ -319,9 +319,6 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
 
             const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
-            if (dni == '004176446') {
-                console.log(diaDescanso, (diaDescanso.descanso || "").length);
-            }
 
             const registro = {
                 documento: emp.NUMDOC,
