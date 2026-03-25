@@ -312,7 +312,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-            return analizarMetricasMadrugada(registro, registro.entradaOficial);
+            return analizarMetricasLineales(registro, registro.entradaOficial);
         }));
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
