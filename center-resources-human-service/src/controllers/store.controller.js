@@ -120,9 +120,9 @@ export const storeController = {
 
 
 const CONFIG = {
-    MIN_TOLERANCIA_ENTRADA: 5,
+    MIN_TOLERANCIA_ENTRADA: 0,
     MIN_BREAK_PERMITIDO: 60,
-    MIN_TOLERANCIA_BREAK: 5,
+    MIN_TOLERANCIA_BREAK: 0,
     HORAS_LABORALES_META: 8
 };
 
@@ -132,48 +132,52 @@ const crearFecha = (fechaStr, horaStr) => {
     return new Date(`${fechaStr}T${horaStr}`);
 };
 
-const analizarMetricasMadrugada = (dia, horaOficial) => {
-    // 1. Creamos fechas base (Día A)
-    let dEntrada = crearFecha(dia.fecha, dia.entrada);
-    let dSBr = crearFecha(dia.fecha, dia.salidaBreak);
-    let dRBr = crearFecha(dia.fecha, dia.retornoBreak);
-    let dSalida = crearFecha(dia.fecha, dia.salidaFinal);
-    let dOficial = crearFecha(dia.fecha, horaOficial);
+const analizarMetricasLineales = (dia, horaOficial) => {
+    // 1. Convertir todas las horas a objetos Date para operar
+    // Asumimos que dia.marcaciones es un array: [{hora: "08:00"}, {hora: "10:00"}, ...]
+    const marcaciones = dia.marcaciones
+        .map(m => crearFecha(dia.fecha, m.hora))
+        .sort((a, b) => a - b); // Nos aseguramos que estén en orden cronológico
 
-    // 2. LÓGICA DE CRUCE DE MEDIANOCHE
-    // Si la salida es menor que la entrada, le sumamos 1 día a la salida
-    if (dSalida && dEntrada && dSalida < dEntrada) {
-        dSalida.setDate(dSalida.getDate() + 1);
-    }
-    // Lo mismo para el retorno del break si ocurrió de madrugada
-    if (dRBr && dSBr && dRBr < dSBr) {
-        dRBr.setDate(dRBr.getDate() + 1);
-    }
-
-    let minBreak = 0;
     let minTrabajados = 0;
+    let minBreak = 0;
 
-    // Cálculo de Break en milisegundos a minutos
-    if (dRBr && dSBr) {
-        minBreak = (dRBr - dSBr) / 1000 / 60;
+    // 2. Sumamos bloques de dos en dos (Parejas de Entrada - Salida)
+    for (let i = 0; i < marcaciones.length; i += 2) {
+        const entradaBloque = marcaciones[i];
+        const salidaBloque = marcaciones[i + 1];
+
+        if (entradaBloque && salidaBloque) {
+            const diferencia = (salidaBloque - entradaBloque) / 60000;
+            minTrabajados += diferencia;
+        }
     }
 
-    // Cálculo de Jornada Efectiva
-    if (dSalida && dEntrada) {
-        const totalMs = dSalida - dEntrada;
-        minTrabajados = (totalMs / 1000 / 60) - (minBreak > 0 ? minBreak : 0);
+    // 3. El tiempo de "Break" es el tiempo entre bloques
+    // (Desde la salida del bloque anterior hasta la entrada del siguiente)
+    for (let i = 1; i < marcaciones.length - 1; i += 2) {
+        const salidaAnterior = marcaciones[i];
+        const entradaSiguiente = marcaciones[i + 1];
+
+        if (salidaAnterior && entradaSiguiente) {
+            minBreak += (entradaSiguiente - salidaAnterior) / 60000;
+        }
     }
 
-    // Cálculo de Tardanza
-    const esTardanza = dEntrada && dOficial
-        ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA
-        : false;
+    // 4. Cálculo de Tardanza (Solo con la primera marcación del día)
+    const dOficial = crearFecha(dia.fecha, horaOficial);
+    const dPrimeraEntrada = marcaciones[0];
+
+    const minTardanza = (dPrimeraEntrada && dOficial)
+        ? (dPrimeraEntrada - dOficial) / 60000
+        : 0;
 
     return {
         ...dia,
+        totalMarcaciones: marcaciones.length,
         tiempoBreak: fmt(minBreak),
         horasEfectivas: fmt(minTrabajados),
-        tardanza: esTardanza,
+        tardanza: minTardanza > CONFIG.MIN_TOLERANCIA_ENTRADA,
         excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
         jornadaIncompleta: (minTrabajados / 60) < CONFIG.HORAS_LABORALES_META
     };
@@ -306,7 +310,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-            return analizarMetricasMadrugada(registro, registro.entradaOficial);
+            return analizarMetricasLineales(registro, registro.entradaOficial);
         }));
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
