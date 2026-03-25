@@ -254,7 +254,7 @@ const searchDescansoEmpleado = async (fecha, documento) => {
             SELECT * 
             FROM TB_DIAS_LIBRE DL
             INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DL.ID_TRB_DIAS
-            WHERE DL.FECHA_NUMBER = ? AND DL.NUMERO_DOCUMENTO = ?
+            WHERE DH.FECHA_NUMBER = ? AND DL.NUMERO_DOCUMENTO = ?
             LIMIT 1;
         `;
 
@@ -318,6 +318,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
             const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
             const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
+
             const registro = {
                 documento: emp.NUMDOC,
                 nombre: b1.nombreCompleto,
