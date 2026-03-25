@@ -179,7 +179,7 @@ const procesarMarcacionesConsolidadas = (marcacionesRaw, horaOficial) => {
             ...dia,
             horasEfectivas: fmt(minutosTrabajadosTotales), // Formato HH:mm
             tiempoBreak: Math.round(minutosBreakTotales),
-            excesoBreak: Math.round(minutosBreakTotales) > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
+            excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
             tardanza: minTardanza > CONFIG.MIN_TOLERANCIA_ENTRADA,
             jornadaIncompleta: (minutosTrabajadosTotales / 60) < CONFIG.HORAS_LABORALES_META
         };
@@ -313,7 +313,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             };
 
             // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
-            return analizarMetricasLineales(registro, registro.entradaOficial);
+            return procesarMarcacionesConsolidadas(registro, registro.entradaOficial);
         }));
 
         // 4. RETORNAMOS EL FORMATO QUE NECESITAS
