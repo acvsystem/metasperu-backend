@@ -320,7 +320,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
             const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
             if (dni == '004176446') {
-                console.log(diaDescanso);
+                console.log(diaDescanso, (diaDescanso.descanso || "").length);
             }
 
             const registro = {
@@ -335,7 +335,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
                 salidaFinal: b2 ? b2.hrOut : b1.hrOut,
                 entradaOficial: horarioDB.entradaOficial || "08:30",
-                rango: horarioDB.rango || (diaDescanso.descanso || "").length ? 'Descanso' : "Sin Horario",
+                rango: (diaDescanso.descanso || "").length ? 'Descanso' : horarioDB.rango || "Sin Horario",
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
                 isPapeleta: papeletaDB.isPapeleta ? true : false,
                 marcaciones: lista
