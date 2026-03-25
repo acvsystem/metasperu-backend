@@ -267,7 +267,8 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
-            //curr.hrWorking = fmt(curr.hrWorking);
+            let minutosTotalesDia = calcularDiferenciaMinutos(curr.hrIn, curr.hrOut);
+            curr.hrWorking = minutosAHoras(minutosTotalesDia);
             acc[curr.dia].push(curr);
             return acc;
         }, {});
@@ -315,4 +316,34 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
 
     return resultadosProcesados;
+};
+
+/**
+ * Calcula la diferencia en minutos entre dos horas (HH:mm)
+ * Soporta cruce de medianoche (ej: 23:00 a 07:00)
+ */
+const calcularDiferenciaMinutos = (horaInicio, horaFin) => {
+    if (!horaInicio || !horaFin) return 0;
+
+    const [h1, m1] = horaInicio.split(':').map(Number);
+    const [h2, m2] = horaFin.split(':').map(Number);
+
+    const inicioEnMinutos = h1 * 60 + m1;
+    const finEnMinutos = h2 * 60 + m2;
+
+    let diferencia = finEnMinutos - inicioEnMinutos;
+
+    // Si la diferencia es negativa, significa que pasó a otro día (Cruce de medianoche)
+    if (diferencia < 0) {
+        diferencia += 24 * 60;
+    }
+
+    return diferencia;
+};
+
+// Función para convertir minutos a formato legible "HH:mm"
+const minutosAHoras = (totalMinutos) => {
+    const hrs = Math.floor(totalMinutos / 60);
+    const mins = totalMinutos % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
