@@ -267,7 +267,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         // 2. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
-            curr.hrWorking = fmt(curr.hrWorking);
+            //curr.hrWorking = fmt(curr.hrWorking);
             acc[curr.dia].push(curr);
             return acc;
         }, {});
