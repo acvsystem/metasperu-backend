@@ -248,6 +248,37 @@ const searchHorarioEmpleado = async (fecha, documento) => {
     }
 }
 
+const searchDescansoEmpleado = async (fecha, documento) => {
+    try {
+        const query = `
+            SELECT * 
+            FROM TB_DIAS_LIBRE DL
+            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DL.ID_TRB_DIAS
+            WHERE DL.FECHA_NUMBER = ? AND DL.NUMERO_DOCUMENTO = ?
+            LIMIT 1;
+        `;
+
+        const [rows] = await pool.query(query, [fecha, documento.trim()]);
+
+        if (rows && rows.length > 0) {
+            const diaDescanso = rows[0].DIA; // Ejemplo: "08:30 a 17:30"
+
+            // Dividimos por la " a " y tomamos el primer elemento [0]
+            // Usamos .trim() por si hay espacios extra alrededor
+
+            return {
+                descanso: diaDescanso
+            };
+        }
+
+        return { descanso: "" }; // Valor por defecto
+
+    } catch (error) {
+        console.error("Error en searchHorarioEmpleado:", error);
+        return { rango: "", entradaOficial: "08:00" };
+    }
+}
+
 const formatearFechaParaDB = (fechaISO) => {
     // fechaISO viene como "2025-01-27"
     const [anio, mes, dia] = fechaISO.split('-');
@@ -286,7 +317,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
             const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
             const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
-
+            const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
             const registro = {
                 documento: emp.NUMDOC,
                 nombre: b1.nombreCompleto,
@@ -299,7 +330,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
                 salidaFinal: b2 ? b2.hrOut : b1.hrOut,
                 entradaOficial: horarioDB.entradaOficial || "08:30",
-                rango: horarioDB.rango || "Sin Horario",
+                rango: horarioDB.rango || diaDescanso.dia.length ? 'Descanso' : "Sin Horario",
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
                 isPapeleta: papeletaDB.isPapeleta ? true : false,
                 marcaciones: lista
