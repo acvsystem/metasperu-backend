@@ -335,7 +335,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 retornoBreak: b2 ? b2.hrIn : '--:--:--',
                 salidaFinal: b2 ? b2.hrOut : b1.hrOut,
                 entradaOficial: horarioDB.entradaOficial || "08:30",
-                rango: horarioDB.rango || (diaDescanso.dia || "").length ? 'Descanso' : "Sin Horario",
+                rango: horarioDB.rango || (diaDescanso.descanso || "").length ? 'Descanso' : "Sin Horario",
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
                 isPapeleta: papeletaDB.isPapeleta ? true : false,
                 marcaciones: lista
