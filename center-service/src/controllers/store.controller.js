@@ -111,7 +111,12 @@ export const storeController = {
     },
 
     getDashboarRefresh: async (req, res) => {
-        getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
+        try {
+            getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
+        } catch (error) {
+            res.status(500).json({ message: 'Error al enviar', error });
+        }
+
     },
     // 2. Aquí recibe la lista de IDs del Servidor General (Agente Python/Node en la otra locación)
     callDocumentsComparation: async (req, res) => {
