@@ -160,7 +160,7 @@ export const initSocket = (server) => {
                 // Notificamos al dashboard que esta tienda ya no está
                 io.emit('actualizar_dashboard', Object.values(tiendasActivas));
                 
-                console.log('disconnect', tiendasActivas);
+              //  console.log('disconnect', tiendasActivas);
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             }
         });
