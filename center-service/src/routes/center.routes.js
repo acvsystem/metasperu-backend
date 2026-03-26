@@ -5,6 +5,9 @@ import { configurationController } from '../controllers/configuration.controller
 import { serverController } from '../controllers/server.controller.js';
 const router = Router();
 
+// ---RUTAS DASHBOARD
+router.get('/api/dashboard/store/refresh', verifyToken, storeController.getDashboarRefresh);
+
 // --- RUTAS PARA TIENDAS
 
 router.get('/api/store', verifyToken, storeController.getTiendas);

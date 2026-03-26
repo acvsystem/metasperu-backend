@@ -140,10 +140,16 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     let dSalida = crearFecha(dia.fecha, dia.salidaFinal);
     let dOficial = crearFecha(dia.fecha, horaOficial);
 
+
+    const mEnt = toMin(dia.entrada);
+    const mSBr = toMin(dia.salidaBreak);
+    const mRBr = toMin(dia.retornoBreak);
+    const mSal = toMin(dia.salidaFinal);
+
     // 2. LÓGICA DE CRUCE DE MEDIANOCHE
     // Si la salida es menor que la entrada, le sumamos 1 día a la salida
     if (dSalida && dEntrada && dSalida < dEntrada) {
-        dSalida.setDate(dSalida.getDate());
+        dSalida.setDate(dSalida.getDate() + 1);
     }
     // Lo mismo para el retorno del break si ocurrió de madrugada
     /*  if (dRBr && dSBr && dRBr < dSBr) {
@@ -168,6 +174,13 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     const esTardanza = dEntrada && dOficial
         ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA
         : false;
+
+
+    const toMin = (h) => {
+        if (!h || h.includes('--')) return null;
+        const [hrs, mins] = h.split(':').map(Number);
+        return (hrs * 60) + mins;
+    };
 
     return {
         ...dia,

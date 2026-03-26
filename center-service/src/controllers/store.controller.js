@@ -110,6 +110,9 @@ export const storeController = {
         }
     },
 
+    getDashboarRefresh: async (req, res) => {
+        getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
+    },
     // 2. Aquí recibe la lista de IDs del Servidor General (Agente Python/Node en la otra locación)
     callDocumentsComparation: async (req, res) => {
 
