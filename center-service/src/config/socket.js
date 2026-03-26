@@ -105,7 +105,6 @@ export const initSocket = (server) => {
 
         // --- Retorno de python store al backend traffic counter
         socket.on('py_update_devices_status', (data) => {
-            console.log('py_update_devices_status', data);
             io.emit('traffic_response_dashboard', data);
         })
 
