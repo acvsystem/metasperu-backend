@@ -151,13 +151,16 @@ export const initSocket = (server) => {
             if (store) {
                 console.log(`🚀 Tienda ${store.serie} OFFLINE`);
 
-                // Notificamos al dashboard que esta tienda ya no está
-                io.emit('actualizar_dashboard', Object.values(tiendasActivas));
+
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
 
                 tiendasOnline = tiendasActivas;
+
+                // Notificamos al dashboard que esta tienda ya no está
+                io.emit('actualizar_dashboard', Object.values(tiendasActivas));
+                
                 console.log('disconnect', tiendasActivas);
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             }
