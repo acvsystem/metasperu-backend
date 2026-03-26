@@ -112,6 +112,8 @@ export const storeController = {
 
     getDashboarRefresh: async (req, res) => {
         try {
+            
+            console.log(tiendasOnline);
             getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
             res.json({ message: 'Señal enviada' });
         } catch (error) {
