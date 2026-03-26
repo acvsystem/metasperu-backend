@@ -157,6 +157,8 @@ export const initSocket = (server) => {
 
                 // Limpiamos nuestra memoria
                 delete tiendasActivas[socket.handshake.headers.code];
+
+                tiendasOnline = tiendasActivas;
                 console.log('disconnect', tiendasActivas);
                 auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             }
