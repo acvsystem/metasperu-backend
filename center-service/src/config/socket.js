@@ -216,7 +216,7 @@ function iniciarProcesoComparacion() {
 
 function obtenerFaltantes(serieStore, store, servidor) {
 
-    if (!JSON.parse(store).length) {
+    if (!JSON.parse(store || []).length) {
         return { serie: serieStore, documents: [], length: 0 };
     }
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
