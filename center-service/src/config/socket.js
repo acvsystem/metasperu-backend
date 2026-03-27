@@ -20,6 +20,8 @@ const auditoriaEstado = {
 
 export const initSocket = (server) => {
     io = new Server(server, {
+        pingTimeout: 60000, // Tiempo de espera para considerar desconexión (60s)
+        pingInterval: 25000, // Frecuencia del ping (25s)
         cors: {
             origin: (origin, callback) => callback(null, true), // Permite cualquier origen
             credentials: true,
@@ -183,6 +185,14 @@ function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
+
+    setTimeout(() => {
+        if (totalTiendasRecibidas != auditoriaEstado.totalTiendasEsperadas) {
+            console.log("🚀 ¡Se proceso con faltante! Iniciando comparación masiva...");
+            iniciarProcesoComparacion();
+        }
+    }, 6000);
+
 
     if (auditoriaEstado.serverData && totalTiendasRecibidas === auditoriaEstado.totalTiendasEsperadas) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
