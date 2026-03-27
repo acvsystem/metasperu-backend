@@ -203,7 +203,7 @@ function iniciarProcesoComparacion() {
             if (((auditoriaEstado.tiendasData || [])[store.serie] || []).length) {
                 resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
             } else {
-                resultadosFinales = { serie: serieStore, documents: [], length: 0 };
+                resultadosFinales = { serie: store.serie, documents: [], length: 0 };
             }
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);
