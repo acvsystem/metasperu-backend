@@ -186,15 +186,10 @@ function verificarYComparar() {
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
-    setTimeout(() => {
-        if (auditoriaEstado.serverData && totalTiendasRecibidas != auditoriaEstado.totalTiendasEsperadas) {
-            console.log("🚀 ¡Se proceso con faltante! Iniciando comparación masiva...");
-            iniciarProcesoComparacion();
-        }
-    }, 6000);
+   
 
 
-    if (auditoriaEstado.serverData && totalTiendasRecibidas === auditoriaEstado.totalTiendasEsperadas) {
+    if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
     }
