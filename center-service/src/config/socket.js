@@ -204,7 +204,7 @@ function iniciarProcesoComparacion() {
     if (Object.keys(tiendasOnline).length) {
         let onlineStore = Object.values(tiendasOnline);
         onlineStore.map((store) => {
-            const resultadosFinales = obtenerFaltantes(store.serie, auditoriaEstado.tiendasData[store.serie], auditoriaEstado.serverData.documentos);
+            const resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);
         });
