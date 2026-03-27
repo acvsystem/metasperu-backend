@@ -186,7 +186,7 @@ function verificarYComparar() {
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
-   
+
 
 
     if (auditoriaEstado.serverData) {
@@ -199,7 +199,12 @@ function iniciarProcesoComparacion() {
     if (Object.keys(tiendasOnline).length) {
         let onlineStore = Object.values(tiendasOnline);
         onlineStore.map((store) => {
-            const resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
+            let resultadosFinales = {};
+            if (((auditoriaEstado.tiendasData || [])[store.serie] || []).length) {
+                resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
+            } else {
+                resultadosFinales = { serie: serieStore, documents: [], length: 0 };
+            }
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);
         });
