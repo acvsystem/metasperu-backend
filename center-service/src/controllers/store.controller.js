@@ -10,7 +10,7 @@ export const storeController = {
                 t.*, 
                 (
                     SELECT JSON_ARRAYAGG(
-                        JSON_OBJECT('ip', IP, 'active', false)
+                        JSON_OBJECT('ip', IP, 'active', true)
                     )
                     FROM tb_traffic_counter_tienda
                     WHERE CODIGO_TIENDA = t.SERIE_TIENDA
