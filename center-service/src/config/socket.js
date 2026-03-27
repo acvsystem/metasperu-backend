@@ -82,7 +82,7 @@ export const initSocket = (server) => {
             auditoriaEstado.tiendasData[data.serie] = data.documentos;
 
             const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-            console.log(`🚀 ( ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
+            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
 
             verificarYComparar();
         });
