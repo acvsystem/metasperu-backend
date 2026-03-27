@@ -187,7 +187,7 @@ function verificarYComparar() {
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
     setTimeout(() => {
-        if (totalTiendasRecibidas != auditoriaEstado.totalTiendasEsperadas) {
+        if (auditoriaEstado.serverData && totalTiendasRecibidas != auditoriaEstado.totalTiendasEsperadas) {
             console.log("🚀 ¡Se proceso con faltante! Iniciando comparación masiva...");
             iniciarProcesoComparacion();
         }
