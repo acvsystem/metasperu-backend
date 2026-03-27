@@ -112,7 +112,7 @@ export const storeController = {
 
     getDashboarRefresh: async (req, res) => {
         try {
-            
+
             console.log(tiendasOnline);
             getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
             res.json({ message: 'Señal enviada' });
@@ -252,6 +252,22 @@ export const storeController = {
             });
             res.json({
                 message: 'Se emitio señal de eliminar cola panama.'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
+    },
+    callTrafficVerification: async (req, res) => {
+        const { socketId } = req.params;
+        try {
+
+            let onlineStore = Object.values(tiendasOnline);
+
+            onlineStore.filter((store) => {
+                getIO().to(store.socketId).emit('py_traffic_counter_verification', { pedido_por: socketId });
+            });
+            res.json({
+                message: 'Se emitio señal verificacion traffic counter.'
             });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });

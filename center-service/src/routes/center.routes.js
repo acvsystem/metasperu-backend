@@ -21,6 +21,7 @@ router.get('/api/transactions/frontretail/:socketId', verifyToken, storeControll
 router.post('/api/transactions/transfer/terminal', verifyToken, storeController.callTransferTerminal);
 router.get('/api/server/comparation/documents/:socketId', verifyToken, serverController.callComparationDocumentsServer);
 router.get('/api/server/documents/pending/:socketId', verifyToken, serverController.callDocumentsPendingServer);
+router.get('/api/traffic/verification/:socketId', verifyToken, storeController.callTrafficVerification);
 
 // ---RUTAS CLIENTE
 router.get('/api/client/blank/:socketId', verifyToken, storeController.callClientBlank);
