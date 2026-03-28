@@ -70,7 +70,7 @@ export const initSocket = (server) => {
             }
 
             tiendasOnline = tiendasActivas;
-
+            console.log(tiendasOnline);
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
@@ -203,7 +203,7 @@ function iniciarProcesoComparacion() {
             if (((auditoriaEstado.tiendasData || [])[store.serie] || []).length) {
                 resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
             } else {
-                resultadosFinales = { serie: store.serie, documents: [], length: 0, error: true };
+                resultadosFinales = { serie: store.serie, documents: [], length: 0 };
             }
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);

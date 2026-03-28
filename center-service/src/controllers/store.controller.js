@@ -212,7 +212,10 @@ export const storeController = {
             let onlineStore = Object.values(tiendasOnline);
 
             onlineStore.filter((store) => {
-                getIO().to(store.socketId).emit('py_delete_client', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_delete_client_descatalogate', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_transactions_store', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_request_documents_store', { pedido_por: socketId });
+                getIO().to(store.socketId).emit('py_delete_extra_client', { pedido_por: socketId });
             });
 
             res.json({
