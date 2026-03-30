@@ -98,7 +98,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de Python server al backend ---
         socket.on('py_response_documents_server', (data) => {
-            auditoriaEstado['serverData'] = data;
+            auditoriaEstado['serverData'] = [];
             //verificarYComparar();
         });
 
@@ -189,10 +189,7 @@ function verificarYComparar() {
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
-
-
-
-    if (auditoriaEstado.serverData) {
+    if (auditoriaEstado.serverData.length) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
     }
