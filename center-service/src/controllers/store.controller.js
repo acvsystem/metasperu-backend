@@ -185,6 +185,7 @@ export const storeController = {
     callClientDelete: async (req, res) => {
         const { socketId } = req.params;
         try {
+             let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
             let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
             getIO().to('grupo_tiendas').emit('py_delete_client_descatalogate', { pedido_por: socketId });
