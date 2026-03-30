@@ -98,7 +98,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de Python server al backend ---
         socket.on('py_response_documents_server', (data) => {
-            auditoriaEstado['serverData'] = [];
+            auditoriaEstado['serverData'] = data;
             //verificarYComparar();
         });
 
