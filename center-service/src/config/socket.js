@@ -79,7 +79,7 @@ export const initSocket = (server) => {
             const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
             console.log(`🚀 ( ${data.serie} - ${totalRecibidas} ) Tiendas han respondido.`);
 
-            verificarYComparar();
+            verificarYComparar(data.serie);
         });
 
         // --- Retorno de Python store al backend documentos de venta---
@@ -173,30 +173,25 @@ export const getIO = () => {
     return io;
 };
 
-function verificarYComparar() {
+function verificarYComparar(serie) {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
 
     if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
-        iniciarProcesoComparacion();
+        iniciarProcesoComparacion(serie);
     }
 }
 
-async function iniciarProcesoComparacion() {
-    const sockets = await io.in('grupo_tiendas').fetchSockets();
-    let onlineStore = sockets;
-        onlineStore.map((store) => {
-            let resultadosFinales = {};
-            if (((auditoriaEstado.tiendasData || [])[store.data.serie] || []).length) {
-                resultadosFinales = obtenerFaltantes(store.data.serie, ((auditoriaEstado.tiendasData || [])[store.data.serie] || []), auditoriaEstado.serverData.documentos);
-            } else {
-                resultadosFinales = { serie: store.data.serie, documents: [], length: 0 };
-            }
-            // Enviamos el resultado final al Frontend (Angular)
-            io.emit('documents_response_dashboard', resultadosFinales);
-        });
+async function iniciarProcesoComparacion(serie) {
+    if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
+        resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
+    } else {
+        resultadosFinales = { serie: serie, documents: [], length: 0 };
+    }
+    // Enviamos el resultado final al Frontend (Angular)
+    io.emit('documents_response_dashboard', resultadosFinales);
 
     // Limpiamos para la próxima auditoría
     //resetearAuditoria();
