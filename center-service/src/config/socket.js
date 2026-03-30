@@ -190,7 +190,7 @@ async function iniciarProcesoComparacion() {
         onlineStore.map((store) => {
             let resultadosFinales = {};
             if (((auditoriaEstado.tiendasData || [])[store.data.serie] || []).length) {
-                resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.data.serie] || []), auditoriaEstado.serverData.documentos);
+                resultadosFinales = obtenerFaltantes(store.data.serie, ((auditoriaEstado.tiendasData || [])[store.data.serie] || []), auditoriaEstado.serverData.documentos);
             } else {
                 resultadosFinales = { serie: store.data.serie, documents: [], length: 0 };
             }
