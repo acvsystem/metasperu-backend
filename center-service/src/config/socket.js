@@ -185,6 +185,8 @@ function verificarYComparar(serie) {
 }
 
 async function iniciarProcesoComparacion(serie) {
+    let resultadosFinales = {};
+
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
     } else {
