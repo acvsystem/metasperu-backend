@@ -112,9 +112,7 @@ export const storeController = {
 
     getDashboarRefresh: async (req, res) => {
         try {
-
-            console.log(tiendasOnline);
-            getIO().emit('actualizar_dashboard', Object.values(tiendasOnline));
+            enviarActualizacionDashboard();
             res.json({ message: 'Señal enviada' });
         } catch (error) {
             res.status(500).json({ message: 'Error al enviar', error });
@@ -275,4 +273,22 @@ export const storeController = {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
     }
+}
+
+
+async function enviarActualizacionDashboard() {
+    // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
+    const sockets = await getIO().in('grupo_tiendas').fetchSockets();
+
+    const listaTiendas = sockets.map(s => ({
+        socketId: s.id,
+        id_tienda: s.data.id_tienda,
+        nombre: s.data.nombre,
+        serie: s.data.serie,
+        lastSeen: s.data.lastSeen,
+        online: true // Si está en la lista, es porque está online
+    }));
+
+    console.log(listaTiendas);
+    getIO().emit('actualizar_dashboard', listaTiendas);
 }
