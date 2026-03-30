@@ -173,6 +173,7 @@ export const storeController = {
             let listCliente = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
             if ((listCliente || []).length) {
+                console.log(listCliente);
                 getIO().to('grupo_tiendas').emit('py_request_client_blank', { pedido_por: socketId, extra_client: listCliente });
             }
 
