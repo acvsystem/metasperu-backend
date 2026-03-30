@@ -172,7 +172,9 @@ export const storeController = {
             let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
             let listCliente = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
-            getIO().to('grupo_tiendas').emit('py_request_client_blank', { pedido_por: socketId, extra_client: listCliente });
+            if ((listCliente || []).length) {
+                getIO().to('grupo_tiendas').emit('py_request_client_blank', { pedido_por: socketId, extra_client: listCliente });
+            }
 
             res.json({
                 message: 'Se emitio señal de clientes en blanco'
@@ -185,7 +187,7 @@ export const storeController = {
     callClientDelete: async (req, res) => {
         const { socketId } = req.params;
         try {
-             let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
+            let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
             let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
             getIO().to('grupo_tiendas').emit('py_delete_client_descatalogate', { pedido_por: socketId });
