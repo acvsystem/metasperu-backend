@@ -189,11 +189,13 @@ async function iniciarProcesoComparacion(serie) {
 
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
+        io.emit('documents_response_dashboard', resultadosFinales);
     } else {
         resultadosFinales = { serie: serie, documents: [], length: 0 };
+        io.emit('documents_response_dashboard', resultadosFinales);
     }
     // Enviamos el resultado final al Frontend (Angular)
-    io.emit('documents_response_dashboard', resultadosFinales);
+
 
     // Limpiamos para la próxima auditoría
     //resetearAuditoria();
