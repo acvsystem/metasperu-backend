@@ -189,7 +189,7 @@ export const storeController = {
             let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
             if ((extra_client || []).length) {
-                getIO().to('grupo_tiendas').emit('handle_delete_client', { pedido_por: socketId, extra_client: extra_client });
+                getIO().to('grupo_tiendas').emit('py_delete_client', { pedido_por: socketId, extra_client: extra_client });
             }
 
             res.json({
