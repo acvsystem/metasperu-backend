@@ -245,11 +245,8 @@ export const storeController = {
         const { socketId } = req.params;
         try {
 
-            let onlineStore = Object.values(tiendasOnline);
+            getIO().to('grupo_tiendas').emit('py_traffic_counter_verification', { pedido_por: socketId });
 
-            onlineStore.filter((store) => {
-                getIO().to(store.socketId).emit('py_traffic_counter_verification', { pedido_por: socketId });
-            });
             res.json({
                 message: 'Se emitio señal verificacion traffic counter.'
             });
