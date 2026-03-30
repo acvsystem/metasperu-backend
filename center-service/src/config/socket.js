@@ -55,7 +55,25 @@ export const initSocket = (server) => {
 
         // --- Lógica para las Tiendas (Python) ---
 
-        socket.on('tienda_identificarse', (data) => {
+        socket.on('tienda_identificarse', async (info) => {
+
+            // 1. Guardamos los metadatos dentro del objeto socket.data
+            socket.data.id_tienda = data.id_tienda;
+            socket.data.nombre = data.nombre;
+            socket.data.serie = data.id_tienda;
+            socket.data.lastSeen = new Date();
+
+            // 2. Lo unimos a la sala
+            await socket.join('grupo_tiendas');
+            socket.join(info.id_tienda); // Unimos la tienda a una "sala" por su ID única
+            console.log(`🚀 Tienda ${data.id_tienda} registrada en memoria del socket.`);
+
+            // 3. Notificar al dashboard (ver paso siguiente)
+            enviarActualizacionDashboard();
+        });
+
+        /*
+                socket.on('tienda_identificarse', (data) => {
             socket.join('grupo_tiendas');
 
             // Guardamos/Actualizamos la tienda siempre con el socketId actual
@@ -73,6 +91,7 @@ export const initSocket = (server) => {
             // Notificamos al dashboard el cambio de estado
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
+        */
 
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_documents_store', (data) => {
@@ -160,21 +179,12 @@ export const initSocket = (server) => {
         });
 
         socket.on('disconnect', () => {
-
-            // Buscamos qué tienda tenía este socketId para marcarla como offline
-            for (let id in tiendasActivas) {
-                if (tiendasActivas[id].socketId === socket.id) {
-                    tiendasActivas[id].online = false;
-                    tiendasActivas[id].lastSeen = new Date();
-                    console.log(`❌ Tienda offline: ${id}`);
-                    break;
-                }
-            }
-
-            auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            io.emit('actualizar_dashboard', Object.values(tiendasActivas));
+            console.log(`❌ Un socket se ha ido.`);
+            enviarActualizacionDashboard();
 
         });
+
+
     });
 
     return io;
@@ -240,4 +250,21 @@ function obtenerFaltantes(serieStore, store, servidor) {
 function resetearAuditoria() {
     auditoriaEstado.serverData = null;
     auditoriaEstado.tiendasData = {};
+}
+
+
+async function enviarActualizacionDashboard() {
+    // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
+    const sockets = await io.in('grupo_tiendas').fetchSockets();
+
+    const listaTiendas = sockets.map(s => ({
+        socketId: s.id,
+        id_tienda: s.data.id_tienda,
+        nombre: s.data.nombre,
+        serie: s.data.serie,
+        lastSeen: s.data.lastSeen,
+        online: true // Si está en la lista, es porque está online
+    }));
+
+    io.emit('actualizar_dashboard', listaTiendas);
 }
