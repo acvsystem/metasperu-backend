@@ -189,7 +189,7 @@ function verificarYComparar() {
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
     console.log("auditoriaEstado.serverData", auditoriaEstado.serverData);
-    if ((auditoriaEstado.serverData || []).length) {
+    if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
     }
