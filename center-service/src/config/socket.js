@@ -194,11 +194,6 @@ async function iniciarProcesoComparacion(serie) {
         resultadosFinales = { serie: serie, documents: [], length: 0 };
         io.emit('documents_response_dashboard', resultadosFinales);
     }
-    // Enviamos el resultado final al Frontend (Angular)
-
-
-    // Limpiamos para la próxima auditoría
-    //resetearAuditoria();
 
 }
 

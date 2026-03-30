@@ -124,19 +124,19 @@ export const storeController = {
 
         const { socketId } = req.params;
 
-      /*  emailService.pushToEmailQueue({
-            email: 'andrecanalesv@gmail.com',
-            subject: 'Documentos Pendientes - BBW JOCKEY',
-            template: 'documentosPendientes',
-            variables: {
-                tienda: 'BBW JOCKEY', // Esta es la variable {{tienda}}
-                documentos: [ // Esta es la lista para el {{#each documentos}}
-                    { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                    { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                    { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' }
-                ]
-            }
-        });*/
+        /*  emailService.pushToEmailQueue({
+              email: 'andrecanalesv@gmail.com',
+              subject: 'Documentos Pendientes - BBW JOCKEY',
+              template: 'documentosPendientes',
+              variables: {
+                  tienda: 'BBW JOCKEY', // Esta es la variable {{tienda}}
+                  documentos: [ // Esta es la lista para el {{#each documentos}}
+                      { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
+                      { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
+                      { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' }
+                  ]
+              }
+          });*/
 
         try {
             getIO().to('servidor_backup').emit('py_request_documents_server');
@@ -155,11 +155,7 @@ export const storeController = {
         const { socketId } = req.params;
         try {
 
-            let onlineStore = Object.values(tiendasOnline);
-
-            onlineStore.filter((store) => {
-                getIO().to(store.socketId).emit('py_request_transactions_store', { pedido_por: socketId });
-            });
+            getIO().to('grupo_tiendas').emit('py_request_transactions_store', { pedido_por: socketId });
 
             res.json({
                 message: 'Se emitio señal de transacciones'
