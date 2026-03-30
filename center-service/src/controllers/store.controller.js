@@ -189,14 +189,14 @@ export const storeController = {
             let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
 
-            if ((listCliente || []).length) {
-                console.log(listCliente);
+            if ((extra_client || []).length) {
+                console.log(extra_client);
 
                 getIO().to('grupo_tiendas').emit('py_delete_client_descatalogate', { pedido_por: socketId });
                 getIO().to('grupo_tiendas').emit('py_delete_client', { pedido_por: socketId });
                 getIO().to('grupo_tiendas').emit('py_delete_extra_client', { pedido_por: socketId, extra_client: extra_client });
             }
-            
+
             res.json({
                 message: 'Se emitio señal de eliminacion de cliente.'
             });
