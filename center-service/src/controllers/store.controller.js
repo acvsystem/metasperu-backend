@@ -185,14 +185,11 @@ export const storeController = {
     callClientDelete: async (req, res) => {
         const { socketId } = req.params;
         try {
+            let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
-            let onlineStore = Object.values(tiendasOnline);
-
-            onlineStore.filter((store) => {
-                getIO().to(store.socketId).emit('py_delete_client_descatalogate', { pedido_por: socketId });
-                getIO().to(store.socketId).emit('py_delete_client', { pedido_por: socketId });
-                //getIO().to(store.socketId).emit('py_delete_extra_client', { pedido_por: socketId });
-            });
+            getIO().to('grupo_tiendas').emit('py_delete_client_descatalogate', { pedido_por: socketId });
+            getIO().to('grupo_tiendas').emit('py_delete_client', { pedido_por: socketId });
+            getIO().to('grupo_tiendas').emit('py_delete_extra_client', { pedido_por: socketId, extra_client: extra_client });
 
             res.json({
                 message: 'Se emitio señal de eliminacion de cliente.'

@@ -84,13 +84,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_delete_client', (data) => {
-            // Guardamos los documentos de la tienda usando su serie como llave
-            auditoriaEstado.tiendasData[data.serie] = data.documentos;
-
-            const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
-
-            verificarYComparar();
+            io.emit('client_refresh_dashboard', data);
         });
 
         // --- Retorno de Python server al backend ---
