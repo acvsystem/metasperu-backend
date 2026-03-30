@@ -124,7 +124,7 @@ export const storeController = {
 
         const { socketId } = req.params;
 
-        emailService.pushToEmailQueue({
+      /*  emailService.pushToEmailQueue({
             email: 'andrecanalesv@gmail.com',
             subject: 'Documentos Pendientes - BBW JOCKEY',
             template: 'documentosPendientes',
@@ -136,24 +136,12 @@ export const storeController = {
                     { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' }
                 ]
             }
-        });
+        });*/
 
         try {
-            let onlineStore = Object.values(tiendasOnline);
-            console.log("callDocumentsComparation onlineStore:", onlineStore);
-            onlineStore.filter((store) => {
-                console.log("callDocumentsComparation serie:", store.serie);
-                getIO().to(store.socketId).emit('py_request_documents_store', { pedido_por: socketId });
-            });
+            getIO().to('servidor_backup').emit('py_request_documents_server');
+            getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: socketId });
 
-            const servidor = servidorOnline;
-            console.log("callDocumentsComparation servidor:", servidor);
-            getIO().to(servidor.socketId).emit('py_request_documents_server');
-
-            if (!servidor.online) {
-                res.status(500).json({ message: 'Servidor Backup OFFLINE' });
-                return;
-            }
 
             res.json({
                 message: 'Se emitio señal de documentos'

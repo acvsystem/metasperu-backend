@@ -71,27 +71,6 @@ export const initSocket = (server) => {
             enviarActualizacionDashboard();
         });
 
-        /*
-                socket.on('tienda_identificarse', (data) => {
-            socket.join('grupo_tiendas');
-
-            // Guardamos/Actualizamos la tienda siempre con el socketId actual
-            tiendasActivas[data.id_tienda] = {
-                serie: data.id_tienda,
-                socketId: socket.id, // Muy importante: actualizar el ID del nuevo socket
-                nombre: data.nombre,
-                lastSeen: new Date(),
-                online: true
-            };
-
-            console.log(`🚀 Tienda sincronizada: ${data.id_tienda} (Socket: ${socket.id})`);
-            tiendasOnline = tiendasActivas;
-            auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            // Notificamos al dashboard el cambio de estado
-            io.emit('actualizar_dashboard', Object.values(tiendasActivas));
-        });
-        */
-
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_documents_store', (data) => {
             // Guardamos los documentos de la tienda usando su serie como llave
@@ -264,7 +243,7 @@ async function enviarActualizacionDashboard() {
         lastSeen: s.data.lastSeen,
         online: true // Si está en la lista, es porque está online
     }));
-    
+
     console.log(listaTiendas);
     io.emit('actualizar_dashboard', listaTiendas);
 }
