@@ -188,8 +188,8 @@ function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
-
-    if (auditoriaEstado.serverData.length) {
+    console.log("auditoriaEstado.serverData", (auditoriaEstado.serverData || []).length);
+    if ((auditoriaEstado.serverData || []).length) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
     }
