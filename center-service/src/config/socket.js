@@ -55,7 +55,7 @@ export const initSocket = (server) => {
 
         // --- Lógica para las Tiendas (Python) ---
 
-        socket.on('tienda_identificarse', async (info) => {
+        socket.on('tienda_identificarse', async (data) => {
 
             // 1. Guardamos los metadatos dentro del objeto socket.data
             socket.data.id_tienda = data.id_tienda;
@@ -65,7 +65,7 @@ export const initSocket = (server) => {
 
             // 2. Lo unimos a la sala
             await socket.join('grupo_tiendas');
-            socket.join(info.id_tienda); // Unimos la tienda a una "sala" por su ID única
+            socket.join(data.id_tienda); // Unimos la tienda a una "sala" por su ID única
             console.log(`🚀 Tienda ${data.id_tienda} registrada en memoria del socket.`);
 
             // 3. Notificar al dashboard (ver paso siguiente)
