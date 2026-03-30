@@ -46,10 +46,9 @@ export const initSocket = (server) => {
         });
 
         socket.on('registrar_dashboard', () => {
+            enviarActualizacionDashboard();
             socket.join('dashboards');
             // Enviamos solo a ESTE socket la lista actual de tiendas
-
-            enviarActualizacionDashboard();
             console.log('🚀 Dashboard refrescado y sincronizado');
         });
 
@@ -265,6 +264,7 @@ async function enviarActualizacionDashboard() {
         lastSeen: s.data.lastSeen,
         online: true // Si está en la lista, es porque está online
     }));
-
+    
+    console.log(listaTiendas);
     io.emit('actualizar_dashboard', listaTiendas);
 }
