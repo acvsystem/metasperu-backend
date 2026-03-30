@@ -188,13 +188,8 @@ export const storeController = {
             let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
             let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
 
-
             if ((extra_client || []).length) {
-                console.log(extra_client);
-
-                getIO().to('grupo_tiendas').emit('py_delete_client_descatalogate', { pedido_por: socketId });
-                getIO().to('grupo_tiendas').emit('py_delete_client', { pedido_por: socketId });
-                getIO().to('grupo_tiendas').emit('py_delete_extra_client', { pedido_por: socketId, extra_client: extra_client });
+                getIO().to('grupo_tiendas').emit('handle_delete_client', { pedido_por: socketId, extra_client: extra_client });
             }
 
             res.json({
