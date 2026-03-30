@@ -77,7 +77,7 @@ export const initSocket = (server) => {
             auditoriaEstado.tiendasData[data.serie] = data.documentos;
 
             const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
+            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} ) Tiendas han respondido.`);
 
             verificarYComparar();
         });
@@ -175,11 +175,8 @@ export const getIO = () => {
 
 function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-    console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
+    console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
-
-
-
 
     if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
@@ -187,23 +184,23 @@ function verificarYComparar() {
     }
 }
 
-function iniciarProcesoComparacion() {
-    if (Object.keys(tiendasOnline).length) {
-        let onlineStore = Object.values(tiendasOnline);
+async function iniciarProcesoComparacion() {
+    const sockets = await io.in('grupo_tiendas').fetchSockets();
+    let onlineStore = sockets;
         onlineStore.map((store) => {
             let resultadosFinales = {};
-            if (((auditoriaEstado.tiendasData || [])[store.serie] || []).length) {
-                resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.serie] || []), auditoriaEstado.serverData.documentos);
+            if (((auditoriaEstado.tiendasData || [])[store.data.serie] || []).length) {
+                resultadosFinales = obtenerFaltantes(store.serie, ((auditoriaEstado.tiendasData || [])[store.data.serie] || []), auditoriaEstado.serverData.documentos);
             } else {
-                resultadosFinales = { serie: store.serie, documents: [], length: 0 };
+                resultadosFinales = { serie: store.data.serie, documents: [], length: 0 };
             }
             // Enviamos el resultado final al Frontend (Angular)
             io.emit('documents_response_dashboard', resultadosFinales);
         });
 
-        // Limpiamos para la próxima auditoría
-        resetearAuditoria();
-    }
+    // Limpiamos para la próxima auditoría
+    //resetearAuditoria();
+
 }
 
 function obtenerFaltantes(serieStore, store, servidor) {
