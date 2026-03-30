@@ -173,6 +173,7 @@ export const initSocket = (server) => {
 
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
+
         });
     });
 
@@ -188,7 +189,10 @@ function verificarYComparar() {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
     console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas, "totalTiendasEsperadas:", auditoriaEstado.totalTiendasEsperadas);
     // Condición de éxito: Tenemos el server Y todas las tiendas
-    console.log("auditoriaEstado.serverData", auditoriaEstado.serverData);
+
+
+
+
     if (auditoriaEstado.serverData) {
         console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
         iniciarProcesoComparacion();
