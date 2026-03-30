@@ -54,30 +54,39 @@ export const initSocket = (server) => {
         });
 
         // --- Lógica para las Tiendas (Python) ---
-        socket.on('tienda_identificarse', (data) => {
 
+        socket.on('tienda_identificarse', (data) => {
             socket.join('grupo_tiendas');
 
-            if (typeof tiendasActivas[data.id_tienda] == 'undefined') {
-                console.log("tiendasActivas", data.id_tienda);
-                tiendasActivas[data.id_tienda] = {
-                    serie: data.id_tienda,
-                    socketId: socket.id,
-                    nombre: data.nombre,
-                    lastSeen: new Date(),
-                    online: true
-                };
-            }
+            // Guardamos/Actualizamos la tienda siempre con el socketId actual
+            tiendasActivas[data.id_tienda] = {
+                serie: data.id_tienda,
+                socketId: socket.id, // Muy importante: actualizar el ID del nuevo socket
+                nombre: data.nombre,
+                lastSeen: new Date(),
+                online: true
+            };
 
+            console.log(`🚀 Tienda sincronizada: ${data.id_tienda} (Socket: ${socket.id})`);
             tiendasOnline = tiendasActivas;
-            console.log(tiendasOnline);
             auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
-            console.log(`🚀 Tienda conectada: ${data.id_tienda}`);
+            // Notificamos al dashboard el cambio de estado
             io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
 
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_documents_store', (data) => {
+            // Guardamos los documentos de la tienda usando su serie como llave
+            auditoriaEstado.tiendasData[data.serie] = data.documentos;
+
+            const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
+            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} / ${auditoriaEstado.totalTiendasEsperadas} ) Tiendas han respondido.`);
+
+            verificarYComparar();
+        });
+
+        // --- Retorno de Python store al backend documentos de venta---
+        socket.on('py_response_delete_client', (data) => {
             // Guardamos los documentos de la tienda usando su serie como llave
             auditoriaEstado.tiendasData[data.serie] = data.documentos;
 
@@ -152,24 +161,18 @@ export const initSocket = (server) => {
 
         socket.on('disconnect', () => {
 
-            const store = tiendasActivas[socket.handshake.headers.code];
-
-            if (store) {
-                console.log(`🚀 Tienda ${store.serie} OFFLINE`);
-
-
-
-                // Limpiamos nuestra memoria
-                delete tiendasActivas[socket.handshake.headers.code];
-
-                tiendasOnline = tiendasActivas;
-
-                // Notificamos al dashboard que esta tienda ya no está
-                io.emit('actualizar_dashboard', Object.values(tiendasActivas));
-
-                //  console.log('disconnect', tiendasActivas);
-                auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
+            // Buscamos qué tienda tenía este socketId para marcarla como offline
+            for (let id in tiendasActivas) {
+                if (tiendasActivas[id].socketId === socket.id) {
+                    tiendasActivas[id].online = false;
+                    tiendasActivas[id].lastSeen = new Date();
+                    console.log(`❌ Tienda offline: ${id}`);
+                    break;
+                }
             }
+
+            auditoriaEstado.totalTiendasEsperadas = Object.keys(tiendasActivas).length;
+            io.emit('actualizar_dashboard', Object.values(tiendasActivas));
         });
     });
 
