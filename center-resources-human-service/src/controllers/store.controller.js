@@ -186,7 +186,7 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     return {
         ...dia,
         tiempoBreak: fmt(totalMinutosBreak), // Suma de todos los intermedios
-        horasEfectivas: fmt(totalMinutosTrabajados), // Suma de todos los bloques laborados
+        horasEfectivas: totalMinutosTrabajados, // Suma de todos los bloques laborados
         tardanza: esTardanza,
         minutosTardanza: minutosTardanza > 0 ? minutosTardanza : 0,
         excesoBreak: totalMinutosBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
