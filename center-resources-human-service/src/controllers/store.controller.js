@@ -142,7 +142,11 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
 
     // 2. RECORRER TODOS LOS BLOQUES (Pueden ser 1, 2, 5 o más)
     const bloques = dia.marcaciones || [];
-    console.log(bloques);
+
+    if(dia == '2026-03-01' && bloques[0]['documento'] == '70359939'){
+        console.log(bloques);
+    }
+
     bloques.forEach((bloque, index) => {
         let inicio = crearFecha(dia.fecha, bloque.hrIn);
         let fin = crearFecha(dia.fecha, bloque.hrOut);
@@ -181,7 +185,7 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     return {
         ...dia,
         tiempoBreak: fmt(totalMinutosBreak), // Suma de todos los intermedios
-        horasEfectivas: totalMinutosTrabajados, // Suma de todos los bloques laborados
+        horasEfectivas: fmt(totalMinutosTrabajados), // Suma de todos los bloques laborados
         tardanza: esTardanza,
         minutosTardanza: minutosTardanza > 0 ? minutosTardanza : 0,
         excesoBreak: totalMinutosBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
