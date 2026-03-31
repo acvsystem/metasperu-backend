@@ -376,7 +376,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 entradaOficial: horarioDB.entradaOficial || "08:30",
                 rango: (diaDescanso.descanso || "").length ? 'Descanso' : (horarioDB.rango || "Sin Horario"),
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
-                isPapeleta: !!papeletaDB.isPapeleta ? 'sin papeleta' : 'con papeleta',
+                isPapeleta: papeletaDB.isPapeleta ? 'con papeleta' : 'sin papeleta',
 
                 // ENVIAMOS TODAS LAS MARCACIONES (las 5 o más)
                 // Esto servirá para que en el Dashboard puedas hacer un "Ver más"
