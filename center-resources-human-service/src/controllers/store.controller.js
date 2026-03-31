@@ -195,18 +195,11 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
 };
 
 const fmt = (minutosTotales) => {
-    if (!minutosTotales || minutosTotales < 0) return "00:00";
-
-    // Math.floor asegura que solo tomamos las horas completas
-    const horas = Math.floor(minutosTotales / 60);
-
-    // El residuo (%) nos da los minutos restantes (siempre menores a 60)
-    const minutos = Math.round(minutosTotales % 60);
-
-    // Ajuste final: si el redondeo de minutos nos dio 60 (por decimales)
-    if (minutos === 60) {
-        return `${String(horas + 1).padStart(2, '0')}:00`;
-    }
+    // Usamos Math.round para que 59.5 minutos suba a 60 (1 hora)
+    let totalCerrado = Math.round(minutosTotales); 
+    
+    const horas = Math.floor(totalCerrado / 60);
+    const minutos = totalCerrado % 60;
 
     return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
 };
