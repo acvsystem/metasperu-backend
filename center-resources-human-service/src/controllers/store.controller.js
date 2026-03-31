@@ -366,6 +366,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 // ENVIAMOS TODAS LAS MARCACIONES (las 5 o más)
                 // Esto servirá para que en el Dashboard puedas hacer un "Ver más"
                 marcaciones: lista,
+                marcacionesLen: (lista || []).length,
                 totalBloques: totalMarcaciones
             };
 
