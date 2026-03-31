@@ -313,16 +313,26 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         if (susMarcaciones.length === 0) return [];
 
         // 1. Agrupar por día
-        const grupos = susMarcaciones.reduce((acc, curr) => {
+        const cajasExcluidas = ['9M1', '9M2', '9M3'];
 
-            if (curr.caja != '9M1' && curr.caja != '9M2' && curr.caja != '9M3') {
-                if (!acc[curr.dia]) acc[curr.dia] = [];
-                // Calculamos horas de este bloque específico
+        const grupos = susMarcaciones.reduce((acc, curr) => {
+            // 1. Validamos si la caja actual NO está en la lista de excluidas
+            if (!cajasExcluidas.includes(curr.caja)) {
+
+                // 2. Si el día no existe en el acumulador, lo inicializamos
+                if (!acc[curr.dia]) {
+                    acc[curr.dia] = [];
+                }
+
+                // 3. Calculamos las horas del bloque
                 curr.hrWorking = minutosAHoras(calcularDiferenciaMinutos(curr.hrIn, curr.hrOut));
+
+                // 4. Agregamos el registro al grupo del día correspondiente
                 acc[curr.dia].push(curr);
-                return acc;
             }
 
+            // IMPORTANTE: Siempre retornar el acumulador en cada iteración
+            return acc;
         }, {});
 
         // 2. Procesar cada día dinámicamente
