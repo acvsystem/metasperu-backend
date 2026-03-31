@@ -182,10 +182,10 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
         ...dia,
         tiempoBreak: fmt(totalMinutosBreak), // Suma de todos los intermedios
         horasEfectivas: minutosAHoras(totalMinutosTrabajados), // Suma de todos los bloques laborados
-        tardanza: esTardanza,
+        tardanza: esTardanza ? 'tardanza' : 'correcto',
         minutosTardanza: minutosTardanza > 0 ? minutosTardanza : 0,
-        excesoBreak: totalMinutosBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
-        jornadaIncompleta: (totalMinutosTrabajados / 60) < CONFIG.HORAS_LABORALES_META
+        excesoBreak: totalMinutosBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK) ? 'verificar' : 'correcto',
+        jornadaIncompleta: (totalMinutosTrabajados / 60) < CONFIG.HORAS_LABORALES_META ? 'incompleta' : 'completa'
     };
 };
 
@@ -376,7 +376,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 entradaOficial: horarioDB.entradaOficial || "08:30",
                 rango: (diaDescanso.descanso || "").length ? 'Descanso' : (horarioDB.rango || "Sin Horario"),
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
-                isPapeleta: !!papeletaDB.isPapeleta,
+                isPapeleta: !!papeletaDB.isPapeleta ? 'sin papeleta' : 'con papeleta',
 
                 // ENVIAMOS TODAS LAS MARCACIONES (las 5 o más)
                 // Esto servirá para que en el Dashboard puedas hacer un "Ver más"
