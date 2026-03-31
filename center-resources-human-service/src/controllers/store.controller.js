@@ -317,6 +317,11 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         const grupos = susMarcaciones.reduce((acc, curr) => {
             // 1. Validamos si la caja actual NO está en la lista de excluidas
+
+            if (curr.nroDocumento == '71466429') {
+                console.log(curr);
+            }
+
             if (!cajasExcluidas.includes(curr.caja)) {
 
                 // 2. Si el día no existe en el acumulador, lo inicializamos
