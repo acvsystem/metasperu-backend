@@ -140,12 +140,6 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     let dSalida = crearFecha(dia.fecha, dia.salidaFinal);
     let dOficial = crearFecha(dia.fecha, horaOficial);
 
-
-    const mEnt = toMin(dia.entrada);
-    const mSBr = toMin(dia.salidaBreak);
-    const mRBr = toMin(dia.retornoBreak);
-    const mSal = toMin(dia.salidaFinal);
-
     // 2. LÓGICA DE CRUCE DE MEDIANOCHE
     // Si la salida es menor que la entrada, le sumamos 1 día a la salida
     if (dSalida && dEntrada && dSalida < dEntrada) {
