@@ -133,51 +133,64 @@ const crearFecha = (fechaStr, horaStr) => {
 };
 
 const analizarMetricasMadrugada = (dia, horaOficial) => {
-    // 1. Creamos fechas base (Día A)
-    let dEntrada = crearFecha(dia.fecha, dia.entrada);
-    let dSBr = crearFecha(dia.fecha, dia.salidaBreak);
-    let dRBr = crearFecha(dia.fecha, dia.retornoBreak);
-    let dSalida = crearFecha(dia.fecha, dia.salidaFinal);
+    // 1. Configuración de entrada oficial para tardanza
+    let dEntradaPrimera = crearFecha(dia.fecha, dia.entrada);
     let dOficial = crearFecha(dia.fecha, horaOficial);
 
+    let totalMinutosTrabajados = 0;
+    let totalMinutosBreak = 0;
 
-    // 2. LÓGICA DE CRUCE DE MEDIANOCHE
-    // Si la salida es menor que la entrada, le sumamos 1 día a la salida
-    if (dSalida && dEntrada && dSalida < dEntrada) {
-        dSalida.setDate(dSalida.getDate() + 1);
-    }
-    // Lo mismo para el retorno del break si ocurrió de madrugada
-    /*  if (dRBr && dSBr && dRBr < dSBr) {
-          dRBr.setDate(dRBr.getDate() + 1);
-      }*/
+    // 2. RECORRER TODOS LOS BLOQUES (Pueden ser 1, 2, 5 o más)
+    const bloques = dia.marcaciones || [];
 
-    let minBreak = 0;
-    let minTrabajados = 0;
+    bloques.forEach((bloque, index) => {
+        let inicio = crearFecha(dia.fecha, bloque.hrIn);
+        let fin = crearFecha(dia.fecha, bloque.hrOut);
 
-    // Cálculo de Break en milisegundos a minutos
-    if (dRBr && dSBr) {
-        minBreak = (dRBr - dSBr) / 1000 / 60;
-    }
+        // Lógica de madrugada por cada bloque individual
+        if (fin && inicio && fin < inicio) {
+            fin.setDate(fin.getDate() + 1);
+        }
 
-    // Cálculo de Jornada Efectiva
-    if (dSalida && dEntrada) {
-        const totalMs = dSalida - dEntrada;
-        minTrabajados = (totalMs / 1000 / 60) - (minBreak > 0 ? minBreak : 0);
-    }
+        if (inicio && fin) {
+            const msBloque = fin - inicio;
+            const minBloque = msBloque / 1000 / 60;
+            totalMinutosTrabajados += minBloque;
+        }
 
-    // Cálculo de Tardanza
-    const esTardanza = dEntrada && dOficial
-        ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA
-        : false;
+        // Calcular Break: Es el tiempo entre el fin del bloque actual 
+        // y el inicio del siguiente bloque
+        if (index < bloques.length - 1) {
+            let finBloqueActual = crearFecha(dia.fecha, bloque.hrOut);
+            let inicioSiguiente = crearFecha(dia.fecha, bloques[index + 1].hrIn);
 
+            // Ajuste de madrugada para el break
+            if (inicioSiguiente < finBloqueActual) {
+                inicioSiguiente.setDate(inicioSiguiente.getDate() + 1);
+            }
+
+            if (finBloqueActual && inicioSiguiente) {
+                const msBreak = inicioSiguiente - finBloqueActual;
+                totalMinutosBreak += (msBreak / 1000 / 60);
+            }
+        }
+    });
+
+    // 3. Cálculo de Tardanza (Solo se evalúa la primera entrada del día)
+    const minutosTardanza = dEntradaPrimera && dOficial
+        ? (dEntradaPrimera - dOficial) / 1000 / 60
+        : 0;
+
+    const esTardanza = minutosTardanza > CONFIG.MIN_TOLERANCIA_ENTRADA;
 
     return {
         ...dia,
-        tiempoBreak: fmt(minBreak),
-        horasEfectivas: fmt(minTrabajados),
+        tiempoBreak: fmt(totalMinutosBreak), // Suma de todos los intermedios
+        horasEfectivas: fmt(totalMinutosTrabajados), // Suma de todos los bloques laborados
         tardanza: esTardanza,
-        excesoBreak: minBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
-        jornadaIncompleta: (minTrabajados / 60) < CONFIG.HORAS_LABORALES_META
+        minutosTardanza: minutosTardanza > 0 ? minutosTardanza : 0,
+        excesoBreak: totalMinutosBreak > (CONFIG.MIN_BREAK_PERMITIDO + CONFIG.MIN_TOLERANCIA_BREAK),
+        jornadaIncompleta: (totalMinutosTrabajados / 60) < CONFIG.HORAS_LABORALES_META
     };
 };
 
