@@ -314,11 +314,15 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
 
         // 1. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
-            if (!acc[curr.dia]) acc[curr.dia] = [];
-            // Calculamos horas de este bloque específico
-            curr.hrWorking = minutosAHoras(calcularDiferenciaMinutos(curr.hrIn, curr.hrOut));
-            acc[curr.dia].push(curr);
-            return acc;
+
+            if (curr.caja != '9M1' && curr.caja != '9M2' && curr.caja != '9M3') {
+                if (!acc[curr.dia]) acc[curr.dia] = [];
+                // Calculamos horas de este bloque específico
+                curr.hrWorking = minutosAHoras(calcularDiferenciaMinutos(curr.hrIn, curr.hrOut));
+                acc[curr.dia].push(curr);
+                return acc;
+            }
+
         }, {});
 
         // 2. Procesar cada día dinámicamente
