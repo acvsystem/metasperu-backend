@@ -142,7 +142,7 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
 
     // 2. RECORRER TODOS LOS BLOQUES (Pueden ser 1, 2, 5 o más)
     const bloques = dia.marcaciones || [];
-    console.log(bloques[0]);
+    console.log(bloques[0]['nroDocumento']);
     if(dia.fecha == '2026-03-07' && bloques[0]['documento'] == '70359939'){
         console.log(bloques);
     }
