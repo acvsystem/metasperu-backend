@@ -360,7 +360,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         return asistenciaDiaria;
     }));
 
-
+    console.log("procesarAsistenciaFinal");
     return resultadosProcesados;
 };
 

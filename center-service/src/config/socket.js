@@ -82,6 +82,11 @@ export const initSocket = (server) => {
             verificarYComparar(data.serie);
         });
 
+
+        socket.on('py_response_clear_cola_pana', (data) => {
+            io.emit('transaction_refresh_dashboard', data);
+        });
+
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_delete_client', (data) => {
             io.emit('client_refresh_dashboard', data);
@@ -209,12 +214,6 @@ function obtenerFaltantes(serieStore, store, servidor) {
     console.log(`🚀 Documentos Faltantes ${serieStore} - ${faltantes.length}`);
     return { serie: serieStore, documents: faltantes, length: faltantes.length };
 }
-
-function resetearAuditoria() {
-    auditoriaEstado.serverData = null;
-    auditoriaEstado.tiendasData = {};
-}
-
 
 async function enviarActualizacionDashboard() {
     // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
