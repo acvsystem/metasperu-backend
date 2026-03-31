@@ -41,7 +41,7 @@ export const storeController = {
         }
 
         try {
-            console.log("postAsistenciaEmployesStore");
+
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 getIO().emit('dashboard_refresh_empleados');
@@ -290,66 +290,78 @@ const formatearFechaParaDB = (fechaISO) => {
 
 // --- PROCESADOR PRINCIPAL ---
 const procesarAsistenciaFinal = async (empleados, marcaciones) => {
-    // Usamos Promise.all para manejar la asincronía de la DB
-    const resultadosProcesados = await Promise.all(empleados.map(async (emp) => {
-        const dni = emp.NUMDOC.trim();
 
-        // 1. Filtrar marcaciones de este empleado
+    const resultadosPorEmpleado = await Promise.all(empleados.map(async (emp) => {
+        const dni = emp.NUMDOC.trim();
         const susMarcaciones = marcaciones.filter(m => m.nroDocumento.trim() === dni);
 
-        // 2. Agrupar por día
+        if (susMarcaciones.length === 0) return [];
+
+        // 1. Agrupar por día
         const grupos = susMarcaciones.reduce((acc, curr) => {
             if (!acc[curr.dia]) acc[curr.dia] = [];
-            let minutosTotalesDia = calcularDiferenciaMinutos(curr.hrIn, curr.hrOut);
-            curr.hrWorking = minutosAHoras(minutosTotalesDia);
+            // Calculamos horas de este bloque específico
+            curr.hrWorking = minutosAHoras(calcularDiferenciaMinutos(curr.hrIn, curr.hrOut));
             acc[curr.dia].push(curr);
             return acc;
         }, {});
 
-        // 3. Procesar cada día (esto es lo que consulta a la DB)
+        // 2. Procesar cada día dinámicamente
         const asistenciaDiaria = await Promise.all(Object.keys(grupos).map(async (fecha) => {
+            // Ordenamos todas las marcaciones del día por hora de inicio
             const lista = grupos[fecha].sort((a, b) => a.hrIn.localeCompare(b.hrIn));
+            const totalMarcaciones = lista.length;
 
-            const b1 = lista[0];
-            const b2 = lista[1] || null;
+            // LÓGICA DINÁMICA:
+            const primera = lista[0]; // Siempre la primera del día
+            const ultima = lista[totalMarcaciones - 1]; // Siempre la última del día
 
-            // Formatear fecha para el query (QUITAR GUIONES: 2026-03-20 -> 20260320)
             const fechaSQL = formatearFechaParaDB(fecha);
 
-            // LLAMADA A LA DB (Asegúrate que searchHorarioEmpleado use await internamente)
-            const horarioDB = await searchHorarioEmpleado(fechaSQL, dni);
-            const papeletaDB = await searchPapeletaEmpleado(fecha, dni);
+            // Consultas a DB en paralelo
+            const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
+                searchHorarioEmpleado(fechaSQL, dni),
+                searchPapeletaEmpleado(fecha, dni),
+                searchDescansoEmpleado(fechaSQL, dni)
+            ]);
 
-            const diaDescanso = await searchDescansoEmpleado(fechaSQL, dni);
-
+            // Construimos el registro base
             const registro = {
-                documento: emp.NUMDOC,
-                nombre: b1.nombreCompleto,
+                documento: dni,
+                nombre: primera.nombreCompleto,
                 ejb: emp.CODEJB,
                 tienda: emp.UNDSERVICIO,
                 dia: fecha,
                 fecha: fecha,
-                entrada: b1.hrIn,
-                salidaBreak: b1.hrOut || '--:--:--',
-                retornoBreak: b2 ? b2.hrIn : '--:--:--',
-                salidaFinal: b2 ? b2.hrOut : b1.hrOut,
+
+                // Métrica de visualización
+                entrada: primera.hrIn,
+                salidaFinal: ultima.hrOut || ultima.hrIn, // Si no tiene salida, usamos la entrada del último bloque
+
+                // Estos campos ahora son informativos del primer y segundo bloque (si existen)
+                salidaBreak: totalMarcaciones > 1 ? lista[0].hrOut : '--:--:--',
+                retornoBreak: totalMarcaciones > 1 ? lista[1].hrIn : '--:--:--',
+
+                // Datos de Horario/Papeleta
                 entradaOficial: horarioDB.entradaOficial || "08:30",
-                rango: (diaDescanso.descanso || "").length ? 'Descanso' : horarioDB.rango || "Sin Horario",
+                rango: (diaDescanso.descanso || "").length ? 'Descanso' : (horarioDB.rango || "Sin Horario"),
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
-                isPapeleta: papeletaDB.isPapeleta ? true : false,
-                marcaciones: lista
+                isPapeleta: !!papeletaDB.isPapeleta,
+
+                // ENVIAMOS TODAS LAS MARCACIONES (las 5 o más)
+                // Esto servirá para que en el Dashboard puedas hacer un "Ver más"
+                marcaciones: lista,
+                totalBloques: totalMarcaciones
             };
 
-            // Retornamos el objeto con las métricas calculadas (Tardanza, etc)
+            // Aplicamos tu lógica de madrugada y cálculos de horas
             return analizarMetricasMadrugada(registro, registro.entradaOficial);
         }));
 
-        // 4. RETORNAMOS EL FORMATO QUE NECESITAS
-        // Usamos el código de empleado o DNI como "property"
         return asistenciaDiaria;
     }));
 
-    return resultadosProcesados;
+    return resultadosPorEmpleado.flat();
 };
 
 /**
