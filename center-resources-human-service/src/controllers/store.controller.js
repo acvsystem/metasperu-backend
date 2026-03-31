@@ -142,15 +142,10 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
 
     // 2. RECORRER TODOS LOS BLOQUES (Pueden ser 1, 2, 5 o más)
     const bloques = dia.marcaciones || [];
-
+    console.log(bloques);
     bloques.forEach((bloque, index) => {
         let inicio = crearFecha(dia.fecha, bloque.hrIn);
         let fin = crearFecha(dia.fecha, bloque.hrOut);
-
-        // Lógica de madrugada por cada bloque individual
-        if (fin && inicio && fin < inicio) {
-            fin.setDate(fin.getDate() + 1);
-        }
 
         if (inicio && fin) {
             const msBloque = fin - inicio;
