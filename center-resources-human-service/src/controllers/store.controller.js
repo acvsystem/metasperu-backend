@@ -194,14 +194,18 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     };
 };
 
-const fmt = (minutosTotales) => {
-    // Usamos Math.round para que 59.5 minutos suba a 60 (1 hora)
-    let totalCerrado = Math.round(minutosTotales); 
-    
-    const horas = Math.floor(totalCerrado / 60);
-    const minutos = totalCerrado % 60;
+const fmt = (minutosDecimales) => {
+    if (!minutosDecimales || minutosDecimales <= 0) return "00:00";
 
-    return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+    // Redondeamos al minuto más cercano para absorber los segundos
+    // 418.966 se convertirá en 419
+    const minutosRedondeados = Math.round(minutosDecimales);
+
+    const hrs = Math.floor(minutosRedondeados / 60);
+    const mins = minutosRedondeados % 60;
+
+    // padStart asegura que siempre veamos 08:05 y no 8:5
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 };
 
 
