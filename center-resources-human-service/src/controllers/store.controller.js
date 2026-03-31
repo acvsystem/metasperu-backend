@@ -140,6 +140,7 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
     let dSalida = crearFecha(dia.fecha, dia.salidaFinal);
     let dOficial = crearFecha(dia.fecha, horaOficial);
 
+
     // 2. LÓGICA DE CRUCE DE MEDIANOCHE
     // Si la salida es menor que la entrada, le sumamos 1 día a la salida
     if (dSalida && dEntrada && dSalida < dEntrada) {
@@ -169,12 +170,6 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
         ? (dEntrada - dOficial) / 1000 / 60 > CONFIG.MIN_TOLERANCIA_ENTRADA
         : false;
 
-
-    const toMin = (h) => {
-        if (!h || h.includes('--')) return null;
-        const [hrs, mins] = h.split(':').map(Number);
-        return (hrs * 60) + mins;
-    };
 
     return {
         ...dia,
