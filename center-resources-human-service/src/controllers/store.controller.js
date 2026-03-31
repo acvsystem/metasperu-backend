@@ -41,7 +41,7 @@ export const storeController = {
         }
 
         try {
-
+            console.log("postAsistenciaEmployesStore");
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 getIO().emit('dashboard_refresh_empleados');
@@ -349,7 +349,6 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         return asistenciaDiaria;
     }));
 
-    console.log("procesarAsistenciaFinal");
     return resultadosProcesados;
 };
 
