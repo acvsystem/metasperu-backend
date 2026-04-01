@@ -205,7 +205,7 @@ const fmt = (minutosDecimales) => {
 const searchPapeletaEmpleado = async (fecha, documento) => {
     try {
         const query = `
-            SELECT * FROM TB_HEAD_PAPELETA 
+            SELECT CODIGO_PAPELETA,HORA_SOLICITADA FROM TB_HEAD_PAPELETA 
             WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
         `;
 
@@ -217,7 +217,6 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
 
             //
             return {
-                papeleta: rows,
                 codigoPapeleta: rangoCompleto || "",
                 horaSolicitada: horaSolicitada || "",
                 isPapeleta: rangoCompleto.length > 0 ? true : false
