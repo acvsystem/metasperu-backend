@@ -120,7 +120,7 @@ export const storeController = {
         const { codeBallot } = req.body;
         console.log(codeBallot);
         try {
-            const query = `SELECT CODIGO_PAPELETA,HORA_SOLICITADA FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
+            const query = `SELECT * FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
             const [rows] = await pool.query(query, [codeBallot]);
 
             res.status(200).json({ ballot: rows });
