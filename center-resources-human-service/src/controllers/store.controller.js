@@ -118,6 +118,7 @@ export const storeController = {
     },
     getBallotEmployesStore: async (req, res) => {
         const { codeBallot } = req.params;
+        console.log(codeBallot);
         try {
             const query = `SELECT CODIGO_PAPELETA,HORA_SOLICITADA FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
             const [rows] = await pool.query(query, [codeBallot]);
