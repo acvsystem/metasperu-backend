@@ -148,8 +148,6 @@ const analizarMetricasMadrugada = (dia, horaOficial) => {
         let fin = crearFecha(dia.fecha, bloque.hrOut);
 
         if (inicio && fin) {
-            const msBloque = fin - inicio;
-            const minBloque = msBloque / 1000 / 60;
             totalMinutosTrabajados += calcularDiferenciaMinutos(bloque.hrIn, bloque.hrOut);
         }
 
@@ -207,7 +205,7 @@ const fmt = (minutosDecimales) => {
 const searchPapeletaEmpleado = async (fecha, documento) => {
     try {
         const query = `
-            SELECT CODIGO_PAPELETA FROM TB_HEAD_PAPELETA 
+            SELECT * FROM TB_HEAD_PAPELETA 
             WHERE ID_PAP_TIPO_PAPELETA = 7 AND NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
         `;
 
@@ -215,9 +213,13 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
 
         if (rows && rows.length > 0) {
             const rangoCompleto = rows[0].CODIGO_PAPELETA;
+            const horaSolicitada = rows[0].HORA_SOLICITADA;
 
+            //
             return {
+                papeleta: rows,
                 codigoPapeleta: rangoCompleto || "",
+                horaSolicitada: horaSolicitada || "",
                 isPapeleta: rangoCompleto.length > 0 ? true : false
             };
         }
@@ -377,7 +379,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
                 rango: (diaDescanso.descanso || "").length ? 'Descanso' : (horarioDB.rango || "Sin Horario"),
                 codigoPapeleta: papeletaDB.codigoPapeleta || "",
                 isPapeleta: papeletaDB.isPapeleta ? 'con papeleta' : 'sin papeleta',
-
+                horaSolicitada: papeletaDB.horaSolicitada || "",
                 // ENVIAMOS TODAS LAS MARCACIONES (las 5 o más)
                 // Esto servirá para que en el Dashboard puedas hacer un "Ver más"
                 marcaciones: lista,
