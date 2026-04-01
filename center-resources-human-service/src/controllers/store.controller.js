@@ -118,15 +118,42 @@ export const storeController = {
     },
     postBallotEmployesStore: async (req, res) => {
         const { codeBallot } = req.body;
-        console.log(codeBallot);
+
+        // 1. Validación de entrada
+        if (!codeBallot) {
+            return res.status(400).json({ message: 'El código de papeleta es requerido' });
+        }
+
         try {
-            const query = `SELECT * FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
-            const [rows] = await pool.query(query, [codeBallot]);
+            // 2. Consulta de Cabecera
+            const headQuery = `SELECT * FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
+            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
 
-            res.status(200).json({ ballot: rows });
+            // 3. Verificación de existencia
+            if (rowsHead.length === 0) {
+                return res.status(404).json({ message: 'Papeleta no encontrada' });
+            }
 
-        } catch {
-            res.status(500).json({ message: 'Error interno' });
+            const headData = rowsHead[0];
+            const idHead = headData.ID_HEAD_PAPELETA;
+
+            // 4. Consulta de Detalle
+            const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
+            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
+
+            // 5. Respuesta estructurada
+            return res.status(200).json({
+                success: true,
+                head_ballot: headData, // Enviamos el objeto directo, no el array de 1 posición
+                detail_ballot: rowsDetail
+            });
+
+        } catch (error) {
+            console.error(`❌ Error en papeleta ${codeBallot}:`, error.message);
+            return res.status(500).json({
+                message: 'Error interno del servidor',
+                error: process.env.NODE_ENV === 'development' ? error.message : {}
+            });
         }
     }
 };
