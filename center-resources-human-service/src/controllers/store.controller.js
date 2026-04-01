@@ -116,8 +116,8 @@ export const storeController = {
             res.status(500).json({ message: 'Error interno' });
         }
     },
-    getBallotEmployesStore: async (req, res) => {
-        const { codeBallot } = req.params;
+    postBallotEmployesStore: async (req, res) => {
+        const { codeBallot } = req.body;
         console.log(codeBallot);
         try {
             const query = `SELECT CODIGO_PAPELETA,HORA_SOLICITADA FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
