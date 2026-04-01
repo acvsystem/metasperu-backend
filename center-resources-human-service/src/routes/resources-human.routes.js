@@ -12,4 +12,8 @@ router.post('/api/asistence/employes/store/refresh', storeController.postRefresA
 // --- RUTAS REGISTRO EMPLEADOS EJB ---
 router.get('/api/asistence/ejb/register/employes', storeController.callRegisterEmployesStore);
 router.post('/api/asistence/ejb/register/employes/response', storeController.postEjbRegisterEmployes);
+
+// --- PAPELETAS EMPLEADOS ---
+router.get('/api/ballot/employes/store/:codeBallot', storeController.getBallotEmployesStore);
+
 export default router;

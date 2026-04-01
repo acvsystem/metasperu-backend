@@ -115,6 +115,18 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
         }
+    },
+    getBallotEmployesStore: async (req, res) => {
+        const { codeBallot } = req.params;
+        try {
+            const query = `SELECT CODIGO_PAPELETA,HORA_SOLICITADA FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ?`;
+            const [rows] = await pool.query(query, [codeBallot]);
+
+            res.status(200).json({ ballot: rows });
+
+        } catch {
+            res.status(500).json({ message: 'Error interno' });
+        }
     }
 };
 
