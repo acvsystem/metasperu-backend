@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url';
 
 const transporter = nodemailer.createTransport({
     service: "Gmail",
+    port: 465,
+    secure: true,
     auth: {
-        user: 'itperu@metasperu.com',
-        pass: 'lpieqykwqpdzkhgt'
+        user: 'itperu.notification@gmail.com',
+        pass: 'fxmcqlzirhrkihzx'
     }
 })
 
