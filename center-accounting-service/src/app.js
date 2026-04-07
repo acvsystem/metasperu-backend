@@ -21,7 +21,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 import accountingRoutes from './routes/accounting.routes.js';
 app.use('/s6/center/accounting', accountingRoutes);
 
-const PORT = 3005;
+const PORT = 3006;
 httpServer.listen(PORT, () => {
     console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });
