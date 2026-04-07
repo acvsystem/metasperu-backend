@@ -1,6 +1,4 @@
 import { getIO } from '../config/socket.js';
-import * as XLSX from 'xlsx';
-import { emailService } from '../services/email.service.js';
 
 const inventariosPorMarca = new Map();
 
