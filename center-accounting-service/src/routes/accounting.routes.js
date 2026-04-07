@@ -5,6 +5,6 @@ import { storeController } from '../controllers/store.controller.js';
 const router = Router();
 
 // --- RUTAS PARA KARDEX TIENDAS
-router.get('/api/kardex/store', storeController.getKardexStore);
+router.post('/api/kardex/store', storeController.getKardexStore);
 
 export default router;
