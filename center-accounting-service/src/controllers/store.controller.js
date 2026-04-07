@@ -5,10 +5,10 @@ const inventariosPorMarca = new Map();
 export const storeController = {
 
     getKardexStore: async (req, res) => {
-        const { serieStore, socketId } = req.body;
+        const { serieStore, socketId, init, end } = req.body;
         try {
 
-            getIO().to(serieStore).emit('py_request_kardex_store', { pedido_por: socketId });
+            getIO().to(serieStore).emit('py_request_kardex_store', { pedido_por: socketId, init: init, end: end });
 
             res.json({
                 message: 'Se emitio señal de kardex'
