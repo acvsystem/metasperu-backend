@@ -40,6 +40,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_kardex_store', (data) => {
+            console.log(data);
             const dataKardex = JSON.parse(data.kardex);
             const socketId = data.pedido_por;
 
