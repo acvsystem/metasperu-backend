@@ -6,5 +6,6 @@ const router = Router();
 
 // --- RUTAS PARA KARDEX TIENDAS
 router.post('/api/kardex/store', storeController.getKardexStore);
+router.post('/api/kardex/camposlibres', storeController.postKardexCamposLibres);
 
 export default router;

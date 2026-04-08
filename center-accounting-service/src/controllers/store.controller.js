@@ -16,5 +16,18 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
+    },
+    postKardexCamposLibres: async (req, res) => {
+        const { serieStore, socketId, body } = req.body;
+        try {
+
+            getIO().to(serieStore).emit('py_request_kardex_campos_libres', { pedido_por: socketId, body: body });
+
+            res.json({
+                message: 'Se emitio señal de kardex campos libres'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
     }
 };
