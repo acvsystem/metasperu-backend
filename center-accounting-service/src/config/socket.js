@@ -54,6 +54,13 @@ export const initSocket = (server) => {
             io.to(socketId).emit('dashboard_kardex_campos_libres', { message: message });
         });
 
+        socket.on('py_response_cuo', (data) => {
+            const dataCuo = JSON.parse(data.cuo);
+            const socketId = data.pedido_por;
+
+            io.to(socketId).emit('dashboard_cuo_store', dataCuo);
+        });
+
         socket.on('disconnect', () => {
             console.log('❌ Tienda desconectada');
         });
