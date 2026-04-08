@@ -65,7 +65,7 @@ export const initSocket = (server) => {
             const message = data.message;
             const socketId = data.pedido_por;
 
-            io.to(socketId).emit('dashboard_cuo_store', { message: message });
+            io.to(socketId).emit('dashboard_cuo_insert', { message: message });
         });
 
         socket.on('disconnect', () => {
