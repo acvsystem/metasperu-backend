@@ -42,5 +42,18 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
+    },
+    postCuoInsert: async (req, res) => {
+        const { serieStore, socketId, data } = req.body;
+        try {
+
+            getIO().to(serieStore).emit('py_request_insert_cuo', { pedido_por: socketId, data: data });
+
+            res.json({
+                message: 'Se emitio señal de CUO'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
     }
 };

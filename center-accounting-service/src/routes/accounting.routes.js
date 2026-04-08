@@ -10,6 +10,6 @@ router.post('/api/kardex/camposlibres', storeController.postKardexCamposLibres);
 
 // --- RUTAS PARA CUO TIENDAS
 router.post('/api/cuo/store', storeController.getCuoStore);
-//router.post('/api/cuo/insert', storeController.postCuoInsert);
+router.post('/api/cuo/insert', storeController.postCuoInsert);
 
 export default router;
