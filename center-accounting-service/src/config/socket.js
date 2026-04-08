@@ -47,6 +47,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_kardex_campos_libres', (data) => {
+            console.log(data);
             const message = data.message;
             const socketId = data.pedido_por;
 
