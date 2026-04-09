@@ -40,10 +40,10 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_one_store_inventory', (data) => {
-            const data = data.dataCode;
+            const datac = data.dataCode;
             const socketId = data.pedido_por;
 
-            io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: data });
+            io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac });
         });
 
         socket.on('disconnect', () => {
