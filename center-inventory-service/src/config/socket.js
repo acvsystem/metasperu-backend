@@ -40,7 +40,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_one_store_inventory', (data) => {
-            const datac = data.dataCode;
+            const datac = JSON.parse(data.dataCode);
             const socketId = data.pedido_por;
 
             io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac });
