@@ -39,6 +39,13 @@ export const initSocket = (server) => {
             console.log(`🏪 Tienda ${info.nombre} registrada en sala ${info.marca}`);
         });
 
+        socket.on('py_response_one_store_inventory', (data) => {
+            const data = data.dataCode;
+            const socketId = data.pedido_por;
+
+            io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: data });
+        });
+
         socket.on('disconnect', () => {
             console.log('❌ Tienda desconectada');
         });
