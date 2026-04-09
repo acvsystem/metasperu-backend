@@ -122,7 +122,7 @@ export const storeController = {
         }
     },
     callInventoryOneStore: async (req, res) => {
-        const { serieStore, socketId, dataCode } = req.params;
+        const { serieStore, socketId, dataCode } = req.body;
         try {
 
             if (!serieStore.length || !dataCode.length || !socketId.length) {
