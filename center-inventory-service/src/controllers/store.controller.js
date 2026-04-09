@@ -120,6 +120,21 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error', error });
         }
+    },
+    callInventoryOneStore: async (req, res) => {
+        const { serieStore, socketId, dataCode } = req.body;
+        try {
+
+            if (!serieStore.length || !dataCode.length || !socketId.length) {
+                return res.json({ message: 'Serie de tienda, código de datos y ID de socket son requeridos' });
+            }
+
+            getIO().to(serieStore).emit('py_request_one_store_inventory', { pedido_por: socketId, data: dataCode });
+            
+            res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error', error });
+        }
     }
 };
 
