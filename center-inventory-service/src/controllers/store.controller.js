@@ -130,11 +130,18 @@ export const storeController = {
             }
 
             getIO().to(serieStore).emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: dataCode });
-            
+
             res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
         } catch (error) {
             res.status(500).json({ message: 'Error', error });
         }
+    },
+    callTraspasosFTP: async (req, res) => {
+        const filePath = req.file.path;
+        const fileName = req.file.originalname;
+        const rutaDirectory = req.body.ftpDirectorio;
+
+        console.log(`Archivo recibido: ${fileName} en ruta temporal: ${filePath} para directorio FTP: ${rutaDirectory}`);
     }
 };
 
