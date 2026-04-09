@@ -46,6 +46,7 @@ export const storeController = {
                     email: t.EMAIL,
                     codigo_ejb: t.COD_TIENDA_EJB,
                     estado: t.ESTATUS,
+                    tipo_tienda: t.TIPO_TIENDA,
                     online: false,
                     traffic: parseJsonField(t.traffic_json),
                     terminales: parseJsonField(t.terminales_json), // Nueva lista de terminales
