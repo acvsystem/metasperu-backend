@@ -43,7 +43,7 @@ export const initSocket = (server) => {
             const datac = JSON.parse(data.dataCode);
             const socketId = data.pedido_por;
 
-            io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac });
+            io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac.dataCode });
         });
 
         socket.on('disconnect', () => {
