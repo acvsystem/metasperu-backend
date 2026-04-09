@@ -129,7 +129,7 @@ export const storeController = {
                 return res.json({ message: 'Serie de tienda, código de datos y ID de socket son requeridos' });
             }
 
-            getIO().to(serieStore).emit('py_request_one_store_inventory', { pedido_por: socketId, data: dataCode });
+            getIO().to(serieStore).emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: dataCode });
             
             res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
         } catch (error) {
