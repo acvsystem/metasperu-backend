@@ -10,4 +10,5 @@ router.post('/api/inventory/send/email', storeController.postSendInventoryStoreE
 router.post('/api/inventory/application/inventary/email', storeController.callSendInventoryStoreEmail);
 router.get('/api/inventory/store/:marca', storeController.callInventoryStore);
 router.get('/api/inventory/consolidated/:marca/:serieStore', storeController.getConsolidatedInventory);
+router.post('/api/inventory/one/search', storeController.callInventoryOneStore);
 export default router;

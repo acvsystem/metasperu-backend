@@ -27,7 +27,6 @@ export const storeController = {
             res.status(500).json({ message: 'Error interno' });
         }
     },
-
     postSendInventoryStoreEmail: async (req, res) => {
         const { stockData, email, nombre, serie } = req.body;
         console.log("Solicitud de envío de inventario a email:", email, nombre, serie);
@@ -75,7 +74,6 @@ export const storeController = {
             return res.status(500).json({ message: 'Error al procesar el envío de inventarios' });
         }
     },
-
     callInventoryStore: async (req, res) => { // Cuando el Dashboard de Angular pide actualizar
         const { marca } = req.params;
         try {
@@ -86,7 +84,6 @@ export const storeController = {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
     },
-
     getConsolidatedInventory: async (req, res) => {
         const { marca, serieStore } = req.params; // Viene de la URL /inventory/:marca
         try {
@@ -106,7 +103,6 @@ export const storeController = {
             res.status(500).json({ message: 'Error', error });
         }
     },
-
     callSendInventoryStoreEmail: async (req, res) => {
         const { email, serieStore } = req.body;
         try {
@@ -121,6 +117,20 @@ export const storeController = {
             res.json({
                 message: 'Se realizo la solicitud de envio de inventario.'
             });
+        } catch (error) {
+            res.status(500).json({ message: 'Error', error });
+        }
+    },
+    callInventoryOneStore: async (req, res) => {
+        const { serieStore, socketId, dataCode } = req.params;
+        try {
+
+            if (!serieStore.length || !dataCode.length || !socketId.length) {
+                return res.json({ message: 'Serie de tienda, código de datos y ID de socket son requeridos' });
+            }
+
+            getIO().to(serieStore).emit('py_request_one_store_inventory', { pedido_por: socketId, data: dataCode });
+            res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
         } catch (error) {
             res.status(500).json({ message: 'Error', error });
         }
