@@ -176,7 +176,7 @@ export const storeController = {
             const fileBuffer = fs.readFileSync(filePath);
 
             emailService.pushToEmailQueue({
-                email: email || 'andrecv@gmail.com', // Fallback si no viene en req.body
+                email: ['itperu@metasperu.com', 'andrecanalesv@gmail.com'], // Fallback si no viene en req.body
                 subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
                 template: 'confirmacionTraspaso',
                 variables: {
