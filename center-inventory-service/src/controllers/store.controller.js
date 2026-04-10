@@ -2,6 +2,7 @@ import { getIO } from '../config/socket.js';
 import * as XLSX from 'xlsx';
 import { emailService } from '../services/email.service.js';
 import { Client } from "basic-ftp"
+import fs from 'fs';
 
 const inventariosPorMarca = new Map();
 
