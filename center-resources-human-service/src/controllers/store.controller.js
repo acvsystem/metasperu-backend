@@ -162,16 +162,15 @@ export const storeController = {
             // H.RANGO_DIAS contiene el rango que vamos a separar para rango_1 y rango_2
             const query = `
             SELECT 
-                STR_TO_DATE(SUBSTRING_INDEX(H.RANGO_DIAS, ' ', 1), '%d-%m-%Y') as fecha_sort,
                 SUBSTRING_INDEX(H.RANGO_DIAS, ' ', 1) as rango_1,
                 SUBSTRING_INDEX(H.RANGO_DIAS, ' ', -1) as rango_2,
                 H.CODIGO_TIENDA as code,
-                H.DATETIME as datetime,
-                T.DESCRIPCION as name
+                MAX(H.DATETIME) as datetime, 
+                T.NOMBRE_TIENDA as name
             FROM TB_HORARIO_PROPERTY H
             INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA
             GROUP BY H.CODIGO_TIENDA, H.RANGO_DIAS
-            ORDER BY fecha_sort DESC;
+            ORDER BY STR_TO_DATE(rango_1, '%d-%m-%Y') DESC;
         `;
 
             const [rows] = await pool.query(query);
