@@ -167,8 +167,8 @@ export const storeController = {
 
             // 3. Subida al FTP
             // Usamos la ruta dinámica que viene en el body o la de prueba
-            const targetDir = ftpDirectorio || `ITPERU/PRUEBA`;
-            await client.ensureDir(targetDir);
+            const targetDir = `ITPERU/PRUEBA`;
+            await client.ensureDir(targetDir);v
             await client.uploadFrom(filePath, fileName);
 
             // 4. Preparar el contenido para RabbitMQ
