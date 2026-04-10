@@ -167,7 +167,7 @@ export const storeController = {
 
             // 3. Subida al FTP
             // Usamos la ruta dinámica que viene en el body o la de prueba
-            const targetDir = `ITPERU/PRUEBA`;
+            const targetDir = ftpDirectorio || `ITPERU/PRUEBA`;
             await client.ensureDir(targetDir);
             await client.uploadFrom(filePath, fileName);
 
@@ -180,8 +180,8 @@ export const storeController = {
                 subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
                 template: 'confirmacionTraspaso',
                 variables: {
-                    tienda_origen: origenStore || 'ORIGEN',
-                    tienda_destino: destinoStore || 'DESTINO',
+                    tienda_origen: origenStore || 'ORIGEN DESCONOCIDO',
+                    tienda_destino: destinoStore || 'DESTINO DESCONOCIDO',
                     carpeta_destino: targetDir,
                     fecha: fechaPE,
                     hora: horaPE
