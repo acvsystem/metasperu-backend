@@ -139,65 +139,84 @@ export const storeController = {
         }
     },
     callTraspasosFTP: async (req, res) => {
-        const filePath = req.file.path;
-        const fileName = req.file.originalname;
-        const rutaDirectory = req.body.ftpDirectorio;
-        const origenStore = req.body.origenStore;
-        const destinoStore = req.body.destinoStore;
+        // 1. Validaciones iniciales
+        if (!req.file) {
+            return res.status(400).send('No se recibió ningún archivo.');
+        }
 
-        console.log(`Archivo recibido: ${fileName} en ruta temporal: ${filePath} para directorio FTP: ${rutaDirectory}`);
+        const { path: filePath, originalname: fileName } = req.file;
+        const { ftpDirectorio, origenStore, destinoStore, email } = req.body;
+
+        // Obtenemos la hora para el template
+        const ahora = new Date();
+        const fechaPE = ahora.toLocaleDateString('es-PE');
+        const horaPE = ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
         const client = new Client();
-        client.ftp.verbose = true;
+        client.ftp.verbose = false; // Desactivar en producción para no llenar logs
 
         try {
+            // 2. Conexión al FTP (Idealmente usar variables de entorno)
             await client.access({
-                host: '199.89.54.31',
+                host: process.env.FTP_HOST || '199.89.54.31',
                 port: 9879,
-                user: 'ftpuser25801247',
-                password: 'Cfz&}q)]i_^c~6MSVPI%',
+                user: process.env.FTP_USER || 'ftpuser25801247',
+                password: process.env.FTP_PASSWORD || 'Cfz&}q)]i_^c~6MSVPI%',
                 secure: false
             });
 
-            // 1. Asegurar que la ruta existe y entrar en ella
-            await client.ensureDir(`ITPERU/PRUEBA`);
-
-            // 2. Subir el archivo (filePath es la ruta local, fileName es el nombre en el FTP)
-            // IMPORTANTE: client.uploadFrom sube el archivo al directorio donde esté posicionado el cliente
+            // 3. Subida al FTP
+            // Usamos la ruta dinámica que viene en el body o la de prueba
+            const targetDir = ftpDirectorio || `ITPERU/PRUEBA`;
+            await client.ensureDir(targetDir);
             await client.uploadFrom(filePath, fileName);
 
-            // NOTA: Se eliminó client.uploadFromDir porque eso sirve para subir CARPETAS completas,
-            // y tú solo quieres subir el archivo del request.
+            // 4. Preparar el contenido para RabbitMQ
+            // Leemos el archivo para enviarlo como Buffer/Base64
+            const fileBuffer = fs.readFileSync(filePath);
 
             emailService.pushToEmailQueue({
-                email: email,
+                email: email || 'andrecv@gmail.com', // Fallback si no viene en req.body
                 subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
                 template: 'confirmacionTraspaso',
                 variables: {
-                    tienda_origen: origenStore,
-                    tienda_destino: destinoStore,
-                    carpeta_destino: rutaDirectory,
-                    fecha: new Date().toLocaleDateString('es-PE')
+                    tienda_origen: origenStore || 'ORIGEN',
+                    tienda_destino: destinoStore || 'DESTINO',
+                    carpeta_destino: targetDir,
+                    fecha: fechaPE,
+                    hora: horaPE
                 },
-                // En lugar de enviar solo el buffer, enviamos un objeto descriptivo
-                archivo: {
-                    filename: `${fileName}`, // Puedes modificar el nombre del archivo adjunto si lo deseas
-                    content: filePath // Este es el Buffer generado por XLSX.write
+                // Usamos la estructura de adjuntos (compatible con lo anterior)
+                archivo:
+                {
+                    filename: fileName,
+                    content: fileBuffer.toString('base64')
                 }
             });
 
-            res.status(200).send('PRUEBA: Archivo subido al FTP y email encolado exitosamente');
+            res.status(200).json({
+                status: 'success',
+                message: 'Archivo procesado, subido al FTP y notificación encolada.'
+            });
 
         } catch (err) {
-
-            res.status(500).send('Error subiendo al FTP: ' + err.message);
-
+            console.error(`Error en Traspaso FTP: ${err.message}`);
+            res.status(500).json({
+                status: 'error',
+                message: 'Error en el proceso de traspaso: ' + err.message
+            });
         } finally {
             client.close();
-            // Verificamos si el archivo existe antes de borrarlo para evitar errores en el finally
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+
+            // 5. Limpieza garantizada del archivo temporal
+            // Usamos la versión asíncrona para no bloquear el event loop
+            fs.access(filePath, fs.constants.F_OK, (err) => {
+                if (!err) {
+                    fs.unlink(filePath, (unlinkErr) => {
+                        if (unlinkErr) console.error(`No se pudo borrar temporal: ${filePath}`);
+                    });
+                }
+            });
         }
     }
 };
