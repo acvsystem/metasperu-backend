@@ -167,7 +167,7 @@ export const storeController = {
                 SUBSTRING_INDEX(H.RANGO_DIAS, ' ', -1) as rango_2,
                 H.CODIGO_TIENDA as code,
                 H.DATETIME as datetime,
-                T.NOMBRE_TIENDA as name
+                T.DESCRIPCION as name
             FROM TB_HORARIO_PROPERTY H
             INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA
             ORDER BY fecha_sort DESC;
