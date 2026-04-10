@@ -198,6 +198,99 @@ export const storeController = {
                 error: process.env.NODE_ENV === 'development' ? error.message : {}
             });
         }
+    },
+    getSearchScheduleStore: async (req, res) => {
+        try {
+            const { range_days, code_store } = req.body || {};
+
+            if (!range_days || !code_store) {
+                return res.status(400).json(mdwErrorHandler.error({
+                    status: 400, message: 'Faltan parámetros requeridos.'
+                }));
+            }
+
+            // 1. Consulta principal parametrizada (Seguridad)
+            const [schedules] = await pool.query(
+                'SELECT * FROM TB_HORARIO_PROPERTY WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?',
+                [code_store, range_days]
+            );
+
+            if (!schedules.length) {
+                return res.status(400).json(mdwErrorHandler.error({
+                    status: 400, type: 'OK', message: 'No hay ningún calendario en este rango de fecha.', api: '/schedule/search', data: []
+                }));
+            }
+
+            // 2. Mapeamos cada horario para traer su detalle en paralelo
+            const responseSchedule = await Promise.all(schedules.map(async (sql) => {
+                const id = sql.ID_HORARIO;
+
+                // Ejecutamos todas las consultas de detalle al mismo tiempo para este cargo
+                const [
+                    [ranges],
+                    [days],
+                    [workDays],
+                    [freeDays],
+                    [observations]
+                ] = await Promise.all([
+                    pool.query('SELECT * FROM TB_RANGO_HORA WHERE ID_RG_HORARIO = ?', [id]),
+                    pool.query('SELECT * FROM TB_DIAS_HORARIO WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC', [id]),
+                    pool.query('SELECT * FROM TB_DIAS_TRABAJO WHERE ID_TRB_HORARIO = ?', [id]),
+                    pool.query('SELECT * FROM TB_DIAS_LIBRE WHERE ID_TRB_HORARIO = ?', [id]),
+                    pool.query('SELECT * FROM TB_OBSERVACION WHERE ID_OBS_HORARIO = ?', [id])
+                ]);
+
+                return {
+                    id: id,
+                    cargo: sql.CARGO,
+                    codigo_tienda: sql.CODIGO_TIENDA,
+                    rg_hora: ranges.map((r, i) => ({
+                        id: r.ID_RANGO_HORA,
+                        position: i + 1,
+                        rg: r.RANGO_HORA,
+                        codigo_tienda: code_store
+                    })),
+                    dias: days.map((d, i) => ({
+                        dia: d.DIA,
+                        fecha: d.FECHA,
+                        fecha_number: d.FECHA_NUMBER,
+                        id: d.ID_DIAS,
+                        position: i + 1
+                    })),
+                    dias_trabajo: workDays.map(r => ({
+                        id: r.ID_DIA_TRB,
+                        id_cargo: r.ID_TRB_HORARIO,
+                        id_dia: r.ID_TRB_DIAS,
+                        nombre_completo: r.NOMBRE_COMPLETO,
+                        numero_documento: r.NUMERO_DOCUMENTO,
+                        rg: r.ID_TRB_RANGO_HORA,
+                        codigo_tienda: r.CODIGO_TIENDA
+                    })),
+                    dias_libres: freeDays.map(r => ({
+                        id: r.ID_DIA_LBR,
+                        id_cargo: r.ID_TRB_HORARIO,
+                        id_dia: r.ID_TRB_DIAS,
+                        nombre_completo: r.NOMBRE_COMPLETO,
+                        numero_documento: r.NUMERO_DOCUMENTO,
+                        rg: r.ID_TRB_RANGO_HORA,
+                        codigo_tienda: r.CODIGO_TIENDA
+                    })),
+                    observacion: observations.map(obs => ({
+                        id: obs.ID_OBSERVACION,
+                        id_dia: obs.ID_OBS_DIAS,
+                        nombre_completo: obs.NOMBRE_COMPLETO,
+                        observacion: obs.OBSERVACION
+                    }))
+                };
+            }));
+
+            // 3. Respuesta inmediata sin setTimeouts
+            res.status(200).json({ data: responseSchedule });
+
+        } catch (error) {
+            console.error("Error en searchSchedule:", error);
+            res.status(500).json({ status: 500, message: 'Error interno del servidor' });
+        }
     }
 };
 
