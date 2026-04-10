@@ -203,7 +203,7 @@ export const storeController = {
             // 2. Generar código de transferencia
             // Nota: Es mejor contar registros dentro de la transacción para evitar duplicados concurrentes
             const [rows] = await connection.query(`SELECT COUNT(*) as total FROM TB_HEAD_TRASPASOS`);
-            const code_transfer = this.generarCodigoSerie(rows[0].total + 1, 'T', 6);
+            const code_transfer = generarCodigoSerie(rows[0].total + 1, 'T', 6);
 
             // 3. Insertar Cabecera (Usando parámetros ? para seguridad)
             const sqlHead = `INSERT INTO TB_HEAD_TRASPASOS 
@@ -372,4 +372,9 @@ function actualizarMapaPorMarca(marca, serieStore, data) {
 
     console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
     getIO().emit('update_inventory', { serieStore, marca });
+}
+
+function generarCodigoSerie(numero, prefijo = 'T', longitud = 6) {
+    const numeroFormateado = numero.toString().padStart(longitud, '0');
+    return `${prefijo}${numeroFormateado}`;
 }
