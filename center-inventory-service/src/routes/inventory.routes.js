@@ -16,4 +16,6 @@ router.post('/api/inventory/one/search', storeController.callInventoryOneStore);
 
 // --- RUTAS PARA TRASPASOS
 router.post('/api/inventory/traspasos', uploadTraspasos.single('file'), storeController.callTraspasosFTP);
+router.get('/api/inventory/traspasos', storeController.getTraspasos);
+router.post('/api/inventory/traspasos/insert', storeController.postTraspasoBD);
 export default router;

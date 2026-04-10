@@ -138,6 +138,116 @@ export const storeController = {
             res.status(500).json({ message: 'Error', error });
         }
     },
+    getTraspasos: async (req, res) => {
+        try {
+            // 1. Obtenemos todas las cabeceras
+            const [headers] = await pool.query(`SELECT * FROM TB_HEAD_TRASPASOS ORDER BY ID_TRASPASOS DESC;`);
+
+            if (!headers.length) {
+                return res.status(200).json(mdwErrorHandler.error({
+                    status: 200, type: 'OK', message: 'OK', api: '/transfers/all', data: []
+                }));
+            }
+
+            // 2. Mapeamos las cabeceras y preparamos las promesas para los detalles
+            // Esto evita el problema del "if (length - 1 == i)" que es muy propenso a errores
+            const responseJSON = await Promise.all(headers.map(async (header) => {
+                const [details] = await pool.query(
+                    `SELECT * FROM TB_DETALLE_TRASPASOS WHERE CODIGO_TRASPASO = ?;`,
+                    [header.CODIGO_TRASPASO]
+                );
+
+                return {
+                    code_transfer: header.CODIGO_TRASPASO,
+                    unid_service: header.UNIDAD_SERVICIO,
+                    store_origin: header.TIENDA_ORIGEN,
+                    store_destination: header.TIENDA_DESTINO,
+                    code_warehouse_origin: header.CODIGO_ALM_ORIGEN,
+                    code_warehouse_destination: header.CODIGO_ALM_DESTINO,
+                    datetime: header.DATETIME,
+                    detail: details.map(d => ({
+                        barcode: d.CODIGO_BARRA,
+                        article_code: d.CODIGO_ARTICULO,
+                        description: d.DESCRIPCION,
+                        size: d.TALLA,
+                        color: d.COLOR,
+                        stock: d.STOCK,
+                        stock_required: d.STOCK_SOLICITADO,
+                        status: d.ESTADO,
+                        code_transfers: d.CODIGO_TRASPASO
+                    }))
+                };
+            }));
+
+            res.status(200).json({ data: responseJSON });
+
+        } catch (err) {
+            console.error("Error en allTransfers:", err);
+            res.status(500).json({ status: 'error', message: err.message });
+        }
+    },
+    postTraspasoBD: async (req, res) => {
+        const {
+            unid_service, store_origin, store_destination,
+            code_warehouse_origin, code_warehouse_destination,
+            datetime, details
+        } = req.body;
+
+        // 1. Obtener conexión del pool para la transacción
+        const connection = await pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 2. Generar código de transferencia
+            // Nota: Es mejor contar registros dentro de la transacción para evitar duplicados concurrentes
+            const [rows] = await connection.query(`SELECT COUNT(*) as total FROM TB_HEAD_TRASPASOS`);
+            const code_transfer = this.generarCodigoSerie(rows[0].total + 1, 'T', 6);
+
+            // 3. Insertar Cabecera (Usando parámetros ? para seguridad)
+            const sqlHead = `INSERT INTO TB_HEAD_TRASPASOS 
+            (CODIGO_TRASPASO, UNIDAD_SERVICIO, TIENDA_ORIGEN, TIENDA_DESTINO, CODIGO_ALM_ORIGEN, CODIGO_ALM_DESTINO, DATETIME) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+            await connection.query(sqlHead, [
+                code_transfer, unid_service, store_origin, store_destination,
+                code_warehouse_origin, code_warehouse_destination, datetime
+            ]);
+
+            // 4. Insertar Detalles en paralelo
+            if (details && details.length > 0) {
+                const sqlDetail = `INSERT INTO TB_DETALLE_TRASPASOS 
+                (CODIGO_BARRA, CODIGO_ARTICULO, DESCRIPCION, TALLA, COLOR, STOCK, STOCK_SOLICITADO, CODIGO_TRASPASO) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+                // Creamos un array de promesas para ejecutar todo de golpe
+                const detailPromises = details.map(det =>
+                    connection.query(sqlDetail, [
+                        det.barcode, det.article_code, det.description,
+                        det.size, det.color, det.stock, det.stock_required, code_transfer
+                    ])
+                );
+
+                await Promise.all(detailPromises);
+            }
+
+            // 5. Confirmar cambios
+            await connection.commit();
+
+            res.status(200).json({ message: 'Traspaso registrado con éxito', data: { code_transfer } });
+
+        } catch (err) {
+            // Si algo falla, deshacemos todo lo anterior (Rollback)
+            await connection.rollback();
+            console.error("Error en inTransfers:", err);
+
+            res.status(400).json({ status: 'error', message: err.message, });
+
+        } finally {
+            // Siempre liberar la conexión al pool
+            connection.release();
+        }
+    },
     callTraspasosFTP: async (req, res) => {
         // 1. Validaciones iniciales
         if (!req.file) {
