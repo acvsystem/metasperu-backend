@@ -140,8 +140,63 @@ export const storeController = {
         const filePath = req.file.path;
         const fileName = req.file.originalname;
         const rutaDirectory = req.body.ftpDirectorio;
+        const origenStore = req.body.origenStore;
+        const destinoStore = req.body.destinoStore;
 
         console.log(`Archivo recibido: ${fileName} en ruta temporal: ${filePath} para directorio FTP: ${rutaDirectory}`);
+
+        const client = new Client();
+        client.ftp.verbose = true;
+
+        try {
+            await client.access({
+                host: '199.89.54.31',
+                port: 9879,
+                user: 'ftpuser25801247',
+                password: 'Cfz&}q)]i_^c~6MSVPI%',
+                secure: false
+            });
+
+            // 1. Asegurar que la ruta existe y entrar en ella
+            await client.ensureDir(`ITPERU/PRUEBA`);
+
+            // 2. Subir el archivo (filePath es la ruta local, fileName es el nombre en el FTP)
+            // IMPORTANTE: client.uploadFrom sube el archivo al directorio donde esté posicionado el cliente
+            await client.uploadFrom(filePath, fileName);
+
+            // NOTA: Se eliminó client.uploadFromDir porque eso sirve para subir CARPETAS completas,
+            // y tú solo quieres subir el archivo del request.
+
+            emailService.pushToEmailQueue({
+                email: email,
+                subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
+                template: 'confirmacionTraspaso',
+                variables: {
+                    tienda_origen: origenStore,
+                    tienda_destino: destinoStore,
+                    carpeta_destino: rutaDirectory,
+                    fecha: new Date().toLocaleDateString('es-PE')
+                },
+                // En lugar de enviar solo el buffer, enviamos un objeto descriptivo
+                archivo: {
+                    filename: `${fileName}`, // Puedes modificar el nombre del archivo adjunto si lo deseas
+                    content: filePath // Este es el Buffer generado por XLSX.write
+                }
+            });
+
+            res.status(200).send('PRUEBA: Archivo subido al FTP y email encolado exitosamente');
+
+        } catch (err) {
+
+            res.status(500).send('Error subiendo al FTP: ' + err.message);
+
+        } finally {
+            client.close();
+            // Verificamos si el archivo existe antes de borrarlo para evitar errores en el finally
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
     }
 };
 
