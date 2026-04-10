@@ -155,6 +155,42 @@ export const storeController = {
                 error: process.env.NODE_ENV === 'development' ? error.message : {}
             });
         }
+    },
+    getScheduleStore: async (req, res) => {
+        try {
+            // 1. Consulta optimizada
+            // TIP: Si el volumen de datos es alto, considera guardar la fecha de inicio en una columna DATE dedicada
+            const query = `
+            SELECT 
+                RANGO_DIAS, 
+                CODIGO_TIENDA, 
+                DATETIME, 
+                ESTADO 
+            FROM TB_HORARIO_PROPERTY 
+            ORDER BY STR_TO_DATE(SUBSTRING_INDEX(RANGO_DIAS, ' ', 1), '%d-%m-%Y') DESC;
+        `;
+
+            const [arHorarios] = await pool.query(query);
+
+            // 2. Respuesta consistente
+            // Es mejor devolver un array vacío [] si no hay datos, en lugar de success: false,
+            // así en Angular puedes usar el .length directamente sin errores.
+            return res.status(200).json({
+                success: true,
+                data: arHorarios || [],
+                count: arHorarios.length
+            });
+
+        } catch (error) {
+            console.error(`❌ Error al obtener horarios:`, error.message);
+
+            return res.status(500).json({
+                success: false,
+                message: 'No se pudieron obtener los horarios de las tiendas.',
+                // Solo enviamos el detalle del error en desarrollo
+                error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Error'
+            });
+        }
     }
 };
 
