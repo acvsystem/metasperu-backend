@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { emailService } from '../services/email.service.js';
 import { Client } from "basic-ftp"
 import fs from 'fs';
+import { pool } from '../config/db.js';
 
 const inventariosPorMarca = new Map();
 
