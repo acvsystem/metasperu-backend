@@ -170,6 +170,7 @@ export const storeController = {
                 T.DESCRIPCION as name
             FROM TB_HORARIO_PROPERTY H
             INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA
+            GROUP BY H.CODIGO_TIENDA, H.RANGO_DIAS
             ORDER BY fecha_sort DESC;
         `;
 
