@@ -4,7 +4,7 @@ import { storeController } from '../controllers/store.controller.js';
 import multer from 'multer';
 
 const router = Router();
-const uploadTraspasos = multer();
+const uploadTraspasos = multer({ dest: 'uploads/traspasos' });
 
 // --- RUTAS PARA INVENTARIO TIENDAS
 router.post('/api/inventory/store', storeController.postReqInventory);
