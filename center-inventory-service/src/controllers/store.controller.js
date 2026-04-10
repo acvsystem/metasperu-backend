@@ -167,7 +167,7 @@ export const storeController = {
 
             // 3. Subida al FTP
             // Usamos la ruta dinámica que viene en el body o la de prueba
-            const targetDir = `ITPERU/${rutaDirectory}` || `ITPERU/PRUEBA`;
+            const targetDir = ftpDirectorio || `ITPERU/PRUEBA`;
             await client.ensureDir(targetDir);
             await client.uploadFrom(filePath, fileName);
 
@@ -176,7 +176,7 @@ export const storeController = {
             const fileBuffer = fs.readFileSync(filePath);
 
             emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com', 'andrecanalesv@gmail.com'], // Fallback si no viene en req.body
+                email: ['carlosmoron@metasperu.com', 'paulodosreis@metasperu.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com'], // Fallback si no viene en req.body
                 subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
                 template: 'confirmacionTraspaso',
                 variables: {
