@@ -196,7 +196,7 @@ export const storeController = {
 
             res.status(200).json({
                 status: 'success',
-                message: 'Archivo procesado, subido al FTP y notificación encolada.'
+                message: 'Traspaso realizado exitosamente.'
             });
 
         } catch (err) {
