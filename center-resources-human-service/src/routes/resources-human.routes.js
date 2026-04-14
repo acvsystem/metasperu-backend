@@ -19,5 +19,6 @@ router.post('/api/ballot/employes/store', storeController.postBallotEmployesStor
 // --- RUTAS PARA HORARIOS TIENDAS
 router.get('/api/schedule/store', storeController.getScheduleStore);
 router.post('/api/search/schedule/store', storeController.getSearchScheduleStore);
+router.post('/api/register/schedule/store', storeController.getRegisterScheduleStore);
 
 export default router;
