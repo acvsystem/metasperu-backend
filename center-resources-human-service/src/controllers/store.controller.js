@@ -294,110 +294,87 @@ export const storeController = {
         }
     },
     getRegisterScheduleStore: async (req, res) => {
-        const { cabecera, detalles } = req.body;
-        const n = (val) => (val === undefined ? null : val);
+        const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
+
         // Obtenemos una conexión del pool para la transacción
         const connection = await dev_pool.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            // 1. Insertar Cabecera (tb_horario_property)
-            // Usamos la fecha de la PC que enviamos desde el front
-            const [resCabecera] = await connection.execute(
-                `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, DATETIME, ESTADO) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-                [cabecera.FECHA, cabecera.RANGO_DIAS, 'HORARIO', cabecera.CODIGO_TIENDA, cabecera.DATETIME, cabecera.ESTADO]
-            );
-            const idHorario = resCabecera.insertId;
+            for (const item of datos) {
+                // 1. Insertar o Actualizar Cabecera (tb_horario_property)
+                // Se usa el CARGO como parte de la llave para diferenciar Gerentes de Cajeros
+                const [resCab] = await connection.execute(
+                    `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
+                 VALUES (?, ?, ?, ?, 1, NOW())`,
+                    [fechaCabecera, rangoDias, item.cargo, codigoTienda]
+                );
 
-            // 2. Procesar cada Cargo (Detalles)
-            for (const cargoItem of detalles) {
+                const idHorario = resCab.insertId;
 
-                // 2.1 Insertar los 7 días (tb_dias_horario)
-                const idsDiasMap = [];
-                for (const dia of cargoItem.dias) {
+                // 2. Insertar Días y capturar sus IDs generados
+                const mappingDias = {}; // Para relacionar id_dia del JSON con el ID real de la DB
+                for (const d of item.dias) {
                     const [resDia] = await connection.execute(
-                        `INSERT INTO tb_dias_horario (DIA, FECHA, ID_DIA_HORARIO, POSITION, FECHA_NUMBER) 
-                     VALUES (?, ?, ?, ?, ?)`,
-                        [dia.DIA, dia.FECHA, idHorario, dia.POSITION, dia.FECHA_NUMBER]
+                        `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
+                     VALUES (?, ?, ?, ?)`,
+                        [idHorario, d.dia, d.fecha, d.id]
                     );
-                    // Guardamos el ID generado por la DB para vincularlo luego
-                    idsDiasMap.push(resDia.insertId);
+                    mappingDias[d.id] = resDia.insertId; // Guardamos el ID real
+                }
 
-                    // 2.1.1 Insertar Observación si existe (tb_observacion)
-                    if (dia.observacion) {
+                // 3. Insertar Notas (Observaciones)
+                for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
+                    if (observacion) {
                         await connection.execute(
-                            `INSERT INTO tb_observacion (ID_OBS_DIAS, ID_OBS_HORARIO, CODIGO_TIENDA, NOMBRE_COMPLETO, OBSERVACION) 
-                         VALUES (?, ?, ?, ?, ?)`,
-                            [resDia.insertId, idHorario, cabecera.CODIGO_TIENDA, 'SISTEMA', dia.observacion]
+                            `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
+                         VALUES (?, ?, ?)`,
+                            [idHorario, mappingDias[idDiaJson], observacion]
                         );
                     }
                 }
 
-                // 2.2 Insertar Rangos de Trabajo (tb_rango_hora)
-                for (const rango of cargoItem.rangos) {
+                // 4. Insertar Filas de Trabajo (Rangos y Trabajadores)
+                for (const fila of item.filasTrabajo) {
                     const [resRango] = await connection.execute(
-                        `INSERT INTO tb_rango_hora (CODIGO_TIENDA, RANGO_HORA, ID_RG_HORARIO) 
-                     VALUES (?, ?, ?)`,
-                        [cabecera.CODIGO_TIENDA, rango.RANGO_HORA, idHorario]
+                        `INSERT INTO tb_rango_hora (ID_RG_HORARIO, RANGO_HORA) VALUES (?, ?)`,
+                        [idHorario, fila.rango]
                     );
-                    const idRangoGenerado = resRango.insertId;
+                    const idRangoReal = resRango.insertId;
 
-                    // 2.2.1 Insertar Trabajadores en este rango (tb_dias_trabajo)
-                    for (const trab of rango.trabajadores) {
-                        await connection.execute(
-                            `INSERT INTO tb_dias_trabajo (CODIGO_TIENDA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO, ID_TRB_RANGO_HORA, ID_TRB_DIAS, ID_TRB_HORARIO) 
-                         VALUES (?, ?, ?, ?, ?, ?)`,
-                            [
-                                cabecera.CODIGO_TIENDA,
-                                trab.NUMERO_DOCUMENTO,
-                                trab.NOMBRE_COMPLETO,
-                                idRangoGenerado,
-                                idsDiasMap[trab.DIA_INDEX], // Mapeo con el ID real de tb_dias_horario
-                                idHorario
-                            ]
-                        );
+                    for (const diaTrabajo of fila.trabajadoresPorDia) {
+                        for (const trb of diaTrabajo.usuarios) {
+                            await connection.execute(
+                                `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                             VALUES (?, ?, ?, ?, ?)`,
+                                [idHorario, mappingDias[diaTrabajo.id_dia], idRangoReal, trb.documento, trb.nombre]
+                            );
+                        }
                     }
                 }
 
-                // 2.3 Insertar Días Libres (tb_dias_libre)
-                for (const libre of cargoItem.libres) {
-                    await connection.execute(
-                        `INSERT INTO tb_dias_libre (CODIGO_TIENDA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO, ID_TRB_RANGO_HORA, ID_TRB_DIAS, ID_TRB_HORARIO) 
-                     VALUES (?, ?, ?, ?, ?, ?)`,
-                        [
-                            cabecera.CODIGO_TIENDA,
-                            libre.NUMERO_DOCUMENTO,
-                            libre.NOMBRE_COMPLETO,
-                            n(null), // No tiene rango hora asignado
-                            n(idsDiasMap[libre.DIA_INDEX]),
-                            idHorario
-                        ]
-                    );
+                // 5. Insertar Libres (Descansos)
+                for (const libre of item.filaLibres) {
+                    for (const trb of libre.trabajadores) {
+                        await connection.execute(
+                            `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                         VALUES (?, ?, ?, ?)`,
+                            [idHorario, mappingDias[libre.id_dia], trb.documento, trb.nombre]
+                        );
+                    }
                 }
             }
 
-            // Si todo salió bien, confirmamos los cambios
             await connection.commit();
-            res.status(200).json({
-                success: true,
-                message: 'Horario de Metas Perú guardado exitosamente',
-                id: idHorario
-            });
+            res.status(201).json({ success: true, message: 'Horario de Metas Perú registrado con éxito' });
 
         } catch (error) {
-            // Si hay CUALQUIER error, deshacemos todo lo insertado
             await connection.rollback();
-            console.error('❌ Error en el registro de horario:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error al procesar el registro',
-                error: error.message
-            });
+            console.error('❌ Error al registrar:', error);
+            res.status(500).json({ success: false, error: error.message });
         } finally {
-            // IMPORTANTE: Devolver la conexión al pool
-            connection.release();
+            if (connection) connection.release();
         }
     },
     getOneSearchScheduleStore: async (req, res) => {
