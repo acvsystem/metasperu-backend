@@ -410,7 +410,7 @@ export const storeController = {
                 message: 'Parámetros incompletos (rango_fecha, codigoTienda)'
             });
         }
-        const connection = await pool.getConnection();
+        const connection = await dev_pool.getConnection();
 
         try {
             // 1. Obtener todas las cabeceras/cargos en el rango
