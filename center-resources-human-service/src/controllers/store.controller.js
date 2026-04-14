@@ -380,8 +380,8 @@ export const storeController = {
                                     [
                                         idHorario,
                                         mappingDias[libre.id_dia],
-                                        n(trb.documento),
-                                        n(trb.nombre)
+                                        n(trb.dni),
+                                        n(trb.nombre_completo)
                                     ]
                                 );
                             }
