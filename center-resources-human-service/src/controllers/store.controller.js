@@ -370,7 +370,7 @@ export const storeController = {
                             cabecera.CODIGO_TIENDA,
                             libre.NUMERO_DOCUMENTO,
                             libre.NOMBRE_COMPLETO,
-                            0, // No tiene rango hora asignado
+                            n(null), // No tiene rango hora asignado
                             idsDiasMap[libre.DIA_INDEX],
                             idHorario
                         ]
