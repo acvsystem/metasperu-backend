@@ -417,8 +417,7 @@ export const storeController = {
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, FECHA, RANGO_DIAS, CODIGO_TIENDA, DATETIME, ESTADO 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
-                ['OF', '2026-04-20 al 2026-04-26']
+             WHERE CODIGO_TIENDA = '${codigoTienda}' AND RANGO_DIAS = '${rango_fecha}'`
             );
             console.log('Cabeceras encontradas:', String(codigoTienda), String(rango_fecha));
             if (cabeceras.length === 0) {
