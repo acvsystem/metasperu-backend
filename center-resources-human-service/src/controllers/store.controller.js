@@ -295,7 +295,7 @@ export const storeController = {
     },
     getRegisterScheduleStore: async (req, res) => {
         const { cabecera, detalles } = req.body;
-
+        const n = (val) => (val === undefined ? null : val);
         // Obtenemos una conexión del pool para la transacción
         const connection = await dev_pool.getConnection();
 
