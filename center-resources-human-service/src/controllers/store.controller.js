@@ -2,6 +2,7 @@ import { getIO } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 import { pool } from '../config/db.js';
 import { dev_pool } from '../config/dev_bd.js';
+import fs from 'fs/promises';
 
 const arDataAsistenciaEmpleados = [{
     ejb: []
@@ -513,6 +514,7 @@ export const storeController = {
     postUpdateScheduleStore: async (req, res) => {
         // Recibimos los mismos datos que en el registro
         const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
+        
         const n = (val) => (val === undefined || val === null ? null : val);
 
         // RESPALDO PREVENTIVO: Guardamos un archivo local por si la DB falla catastróficamente
