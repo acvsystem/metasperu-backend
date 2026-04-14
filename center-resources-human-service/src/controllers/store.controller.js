@@ -494,6 +494,144 @@ export const storeController = {
         } finally {
             if (connection) connection.release();
         }
+    },
+    postUpdateScheduleStore: async (req, res) => {
+        // Recibimos los mismos datos que en el registro
+        const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
+        const n = (val) => (val === undefined || val === null ? null : val);
+
+        // RESPALDO PREVENTIVO: Guardamos un archivo local por si la DB falla catastróficamente
+        try {
+            const fileName = `./logs/backup_${codigoTienda}_${fechaCabecera}.json`;
+            await fs.writeFile(fileName, JSON.stringify(req.body, null, 2));
+        } catch (err) {
+            console.error("No se pudo crear el backup local, pero continuamos...", err);
+        }
+
+        const connection = await dev_pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. LIMPIEZA: Buscamos los IDs de horarios existentes para ese rango y tienda para borrar sus hijos
+            // Esto asegura que no queden registros huérfanos antes de insertar los nuevos.
+            const [existentes] = await connection.execute(
+                `SELECT ID_HORARIO FROM tb_horario_property 
+             WHERE CODIGO_TIENDA = ? AND FECHA = ?`,
+                [codigoTienda, fechaCabecera]
+            );
+
+            if (existentes.length > 0) {
+                const idsABorrar = existentes.map(h => h.ID_HORARIO);
+
+                // Borrar cascada manual (en caso de que no tengas ON DELETE CASCADE en la DB)
+                await connection.query(`DELETE FROM tb_observacion WHERE ID_OBS_HORARIO IN (?)`, [idsABorrar]);
+                await connection.query(`DELETE FROM tb_dias_trabajo WHERE ID_TRB_HORARIO IN (?)`, [idsABorrar]);
+                await connection.query(`DELETE FROM tb_dias_libre WHERE ID_TRB_HORARIO IN (?)`, [idsABorrar]);
+                await connection.query(`DELETE FROM tb_rango_hora WHERE ID_RG_HORARIO IN (?)`, [idsABorrar]);
+                await connection.query(`DELETE FROM tb_dias_horario WHERE ID_DIA_HORARIO IN (?)`, [idsABorrar]);
+                await connection.query(`DELETE FROM tb_horario_property WHERE ID_HORARIO IN (?)`, [idsABorrar]);
+            }
+
+            // 2. RE-INSERCIÓN: Utilizamos la misma lógica del registro
+
+            for (const item of datos) {
+                // 1. Insertar Cabecera
+                const [resCab] = await connection.execute(
+                    `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
+                 VALUES (?, ?, ?, ?, 1, NOW())`,
+                    [n(fechaCabecera), n(rangoDias), n(item.cargo), n(codigoTienda)]
+                );
+
+                const idHorario = resCab.insertId;
+
+                // 2. Insertar Días
+                const mappingDias = {};
+                for (const d of item.dias) {
+                    const [resDia] = await connection.execute(
+                        `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
+                     VALUES (?, ?, ?, ?)`,
+                        [idHorario, n(d.dia), n(d.fecha), n(d.id)]
+                    );
+                    mappingDias[d.id] = resDia.insertId;
+                }
+
+                // 3. Insertar Notas
+                if (item.notasDia) {
+                    for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
+                        // Solo insertamos si hay texto real
+                        if (observacion && String(observacion).trim() !== "") {
+                            await connection.execute(
+                                `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
+                             VALUES (?, ?, ?)`,
+                                [idHorario, mappingDias[idDiaJson], n(observacion)]
+                            );
+                        }
+                    }
+                }
+
+                // 4. Insertar Filas de Trabajo
+                if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
+                    for (const fila of item.filasTrabajo) {
+                        const [resRango] = await connection.execute(
+                            `INSERT INTO tb_rango_hora (ID_RG_HORARIO, RANGO_HORA) VALUES (?, ?)`,
+                            [idHorario, n(fila.rango)]
+                        );
+                        const idRangoReal = resRango.insertId;
+
+                        if (fila.celdas && Array.isArray(fila.celdas)) {
+                            for (const diaInfo of fila.celdas) {
+                                if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
+                                    for (const user of diaInfo.trabajadores) {
+                                        await connection.execute(
+                                            `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                                         VALUES (?, ?, ?, ?, ?)`,
+                                            [
+                                                idHorario,
+                                                mappingDias[diaInfo.id_dia],
+                                                idRangoReal,
+                                                n(user.dni),
+                                                n(user.nombre_completo)
+                                            ]
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 5. Insertar Libres
+                if (item.filaLibres && Array.isArray(item.filaLibres)) {
+                    for (const libre of item.filaLibres) {
+                        if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
+                            for (const trb of libre.trabajadores) {
+                                await connection.execute(
+                                    `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                                 VALUES (?, ?, ?, ?)`,
+                                    [
+                                        idHorario,
+                                        mappingDias[libre.id_dia],
+                                        n(trb.dni),
+                                        n(trb.nombre_completo)
+                                    ]
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            await connection.commit();
+            res.status(200).json({ success: true, message: 'Horario actualizado correctamente' });
+
+        } catch (error) {
+            if (connection) await connection.rollback();
+            console.error('❌ Error al editar:', error);
+            res.status(500).json({ success: false, error: error.message });
+        } finally {
+            if (connection) connection.release();
+        }
     }
 };
 

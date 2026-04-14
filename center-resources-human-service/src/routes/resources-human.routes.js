@@ -20,5 +20,6 @@ router.post('/api/ballot/employes/store', storeController.postBallotEmployesStor
 router.get('/api/schedule/store', storeController.getScheduleStore);
 router.post('/api/search/schedule/store', storeController.getSearchScheduleStore);
 router.post('/api/register/schedule/store', storeController.getRegisterScheduleStore);
+router.post('/api/update/schedule/store', storeController.postUpdateScheduleStore);
 router.post('/api/one/search/schedule/store', storeController.getOneSearchScheduleStore);
 export default router;
