@@ -418,9 +418,9 @@ export const storeController = {
                 `SELECT ID_HORARIO, FECHA, RANGO_DIAS, CODIGO_TIENDA, DATETIME, ESTADO 
              FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
-                [codigoTienda, rango_fecha]
+                [String(codigoTienda), String(rango_fecha)]
             );
-            console.log('Cabeceras encontradas:', codigoTienda, rango_fecha);
+            console.log('Cabeceras encontradas:', String(codigoTienda), String(rango_fecha));
             if (cabeceras.length === 0) {
                 return res.status(200).json({ success: true, data: [] });
             }
