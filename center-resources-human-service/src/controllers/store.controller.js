@@ -347,10 +347,10 @@ export const storeController = {
                         );
                         const idRangoReal = resRango.insertId;
 
-                        if (fila.trabajadores && Array.isArray(fila.trabajadores)) {
-                            for (const diaInfo of fila.trabajadores) {
-                                if (diaInfo.usuarios && Array.isArray(diaInfo.usuarios)) {
-                                    for (const user of diaInfo.usuarios) {
+                        if (fila.celdas && Array.isArray(fila.celdas)) {
+                            for (const diaInfo of fila.celdas) {
+                                if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
+                                    for (const user of diaInfo.trabajadores) {
                                         await connection.execute(
                                             `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
                                          VALUES (?, ?, ?, ?, ?)`,
@@ -358,8 +358,8 @@ export const storeController = {
                                                 idHorario,
                                                 mappingDias[diaInfo.id_dia],
                                                 idRangoReal,
-                                                n(user.documento),
-                                                n(user.nombre)
+                                                n(user.dni),
+                                                n(user.nombre_completo)
                                             ]
                                         );
                                     }
@@ -445,7 +445,7 @@ export const storeController = {
                 // Reconstruir filasTrabajo (Agrupado por Rango Horario)
                 const filasTrabajo = rangosDB.map(r => ({
                     rango: r.RANGO_HORA,
-                    celda: diasDB.map(d => ({
+                    celdas: diasDB.map(d => ({
                         id_dia: d.POSITION,
                         trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
