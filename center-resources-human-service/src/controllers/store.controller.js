@@ -307,7 +307,7 @@ export const storeController = {
             const [resCabecera] = await connection.execute(
                 `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, DATETIME, ESTADO) 
              VALUES (?, ?, ?, ?, ?, ?)`,
-                [cabecera.FECHA, cabecera.RANGO_DIAS, cabecera.CARGO, cabecera.CODIGO_TIENDA, cabecera.DATETIME, cabecera.ESTADO]
+                [cabecera.FECHA, cabecera.RANGO_DIAS, 'HORARIO', cabecera.CODIGO_TIENDA, cabecera.DATETIME, cabecera.ESTADO]
             );
             const idHorario = resCabecera.insertId;
 
