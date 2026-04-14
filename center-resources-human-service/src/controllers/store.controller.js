@@ -295,6 +295,7 @@ export const storeController = {
     },
     getRegisterScheduleStore: async (req, res) => {
         const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
+        const n = (val) => (val === undefined || val === null ? null : val);
 
         // Obtenemos una conexión del pool para la transacción
         const connection = await dev_pool.getConnection();
@@ -307,57 +308,59 @@ export const storeController = {
                 const [resCab] = await connection.execute(
                     `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
                  VALUES (?, ?, ?, ?, 1, NOW())`,
-                    [fechaCabecera, rangoDias, item.cargo, codigoTienda]
+                    [n(fechaCabecera), n(rangoDias), n(item.cargo), n(codigoTienda)]
                 );
 
                 const idHorario = resCab.insertId;
 
-                // 2. Insertar Días y mapear IDs
+                // 2. Insertar Días
                 const mappingDias = {};
                 for (const d of item.dias) {
                     const [resDia] = await connection.execute(
                         `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
                      VALUES (?, ?, ?, ?)`,
-                        [idHorario, d.dia, d.fecha, d.id]
+                        [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                     );
                     mappingDias[d.id] = resDia.insertId;
                 }
 
-                // 3. Insertar Notas (notasDia es un objeto { "id": "texto" })
+                // 3. Insertar Notas
                 if (item.notasDia) {
                     for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
-                        if (observacion && observacion.trim() !== "") {
+                        // Solo insertamos si hay texto real
+                        if (observacion && String(observacion).trim() !== "") {
                             await connection.execute(
                                 `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
                              VALUES (?, ?, ?)`,
-                                [idHorario, mappingDias[idDiaJson], observacion]
+                                [idHorario, mappingDias[idDiaJson], n(observacion)]
                             );
                         }
                     }
                 }
 
-                // 4. Insertar Filas de Trabajo (Ajustado a tu estructura JSON)
-                // Según tu estructura: filasTrabajo es un array de objetos
+                // 4. Insertar Filas de Trabajo
                 if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
                     for (const fila of item.filasTrabajo) {
-                        // Primero insertamos el rango (Turno)
                         const [resRango] = await connection.execute(
                             `INSERT INTO tb_rango_hora (ID_RG_HORARIO, RANGO_HORA) VALUES (?, ?)`,
-                            [idHorario, fila.rango || 'Sin Rango']
+                            [idHorario, n(fila.rango)]
                         );
                         const idRangoReal = resRango.insertId;
 
-                        // IMPORTANTE: Aquí cambiamos trabajadoresPorDia por la propiedad real de tu JSON
-                        // Si en tu JSON cada fila tiene un array de días/trabajadores:
                         if (fila.trabajadores && Array.isArray(fila.trabajadores)) {
                             for (const diaInfo of fila.trabajadores) {
-                                // diaInfo suele tener { id_dia: 1, usuarios: [...] }
                                 if (diaInfo.usuarios && Array.isArray(diaInfo.usuarios)) {
                                     for (const user of diaInfo.usuarios) {
                                         await connection.execute(
                                             `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
                                          VALUES (?, ?, ?, ?, ?)`,
-                                            [idHorario, mappingDias[diaInfo.id_dia], idRangoReal, user.documento, user.nombre]
+                                            [
+                                                idHorario,
+                                                mappingDias[diaInfo.id_dia],
+                                                idRangoReal,
+                                                n(user.documento),
+                                                n(user.nombre)
+                                            ]
                                         );
                                     }
                                 }
@@ -366,7 +369,7 @@ export const storeController = {
                     }
                 }
 
-                // 5. Insertar Libres (filaLibres es un array de { id_dia, trabajadores: [] })
+                // 5. Insertar Libres
                 if (item.filaLibres && Array.isArray(item.filaLibres)) {
                     for (const libre of item.filaLibres) {
                         if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
@@ -374,7 +377,12 @@ export const storeController = {
                                 await connection.execute(
                                     `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
                                  VALUES (?, ?, ?, ?)`,
-                                    [idHorario, mappingDias[libre.id_dia], trb.documento, trb.nombre]
+                                    [
+                                        idHorario,
+                                        mappingDias[libre.id_dia],
+                                        n(trb.documento),
+                                        n(trb.nombre)
+                                    ]
                                 );
                             }
                         }
@@ -383,11 +391,11 @@ export const storeController = {
             }
 
             await connection.commit();
-            res.status(201).json({ success: true, message: 'Horario registrado correctamente en Metas Perú' });
+            res.status(201).json({ success: true, message: 'Horario registrado correctamente' });
 
         } catch (error) {
             if (connection) await connection.rollback();
-            console.error('❌ Error al registrar:', error);
+            console.error('❌ Error detallado:', error);
             res.status(500).json({ success: false, error: error.message });
         } finally {
             if (connection) connection.release();
