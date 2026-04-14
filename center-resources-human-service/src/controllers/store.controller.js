@@ -450,8 +450,8 @@ export const storeController = {
                         trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
-                                documento: t.NUMERO_DOCUMENTO,
-                                nombre: t.NOMBRE_COMPLETO
+                                dni: t.NUMERO_DOCUMENTO,
+                                nombre_completo: t.NOMBRE_COMPLETO
                             }))
                     }))
                 }));
@@ -462,8 +462,8 @@ export const storeController = {
                     trabajadores: libresDB
                         .filter(l => l.ID_TRB_DIAS === d.ID_DIAS)
                         .map(l => ({
-                            documento: l.NUMERO_DOCUMENTO,
-                            nombre: l.NOMBRE_COMPLETO
+                            dni: l.NUMERO_DOCUMENTO,
+                            nombre_completo: l.NOMBRE_COMPLETO
                         }))
                 }));
 
