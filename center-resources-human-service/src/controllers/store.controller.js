@@ -418,7 +418,7 @@ export const storeController = {
                 `SELECT ID_HORARIO, FECHA, RANGO_DIAS, CODIGO_TIENDA, DATETIME, ESTADO 
              FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
-                [String(codigoTienda), String(rango_fecha)]
+                ['OF', '2026-04-20 al 2026-04-26']
             );
             console.log('Cabeceras encontradas:', String(codigoTienda), String(rango_fecha));
             if (cabeceras.length === 0) {
