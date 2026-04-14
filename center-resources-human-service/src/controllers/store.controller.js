@@ -420,66 +420,77 @@ export const storeController = {
              WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
                 [codigoTienda, rango_fecha]
             );
- 
+
             if (cabeceras.length === 0) {
                 return res.status(200).json({ success: true, data: [] });
             }
 
-            // 2. Para cada cabecera encontrada, reconstruir su estructura
             const respuestaFinal = [];
 
+            // 2. Iterar por cada horario encontrado para reconstruir su detalle
             for (const cab of cabeceras) {
                 const idH = cab.ID_HORARIO;
+                const nombreCargo = cab.CARGO;
 
-                // Obtener datos relacionados de este horario específico
+                // Consultas relacionadas para este ID_HORARIO específico
+                // Quitamos 'CARGO' de esta consulta para evitar el error ER_BAD_FIELD_ERROR
                 const [diasDB] = await connection.execute(
-                    `SELECT ID_DIAS, DIA, FECHA, POSITION, FECHA_NUMBER, CARGO 
-                 FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
+                    `SELECT ID_DIAS, DIA, FECHA, POSITION, FECHA_NUMBER 
+                 FROM tb_dias_horario 
+                 WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`,
+                    [idH]
+                );
 
-                const [obsDB] = await connection.execute(`SELECT * FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
-                const [rangosDB] = await connection.execute(`SELECT * FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`, [idH]);
-                const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
-                const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
+                const [obsDB] = await connection.execute(
+                    `SELECT ID_OBS_DIAS, OBSERVACION FROM tb_observacion WHERE ID_OBS_HORARIO = ?`,
+                    [idH]
+                );
 
-                // Agrupar por CARGO
-                const listaCargos = [...new Set(diasDB.map(d => d.CARGO))];
+                const [rangosDB] = await connection.execute(
+                    `SELECT ID_RANGO_HORA, RANGO_HORA FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`,
+                    [idH]
+                );
 
-                const detallesEstructurados = listaCargos.map(nombreCargo => {
-                    const diasDelCargo = diasDB.filter(d => d.CARGO === nombreCargo);
-                    const idsDiasCargo = diasDelCargo.map(d => d.ID_DIAS);
+                const [trabajadoresDB] = await connection.execute(
+                    `SELECT NUMERO_DOCUMENTO, NOMBRE_COMPLETO, ID_TRB_RANGO_HORA, ID_TRB_DIAS 
+                 FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`,
+                    [idH]
+                );
 
-                    return {
-                        CARGO: nombreCargo,
-                        dias: diasDelCargo.map(d => ({
-                            DIA: d.DIA,
-                            FECHA: d.FECHA,
-                            POSITION: d.POSITION,
-                            FECHA_NUMBER: d.FECHA_NUMBER,
-                            observacion: obsDB.find(o => o.ID_OBS_DIAS === d.ID_DIAS)?.OBSERVACION || null
-                        })),
-                        rangos: rangosDB
-                            .filter(r => trabajadoresDB.some(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && idsDiasCargo.includes(t.ID_TRB_DIAS)))
-                            .map(r => ({
-                                RANGO_HORA: r.RANGO_HORA,
-                                trabajadores: trabajadoresDB
-                                    .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && idsDiasCargo.includes(t.ID_TRB_DIAS))
-                                    .map(t => ({
-                                        NUMERO_DOCUMENTO: t.NUMERO_DOCUMENTO,
-                                        NOMBRE_COMPLETO: t.NOMBRE_COMPLETO,
-                                        DIA_INDEX: diasDelCargo.findIndex(d => d.ID_DIAS === t.ID_TRB_DIAS)
-                                    }))
-                            })),
-                        libres: libresDB
-                            .filter(l => idsDiasCargo.includes(l.ID_TRB_DIAS))
-                            .map(l => ({
-                                NUMERO_DOCUMENTO: l.NUMERO_DOCUMENTO,
-                                NOMBRE_COMPLETO: l.NOMBRE_COMPLETO,
-                                DIA_INDEX: diasDelCargo.findIndex(d => d.ID_DIAS === l.ID_TRB_DIAS)
+                const [libresDB] = await connection.execute(
+                    `SELECT NUMERO_DOCUMENTO, NOMBRE_COMPLETO, ID_TRB_DIAS 
+                 FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`,
+                    [idH]
+                );
+
+                // 3. Reconstruir la estructura jerárquica para este registro
+                const detallesEstructurados = [{
+                    CARGO: nombreCargo,
+                    dias: diasDB.map(d => ({
+                        DIA: d.DIA,
+                        FECHA: d.FECHA,
+                        POSITION: d.POSITION,
+                        FECHA_NUMBER: d.FECHA_NUMBER,
+                        observacion: obsDB.find(o => o.ID_OBS_DIAS === d.ID_DIAS)?.OBSERVACION || null
+                    })),
+                    rangos: rangosDB.map(r => ({
+                        RANGO_HORA: r.RANGO_HORA,
+                        trabajadores: trabajadoresDB
+                            .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA)
+                            .map(t => ({
+                                NUMERO_DOCUMENTO: t.NUMERO_DOCUMENTO,
+                                NOMBRE_COMPLETO: t.NOMBRE_COMPLETO,
+                                DIA_INDEX: diasDB.findIndex(d => d.ID_DIAS === t.ID_TRB_DIAS)
                             }))
-                    };
-                });
+                    })),
+                    libres: libresDB.map(l => ({
+                        NUMERO_DOCUMENTO: l.NUMERO_DOCUMENTO,
+                        NOMBRE_COMPLETO: l.NOMBRE_COMPLETO,
+                        DIA_INDEX: diasDB.findIndex(d => d.ID_DIAS === l.ID_TRB_DIAS)
+                    }))
+                }];
 
-                // Añadir al array de resultados
+                // 4. Empujar el objeto completo al array de respuesta
                 respuestaFinal.push({
                     cabecera: {
                         FECHA: cab.FECHA,
@@ -492,6 +503,7 @@ export const storeController = {
                 });
             }
 
+            // Enviar respuesta exitosa con todos los horarios del rango
             res.status(200).json({
                 success: true,
                 data: respuestaFinal
@@ -499,9 +511,13 @@ export const storeController = {
 
         } catch (error) {
             console.error('❌ Error en búsqueda por rango:', error);
-            res.status(500).json({ success: false, error: error.message });
+            res.status(500).json({
+                success: false,
+                message: 'Error al procesar la búsqueda de horarios',
+                error: error.message
+            });
         } finally {
-            connection.release();
+            if (connection) connection.release();
         }
     }
 };
