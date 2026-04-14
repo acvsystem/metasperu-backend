@@ -343,7 +343,7 @@ export const storeController = {
                     );
                     const idRangoReal = resRango.insertId;
 
-                    for (const diaTrabajo of fila.trabajadoresPorDia) {
+                    for (const diaTrabajo of fila.filasTrabajo) {
                         for (const trb of diaTrabajo.usuarios) {
                             await connection.execute(
                                 `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
