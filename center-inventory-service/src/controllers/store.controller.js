@@ -349,9 +349,6 @@ function actualizarMapaPorMarca(marca, serieStore, data) {
     const mapaMarca = inventariosPorMarca.get(marca);
 
     data.forEach(item => {
-        if(item.cCodigoBarra === '667659332977' && serieStore === '7A') {
-            console.log("SKU PROBANDO:", item);
-        }
 
         if (!mapaMarca.has(item.cCodigoBarra)) {
             mapaMarca.set(item.cCodigoBarra, {
