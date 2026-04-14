@@ -371,7 +371,7 @@ export const storeController = {
                             libre.NUMERO_DOCUMENTO,
                             libre.NOMBRE_COMPLETO,
                             n(null), // No tiene rango hora asignado
-                            idsDiasMap[libre.DIA_INDEX],
+                            n(idsDiasMap[libre.DIA_INDEX]),
                             idHorario
                         ]
                     );
