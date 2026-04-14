@@ -303,87 +303,102 @@ export const storeController = {
         try {
             await connection.beginTransaction();
 
-            for (const item of datos) {
-                // 1. Insertar Cabecera
-                const [resCab] = await connection.execute(
-                    `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
+
+            const [cabeceras] = await connection.execute(
+                `SELECT ID_HORARIO, CARGO, FECHA, RANGO_DIAS 
+             FROM tb_horario_property 
+             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?
+             ORDER BY FECHA ASC`,
+                [codigoTienda, rangoDias]
+            );
+
+            if (cabeceras.length > 0) {
+                if (connection) await connection.rollback();
+                res.status(500).json({ success: false, message: 'Horario con ese rango de fecha ya existe.' });
+            } else {
+
+                for (const item of datos) {
+                    // 1. Insertar Cabecera
+                    const [resCab] = await connection.execute(
+                        `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
                  VALUES (?, ?, ?, ?, 1, NOW())`,
-                    [n(fechaCabecera), n(rangoDias), n(item.cargo), n(codigoTienda)]
-                );
-
-                const idHorario = resCab.insertId;
-
-                // 2. Insertar Días
-                const mappingDias = {};
-                for (const d of item.dias) {
-                    const [resDia] = await connection.execute(
-                        `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
-                     VALUES (?, ?, ?, ?)`,
-                        [idHorario, n(d.dia), n(d.fecha), n(d.id)]
+                        [n(fechaCabecera), n(rangoDias), n(item.cargo), n(codigoTienda)]
                     );
-                    mappingDias[d.id] = resDia.insertId;
-                }
 
-                // 3. Insertar Notas
-                if (item.notasDia) {
-                    for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
-                        // Solo insertamos si hay texto real
-                        if (observacion && String(observacion).trim() !== "") {
-                            await connection.execute(
-                                `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
+                    const idHorario = resCab.insertId;
+
+                    // 2. Insertar Días
+                    const mappingDias = {};
+                    for (const d of item.dias) {
+                        const [resDia] = await connection.execute(
+                            `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
+                     VALUES (?, ?, ?, ?)`,
+                            [idHorario, n(d.dia), n(d.fecha), n(d.id)]
+                        );
+                        mappingDias[d.id] = resDia.insertId;
+                    }
+
+                    // 3. Insertar Notas
+                    if (item.notasDia) {
+                        for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
+                            // Solo insertamos si hay texto real
+                            if (observacion && String(observacion).trim() !== "") {
+                                await connection.execute(
+                                    `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
                              VALUES (?, ?, ?)`,
-                                [idHorario, mappingDias[idDiaJson], n(observacion)]
-                            );
+                                    [idHorario, mappingDias[idDiaJson], n(observacion)]
+                                );
+                            }
                         }
                     }
-                }
 
-                // 4. Insertar Filas de Trabajo
-                if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
-                    for (const fila of item.filasTrabajo) {
-                        const [resRango] = await connection.execute(
-                            `INSERT INTO tb_rango_hora (ID_RG_HORARIO, RANGO_HORA) VALUES (?, ?)`,
-                            [idHorario, n(fila.rango)]
-                        );
-                        const idRangoReal = resRango.insertId;
+                    // 4. Insertar Filas de Trabajo
+                    if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
+                        for (const fila of item.filasTrabajo) {
+                            const [resRango] = await connection.execute(
+                                `INSERT INTO tb_rango_hora (ID_RG_HORARIO, RANGO_HORA) VALUES (?, ?)`,
+                                [idHorario, n(fila.rango)]
+                            );
+                            const idRangoReal = resRango.insertId;
 
-                        if (fila.celdas && Array.isArray(fila.celdas)) {
-                            for (const diaInfo of fila.celdas) {
-                                if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
-                                    for (const user of diaInfo.trabajadores) {
-                                        await connection.execute(
-                                            `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                            if (fila.celdas && Array.isArray(fila.celdas)) {
+                                for (const diaInfo of fila.celdas) {
+                                    if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
+                                        for (const user of diaInfo.trabajadores) {
+                                            await connection.execute(
+                                                `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
                                          VALUES (?, ?, ?, ?, ?)`,
-                                            [
-                                                idHorario,
-                                                mappingDias[diaInfo.id_dia],
-                                                idRangoReal,
-                                                n(user.dni),
-                                                n(user.nombre_completo)
-                                            ]
-                                        );
+                                                [
+                                                    idHorario,
+                                                    mappingDias[diaInfo.id_dia],
+                                                    idRangoReal,
+                                                    n(user.dni),
+                                                    n(user.nombre_completo)
+                                                ]
+                                            );
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                // 5. Insertar Libres
-                if (item.filaLibres && Array.isArray(item.filaLibres)) {
-                    for (const libre of item.filaLibres) {
-                        if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
-                            for (const trb of libre.trabajadores) {
-                                await connection.execute(
-                                    `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
+                    // 5. Insertar Libres
+                    if (item.filaLibres && Array.isArray(item.filaLibres)) {
+                        for (const libre of item.filaLibres) {
+                            if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
+                                for (const trb of libre.trabajadores) {
+                                    await connection.execute(
+                                        `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
                                  VALUES (?, ?, ?, ?)`,
-                                    [
-                                        idHorario,
-                                        mappingDias[libre.id_dia],
-                                        n(trb.dni),
-                                        n(trb.nombre_completo)
-                                    ]
-                                );
+                                        [
+                                            idHorario,
+                                            mappingDias[libre.id_dia],
+                                            n(trb.dni),
+                                            n(trb.nombre_completo)
+                                        ]
+                                    );
+                                }
                             }
                         }
                     }
