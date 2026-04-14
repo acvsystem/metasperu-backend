@@ -445,9 +445,9 @@ export const storeController = {
                 // Reconstruir filasTrabajo (Agrupado por Rango Horario)
                 const filasTrabajo = rangosDB.map(r => ({
                     rango: r.RANGO_HORA,
-                    trabajadoresPorDia: diasDB.map(d => ({
+                    celda: diasDB.map(d => ({
                         id_dia: d.POSITION,
-                        usuarios: trabajadoresDB
+                        trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
                                 documento: t.NUMERO_DOCUMENTO,
