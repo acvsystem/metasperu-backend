@@ -420,7 +420,7 @@ export const storeController = {
              WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
                 [codigoTienda, rango_fecha]
             );
-
+            console.log('Cabeceras encontradas:', codigoTienda, rango_fecha);
             if (cabeceras.length === 0) {
                 return res.status(200).json({ success: true, data: [] });
             }
