@@ -401,7 +401,7 @@ export const storeController = {
         }
     },
     getOneSearchScheduleStore: async (req, res) => {
-        const { rango_fecha, codigoTienda } = req.body;
+        const { codigoTienda, rango_fecha } = req.body;
 
         if (!rango_fecha || !codigoTienda) {
             return res.status(400).json({
@@ -417,8 +417,7 @@ export const storeController = {
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, FECHA, RANGO_DIAS, CODIGO_TIENDA, DATETIME, ESTADO 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?
-             ORDER BY FECHA DESC`,
+             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?`,
                 [codigoTienda, rango_fecha]
             );
 
