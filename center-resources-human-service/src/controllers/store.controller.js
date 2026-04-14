@@ -16,7 +16,7 @@ export const storeController = {
         if (!fecha || !tipoConsulta) {
             return res.status(400).json({ message: 'Fecha y Tipo de Consulta son requeridos' });
         }
-
+ 
         try {
             const propertyUnique = Math.random().toString(36).substring(2, 8).toUpperCase();
 
