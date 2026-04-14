@@ -401,12 +401,12 @@ export const storeController = {
         }
     },
     getOneSearchScheduleStore: async (req, res) => {
-        const { fechaInicio, fechaFin, codigoTienda } = req.body;
+        const { rango_fecha, codigoTienda } = req.body;
 
-        if (!fechaInicio || !fechaFin || !codigoTienda) {
+        if (!rango_fecha || !codigoTienda) {
             return res.status(400).json({
                 success: false,
-                message: 'Parámetros incompletos (fechaInicio, fechaFin, codigoTienda)'
+                message: 'Parámetros incompletos (rango_fecha, codigoTienda)'
             });
         }
 
@@ -417,9 +417,9 @@ export const storeController = {
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, FECHA, RANGO_DIAS, CODIGO_TIENDA, DATETIME, ESTADO 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND FECHA BETWEEN ? AND ?
+             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?
              ORDER BY FECHA DESC`,
-                [codigoTienda, fechaInicio, fechaFin]
+                [codigoTienda, rango_fecha]
             );
 
             if (cabeceras.length === 0) {
