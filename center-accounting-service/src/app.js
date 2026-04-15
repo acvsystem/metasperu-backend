@@ -23,7 +23,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('52 16 * * *', async () => {
+cron.schedule('55 16 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   const fechaHoy = new Date().toISOString().split('T')[0];
