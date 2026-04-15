@@ -1,6 +1,6 @@
 import { getIO } from '../config/socket.js';
 import axios from 'axios';
-const inventariosPorMarca = new Map();
+import { pool } from '../config/db.js';
 
 export const storeController = {
 
@@ -71,43 +71,60 @@ export const storeController = {
     },
 
     postExchangeRateSunat: async (req, res) => {
-        // 1. Configuración del Token (Mejor si viene de un .env)
         const API_TOKEN = '8a02ec4cc1f4618487ff6a58100299a7dd02bc4ec60e3c8959d97dfd7becdf6b';
         const URL = 'https://apiperu.dev/api/tipo-de-cambio';
+        const { fecha } = req.body; // Formato YYYY-MM-DD
 
-        // 2. Obtener fecha del body o query (formato YYYY-MM-DD)
-        const { fecha } = req.body;
-
-        if (!fecha) {
-            return res.status(400).json({
-                success: false,
-                message: "La fecha es requerida (YYYY-MM-DD)"
-            });
-        }
+        if (!fecha) return res.status(400).json({ success: false, message: "Fecha requerida" });
 
         try {
-            const response = await axios.post(URL,
-                { fecha: fecha }, // Body
-                {
-                    headers: {
-                        'Authorization': `Bearer ${API_TOKEN}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                }
+            // --- PASO 1: BUSCAR EN DB LOCAL ---
+            const [localRows] = await pool.execute(
+                'SELECT compra, venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
+                [fecha]
             );
 
-            // ApiPeru suele devolver { success: true, data: { compra: 3.7, venta: 3.8, ... } }
-            res.status(200).json(response.data);
+            if (localRows.length > 0) {
+                console.log(`⚡ [Cache DB] Retornando fecha: ${fecha}`);
+                return res.status(200).json({
+                    success: true,
+                    data: {
+                        fecha,
+                        compra: localRows[0].compra,
+                        venta: localRows[0].venta,
+                        origen: 'local_cache'
+                    }
+                });
+            }
+
+            // --- PASO 2: SI NO ESTÁ, CONSULTAR API EXTERNA ---
+            console.log(`🌐 [API Exterior] Consultando ApiPeru para fecha: ${fecha}`);
+            const response = await axios.post(URL, { fecha }, {
+                headers: {
+                    'Authorization': `Bearer ${API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const apiData = response.data;
+
+            if (apiData.success && apiData.data) {
+                const { compra, venta } = apiData.data;
+
+                // --- PASO 3: GUARDAR EN DB LOCAL PARA LA PRÓXIMA VEZ ---
+                await pool.execute(
+                    'INSERT INTO tb_tipo_cambio_cache (fecha, compra, venta) VALUES (?, ?, ?)',
+                    [fecha, compra, venta]
+                );
+
+                return res.status(200).json(apiData);
+            } else {
+                return res.status(404).json({ success: false, message: "No se encontró tipo de cambio en SUNAT" });
+            }
 
         } catch (error) {
-            console.error('❌ Error consultando ApiPeru:', error.response?.data || error.message);
-
-            res.status(error.response?.status || 500).json({
-                success: false,
-                message: 'Error al obtener tipo de cambio desde el proveedor externo',
-                error: error.response?.data || error.message
-            });
+            console.error('❌ Error:', error.message);
+            res.status(500).json({ success: false, error: error.message });
         }
     }
 };
