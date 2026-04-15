@@ -9,6 +9,7 @@ import { extraServices } from './services/extra.services.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getIO } from './config/socket.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +32,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('28 17 * * *', async () => {
+cron.schedule('31 17 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   // 1. Asegurar fecha correcta en Lima (evita desfases de UTC)
@@ -89,8 +90,8 @@ cron.schedule('28 17 * * *', async () => {
 
     // 3. Notificación vía Socket (Fuera del if para no repetir código)
     if (datosTC) {
-      const io = initSocket();
-      io.to('7A').emit('py_request_exchange_rate', {
+     
+      getIO().to('7A').emit('py_request_exchange_rate', {
         pedido_por: 'cron_accounting',
         init: fechaHoy,
         end: fechaHoy,
