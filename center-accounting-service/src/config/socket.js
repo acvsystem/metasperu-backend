@@ -107,17 +107,6 @@ export const initSocket = (server) => {
                                 `_Los valores coinciden perfectamente._`,
                                 "Comparación de Tipo de Cambio"
                             );
-
-                            const results = emailService.pushToEmailQueue({
-                                email: 'andrecanalesv@gmail.com',
-                                subject: `Diferencia Tipo Cambio FRONT RETAIL`,
-                                template: 'alertaDiffTipoChambio',
-                                variables: {
-                                    tcSistema: `${ventaRetail.toFixed(3)}`,
-                                    tcSunat: `${ventaSunat.toFixed(3)}`,
-                                    fecha: fechaHoy
-                                }
-                            });
                         } else {
                             await extraServices.enviarSlack(
                                 `🚨 *ALERTA: Diferencia detectada*\n` +
