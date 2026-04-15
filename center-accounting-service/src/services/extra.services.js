@@ -3,7 +3,6 @@ import axios from 'axios';
 export const extraServices = {
 
     enviarSlack: async (mensaje, emisor) => {
-        console.log(process.env.SLACK_WEBHOOK_URL);
         try {
             await axios.post(process.env.SLACK_WEBHOOK_URL, {
                 text: mensaje,

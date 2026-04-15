@@ -31,7 +31,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('06 17 * * *', async () => {
+cron.schedule('13 17 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   const fechaHoy = new Date().toISOString().split('T')[0];
@@ -71,7 +71,11 @@ cron.schedule('06 17 * * *', async () => {
       }
     } else {
       console.log(`✅ [Cron] El tipo de cambio para hoy (${fechaHoy}) ya existe en la DB local.`);
-      await extraServices.enviarSlack(`⚠️ *Atención:* No se pudo obtener el tipo de cambio para hoy (${fechaHoy}).`, "Monitor de Tipo de Cambio");
+
+      await extraServices.enviarSlack(`⚠️ [Cron] El tipo de cambio para hoy (${fechaHoy}), Venta: ${row[0]['venta']} ya existe en la DB local.`, "Monitor de Tipo de Cambio");
+
+      const io = initSocket(); // Si tienes una función para obtener la instancia de socket
+      io.to('7A').emit('py_request_exchange_rate', { pedido_por: 'cron_accounting', init: fechaHoy, end: fechaHoy });
     }
 
   } catch (error) {
