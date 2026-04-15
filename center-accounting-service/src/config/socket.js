@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { extraServices } from '../services/extra.services.js';
-import { pool } from './config/db.js';
+import { pool } from './db.js';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
