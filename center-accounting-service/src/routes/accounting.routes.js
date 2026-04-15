@@ -14,5 +14,6 @@ router.post('/api/cuo/insert', storeController.postCuoInsert);
 
 // --- RUTAS PARA TIPO DE CAMBIO TIENDAS
 router.post('/api/exchange-rate/store', storeController.getExchangeRateStore);
+router.post('/api/exchange-rate/sunat', storeController.postExchangeRateSunat);
 
 export default router;
