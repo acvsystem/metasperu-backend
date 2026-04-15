@@ -1,4 +1,6 @@
 import { Server } from 'socket.io';
+import { extraServices } from '../services/extra.services.js';
+import { pool } from './config/db.js';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -68,11 +70,29 @@ export const initSocket = (server) => {
             io.to(socketId).emit('dashboard_cuo_insert', { message: message });
         });
 
-        socket.on('py_response_exchange_rate', (data) => {
+        socket.on('py_response_exchange_rate', async (data) => {
             const dataExchangeRate = JSON.parse(data.exchangeRate);
             const socketId = data.pedido_por;
 
-            io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
+            if (socketId == 'cron_accounting') {
+                const fechaHoy = dataExchangeRate[0]['cFecha'];
+
+                // --- PASO 1: BUSCAR EN DB LOCAL ---
+                const [localRows] = await pool.execute(
+                    'SELECT compra, venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
+                    [fechaHoy]
+                );
+
+                if (localRows.length > 0) {
+                    if (dataExchangeRate[0]['cCotiActual'] == localRows[0].venta) {
+                        extraServices.enviarSlack(`✅ *Sincronización Exitosa*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* ${dataExchangeRate[0]['cCotizacion']}\n*Sunat:* ${localRows[0].venta}`, "Comparacion de Tipo de Cambio");
+                    } else {
+                        extraServices.enviarSlack(`⚠️ *Sincronización Diferencia*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* ${dataExchangeRate[0]['cCotizacion']}\n*Sunat:* ${localRows[0].venta}`, "Comparacion de Tipo de Cambio");
+                    }
+                }
+            } else {
+                io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
+            }
         });
 
         socket.on('disconnect', () => {
