@@ -31,7 +31,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('19 17 * * *', async () => {
+cron.schedule('24 17 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   // 1. Asegurar fecha correcta en Lima (evita desfases de UTC)
