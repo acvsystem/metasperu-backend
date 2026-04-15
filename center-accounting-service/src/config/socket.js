@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { extraServices } from '../services/extra.services.js';
 import { pool } from './db.js';
+import { emailService } from '../services/email.service.js';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -106,6 +107,17 @@ export const initSocket = (server) => {
                                 `_Los valores coinciden perfectamente._`,
                                 "Comparación de Tipo de Cambio"
                             );
+
+                            const results = emailService.pushToEmailQueue({
+                                email: 'andrecanalesv@gmail.com',
+                                subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                                template: 'alertaDiffTipoChambio',
+                                variables: {
+                                    tcSistema: `${ventaRetail.toFixed(3)}`,
+                                    tcSunat: `${ventaSunat.toFixed(3)}`,
+                                    fecha: fechaHoy
+                                }
+                            });
                         } else {
                             await extraServices.enviarSlack(
                                 `🚨 *ALERTA: Diferencia detectada*\n` +
@@ -115,6 +127,17 @@ export const initSocket = (server) => {
                                 `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
                                 "Comparación de Tipo de Cambio"
                             );
+
+                            const results = emailService.pushToEmailQueue({
+                                email: 'andrecanalesv@gmail.com',
+                                subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                                template: 'alertaDiffTipoChambio',
+                                variables: {
+                                    tcSistema: `${ventaRetail.toFixed(3)}`,
+                                    tcSunat: `${ventaSunat.toFixed(3)}`,
+                                    fecha: fechaHoy
+                                }
+                            });
                         }
                     } else {
                         console.log(`⚠️ No se encontró registro SUNAT en DB para la fecha ${fechaHoy}`);

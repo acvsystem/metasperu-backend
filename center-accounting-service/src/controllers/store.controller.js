@@ -2,6 +2,7 @@ import { getIO } from '../config/socket.js';
 import axios from 'axios';
 import { pool } from '../config/db.js';
 
+
 export const storeController = {
 
     getKardexStore: async (req, res) => {
