@@ -6,7 +6,15 @@ import cron from 'node-cron';
 import axios from 'axios';
 import { pool } from './config/db.js'; // Asegúrate de que la ruta a tu DB sea correcta
 import { extraServices } from './services/extra.services.js';
-import 'dotenv/config'
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Esto fuerza a buscar el .env en la carpeta padre de 'src'
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 const httpServer = createServer(app);
