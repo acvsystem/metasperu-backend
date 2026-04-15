@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import axios from 'axios';
 import { pool } from './config/db.js'; // Asegúrate de que la ruta a tu DB sea correcta
 import { extraServices } from './services/extra.services.js';
+import 'dotenv/config'
 
 const app = express();
 const httpServer = createServer(app);
