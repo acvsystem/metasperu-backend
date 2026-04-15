@@ -34,19 +34,29 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 cron.schedule('19 17 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
-  const fechaHoy = new Date().toISOString().split('T')[0];
-  const API_TOKEN = '8a02ec4cc1f4618487ff6a58100299a7dd02bc4ec60e3c8959d97dfd7becdf6b';
+  // 1. Asegurar fecha correcta en Lima (evita desfases de UTC)
+  const fechaHoy = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
+  // 2. Usar variables de entorno (Seguridad)
+  const API_TOKEN = process.env.APIPERU_TOKEN;
   const URL_APIPERU = 'https://apiperu.dev/api/tipo-de-cambio';
 
   try {
-    // 1. Verificar si ya lo tenemos en nuestra tabla de caché local
+    // Buscar en caché local
     const [rows] = await pool.execute(
-      'SELECT id FROM tb_tipo_cambio_cache WHERE fecha = ?',
+      'SELECT compra, venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
       [fechaHoy]
     );
 
+    let datosTC = null;
+
     if (rows.length === 0) {
-      console.log(`🌐 [Cron] No hay TC local para ${fechaHoy}. Consultando API externa...`);
+      console.log(`🌐 [Cron] Consultando API externa para ${fechaHoy}...`);
 
       const response = await axios.post(URL_APIPERU,
         { fecha: fechaHoy },
@@ -54,36 +64,49 @@ cron.schedule('19 17 * * *', async () => {
       );
 
       if (response.data.success) {
-        const { compra, venta } = response.data.data;
+        datosTC = response.data.data;
 
-        // 2. Guardar en la DB local
+        // Guardar/Actualizar en DB local
         await pool.execute(
-          'INSERT INTO tb_tipo_cambio_cache (fecha, compra, venta) VALUES (?, ?, ?)',
-          [fechaHoy, compra, venta]
+          'INSERT INTO tb_tipo_cambio_cache (fecha, compra, venta) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE compra=?, venta=?',
+          [fechaHoy, datosTC.compra, datosTC.venta, datosTC.compra, datosTC.venta]
         );
-        console.log(`✅ [Cron] TC Guardado localmente: Compra ${compra} - Venta ${venta}`);
 
-        await extraServices.enviarSlack(`✅ *Sincronización Exitosa*\n*Fecha:* ${fechaHoy}\n*Compra:* ${compra}\n*Venta:* ${venta}`, "Monitor de Tipo de Cambio");
-
-        // 3. Opcional: Notificar a todas las tiendas por Socket
-        const io = initSocket(); // Si tienes una función para obtener la instancia de socket
-        io.to('7A').emit('py_request_exchange_rate', { pedido_por: 'cron_accounting', init: fechaHoy, end: fechaHoy });
+        await extraServices.enviarSlack(
+          `✅ *Sincronización Exitosa*\n*Fecha:* ${fechaHoy}\n*Compra:* ${datosTC.compra}\n*Venta:* ${datosTC.venta}`,
+          "Monitor de Tipo de Cambio"
+        );
       }
     } else {
-      console.log(`✅ [Cron] El tipo de cambio para hoy (${fechaHoy}) ya existe en la DB local.${rows[0]}`);
+      datosTC = rows[0];
+      console.log(`✅ [Cron] TC ya existe localmente para ${fechaHoy}`);
 
-      await extraServices.enviarSlack(`⚠️ [Cron] El tipo de cambio para hoy (${fechaHoy}), Venta: ${rows[0].venta} ya existe en la DB local.`, "Monitor de Tipo de Cambio");
+      await extraServices.enviarSlack(
+        `⚠️ *Aviso:* El TC para hoy ya estaba registrado.\n*Fecha:* ${fechaHoy}\n*Venta:* ${datosTC.venta}`,
+        "Monitor de Tipo de Cambio"
+      );
+    }
 
-      const io = initSocket(); // Si tienes una función para obtener la instancia de socket
-      io.to('7A').emit('py_request_exchange_rate', { pedido_por: 'cron_accounting', init: fechaHoy, end: fechaHoy });
+    // 3. Notificación vía Socket (Fuera del if para no repetir código)
+    if (datosTC) {
+      const io = initSocket();
+      io.to('7A').emit('py_request_exchange_rate', {
+        pedido_por: 'cron_accounting',
+        init: fechaHoy,
+        end: fechaHoy,
+        data: datosTC
+      });
+      console.log(`📡 Evento de socket emitido para la tienda 7A`);
     }
 
   } catch (error) {
-    console.error('❌ [Cron Error]:', error.message);
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+    await extraServices.enviarSlack(`🚨 *Error en Cron Job*\nDetalle: ${errorMsg}`, "Monitor de Tipo de Cambio");
   }
 }, {
   scheduled: true,
-  timezone: "America/Lima" // Configurado para hora de Perú
+  timezone: "America/Lima"
 });
 
 // Rutas
