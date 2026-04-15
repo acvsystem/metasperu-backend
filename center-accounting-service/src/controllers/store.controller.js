@@ -55,5 +55,18 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
         }
+    },
+    getExchangeRateStore: async (req, res) => {
+        const { serieStore, socketId, init, end } = req.body;
+        try {
+
+            getIO().to(serieStore).emit('py_request_exchange_rate', { pedido_por: socketId, init: init, end: end });
+
+            res.json({
+                message: 'Se emitio señal de tipo de cambio'
+            });
+        } catch (error) {
+            res.status(500).json({ message: 'Error en envio de señal', error });
+        }
     }
 };

@@ -12,4 +12,7 @@ router.post('/api/kardex/camposlibres', storeController.postKardexCamposLibres);
 router.post('/api/cuo/store', storeController.getCuoStore);
 router.post('/api/cuo/insert', storeController.postCuoInsert);
 
+// --- RUTAS PARA TIPO DE CAMBIO TIENDAS
+router.post('/api/exchange-rate/store', storeController.getExchangeRateStore);
+
 export default router;

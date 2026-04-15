@@ -53,7 +53,7 @@ export const initSocket = (server) => {
 
             io.to(socketId).emit('dashboard_kardex_campos_libres', { message: message });
         });
-        
+
         socket.on('py_response_cuo', (data) => {
             const dataCuo = JSON.parse(data.cuo);
             const socketId = data.pedido_por;
@@ -66,6 +66,13 @@ export const initSocket = (server) => {
             const socketId = data.pedido_por;
 
             io.to(socketId).emit('dashboard_cuo_insert', { message: message });
+        });
+
+        socket.on('py_response_exchange_rate', (data) => {
+            const dataExchangeRate = JSON.parse(data.exchangeRate);
+            const socketId = data.pedido_por;
+
+            io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
         });
 
         socket.on('disconnect', () => {
