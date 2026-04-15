@@ -71,27 +71,63 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_exchange_rate', async (data) => {
-            const dataExchangeRate = JSON.parse(data.exchangeRate);
-            const socketId = data.pedido_por;
+            try {
+                // 1. Validación de seguridad
+                if (!data.exchangeRate) return;
 
-            if (socketId == 'cron_accounting') {
-                const fechaHoy = dataExchangeRate[0]['cFecha'];
+                const dataExchangeRate = JSON.parse(data.exchangeRate);
+                const socketId = data.pedido_por;
+                console.log(socketId);
+                // Si no hay datos en el array, no procesar
+                if (!dataExchangeRate || dataExchangeRate.length === 0) return;
 
-                // --- PASO 1: BUSCAR EN DB LOCAL ---
-                const [localRows] = await pool.execute(
-                    'SELECT compra, venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
-                    [fechaHoy]
-                );
+                const { cFecha: fechaHoy, cCotiActual: cotizacionRetail } = dataExchangeRate[0];
 
-                if (localRows.length > 0) {
-                    if (dataExchangeRate[0]['cCotiActual'] == localRows[0].venta) {
-                        extraServices.enviarSlack(`✅ *Sincronización Exitosa*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* ${dataExchangeRate[0]['cCotizacion']}\n*Sunat:* ${localRows[0].venta}`, "Comparacion de Tipo de Cambio");
+                // Caso: Respuesta para el proceso automático del Cron
+                if (socketId === 'cron_accounting') {
+
+                    // --- PASO 1: BUSCAR EN DB LOCAL ---
+                    const [localRows] = await pool.execute(
+                        'SELECT venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
+                        [fechaHoy]
+                    );
+
+                    if (localRows.length > 0) {
+                        const ventaSunat = parseFloat(localRows[0].venta);
+                        const ventaRetail = parseFloat(cotizacionRetail);
+
+                        // Comparación robusta
+                        if (ventaRetail === ventaSunat) {
+                            await extraServices.enviarSlack(
+                                `✅ *Sincronización Correcta*\n` +
+                                `*Fecha:* ${fechaHoy}\n` +
+                                `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
+                                `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
+                                `_Los valores coinciden perfectamente._`,
+                                "Comparación de Tipo de Cambio"
+                            );
+                        } else {
+                            await extraServices.enviarSlack(
+                                `🚨 *ALERTA: Diferencia detectada*\n` +
+                                `*Fecha:* ${fechaHoy}\n` +
+                                `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
+                                `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
+                                `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
+                                "Comparación de Tipo de Cambio"
+                            );
+                        }
                     } else {
-                        extraServices.enviarSlack(`⚠️ *Sincronización Diferencia*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* ${dataExchangeRate[0]['cCotizacion']}\n*Sunat:* ${localRows[0].venta}`, "Comparacion de Tipo de Cambio");
+                        console.log(`⚠️ No se encontró registro SUNAT en DB para la fecha ${fechaHoy}`);
                     }
+
+                } else {
+                    // Caso: Respuesta para un usuario en el Dashboard
+                    io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
                 }
-            } else {
-                io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
+
+            } catch (error) {
+                console.error('❌ Error en py_response_exchange_rate:', error.message);
+                // Opcional: Avisar a Slack que el procesamiento falló
             }
         });
 
