@@ -16,7 +16,7 @@ export const storeController = {
         if (!fecha || !tipoConsulta) {
             return res.status(400).json({ message: 'Fecha y Tipo de Consulta son requeridos' });
         }
- 
+
         try {
             const propertyUnique = Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -74,7 +74,7 @@ export const storeController = {
             );
 
             arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
-            getIO().emit('dashboard_empleados_horario');
+            getIO().emit('dashboard_empleados_horario', empleadosUnicos);
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
@@ -516,7 +516,7 @@ export const storeController = {
     postUpdateScheduleStore: async (req, res) => {
         // Recibimos los mismos datos que en el registro
         const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
-        
+
         const n = (val) => (val === undefined || val === null ? null : val);
 
         // RESPALDO PREVENTIVO: Guardamos un archivo local por si la DB falla catastróficamente
