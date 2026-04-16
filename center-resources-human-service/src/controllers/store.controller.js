@@ -64,20 +64,48 @@ export const storeController = {
         }
 
         try {
+            // 1. Filtrar duplicados por NUMDOC para no procesar de más
             const empleadosUnicos = Array.from(
                 new Map(
-                    data.map(empleado => [
-                        empleado.NUMDOC.trim(), // La llave del Map será el DNI limpio
-                        empleado                // El valor será el objeto completo
+                    data.map(ejb => [
+                        (ejb.NUMDOC || "").trim(),
+                        ejb
                     ])
                 ).values()
             );
 
-            arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
-            getIO().emit('dashboard_empleados_horario', empleadosUnicos);
-            res.status(200).json({ message: 'Se envio la solicitud con exito' });
+            // 2. Formatear la data con la estructura solicitada
+            const datosFormateados = empleadosUnicos.map(ejb => {
+                return {
+                    codigoEJB: ((ejb || {}).CODEJB || "").trim(),
+                    nombre_completo: `${(ejb || {}).APEPAT || ""} ${(ejb || {}).APEMAT || ""} ${(ejb || {}).NOMBRE || ""}`.trim(),
+                    nro_documento: ((ejb || {}).NUMDOC || "").trim(),
+                    telefono: ((ejb || {}).TELEFO || "").trim(),
+                    email: ((ejb || {}).EMAIL || "").trim(),
+                    fec_nacimiento: ((ejb || {}).FECNAC || "").trim(),
+                    fec_ingreso: ((ejb || {}).FECING || "").trim(),
+                    status: ((ejb || {}).STATUS || "").trim(),
+                    unid_servicio: ((ejb || {}).UNDSERVICIO || "").trim(),
+                    code_unid_servicio: ((ejb || {}).CODUNDSERVICIO || "").trim()
+                };
+            });
+
+            // 3. Guardar en el almacenamiento temporal de asistencia
+            if (arDataAsistenciaEmpleados.length > 0) {
+                arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
+            }
+
+            // 4. Emitir al dashboard en tiempo real
+            getIO().emit('dashboard_empleados_horario', datosFormateados);
+
+            res.status(200).json({
+                message: 'Se envío la solicitud con éxito',
+                cantidad: empleadosUnicos.length
+            });
+
         } catch (error) {
-            res.status(500).json({ message: 'Error interno' });
+            console.error('Error procesando empleados EJB:', error);
+            res.status(500).json({ message: 'Error interno al procesar los datos' });
         }
     },
     postRefresAsistenciaEmpleados: (req, res) => {
