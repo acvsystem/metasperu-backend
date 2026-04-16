@@ -118,7 +118,7 @@ export const initSocket = (server) => {
                             );
 
                             const results = emailService.pushToEmailQueue({
-                                email: 'andrecanalesv@gmail.com',
+                                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
                                 subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                                 template: 'alertaDiffTipoChambio',
                                 variables: {
