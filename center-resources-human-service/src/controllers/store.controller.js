@@ -74,6 +74,7 @@ export const storeController = {
             );
 
             arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
+            getIO().emit('dashboard_empleados_horario');
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
