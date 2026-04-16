@@ -116,9 +116,9 @@ export const initSocket = (server) => {
                                 `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
                                 "Comparación de Tipo de Cambio"
                             );
-
+                            
                             const results = emailService.pushToEmailQueue({
-                                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
+                                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                                 subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                                 template: 'alertaDiffTipoChambio',
                                 variables: {
