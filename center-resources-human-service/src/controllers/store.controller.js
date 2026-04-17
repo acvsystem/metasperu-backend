@@ -637,7 +637,7 @@ export const storeController = {
                                                 idHorario,
                                                 mappingDias[diaInfo.id_dia],
                                                 idRangoReal,
-                                                n(user.dni),
+                                                n(user.nro_documento),
                                                 n(user.nombre_completo)
                                             ]
                                         );
@@ -659,7 +659,7 @@ export const storeController = {
                                     [
                                         idHorario,
                                         mappingDias[libre.id_dia],
-                                        n(trb.dni),
+                                        n(trb.nro_documento),
                                         n(trb.nombre_completo)
                                     ]
                                 );
