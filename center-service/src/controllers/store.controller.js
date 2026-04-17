@@ -205,11 +205,12 @@ export const storeController = {
         const { socketId, serie, terminalIn, terminalOut } = req.body;
         try {
 
-            let onlineStore = Object.values(tiendasOnline);
+           // let onlineStore = Object.values(tiendasOnline);
 
-            const store = onlineStore.find((store) => store.serie == serie);
-            console.log(store);
-            getIO().to(store.socketId).emit('py_transfer_terminal', { pedido_por: socketId, serie: serie, terminalIn: terminalIn, terminalOut: terminalOut });
+           // const store = onlineStore.find((store) => store.serie == serie);
+            
+           // console.log(store);
+            getIO().to(serie).emit('py_transfer_terminal', { pedido_por: socketId, serie: serie, terminalIn: terminalIn, terminalOut: terminalOut });
 
             res.json({
                 message: 'Se emitio señal de transferencia de cola.'
