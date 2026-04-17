@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getIO, tiendasOnline, servidorOnline } from '../config/socket.js';
+import { getIO, servidorOnline } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 export const storeController = {
 
@@ -205,11 +205,6 @@ export const storeController = {
         const { socketId, serie, terminalIn, terminalOut } = req.body;
         try {
 
-           // let onlineStore = Object.values(tiendasOnline);
-
-           // const store = onlineStore.find((store) => store.serie == serie);
-            
-           // console.log(store);
             getIO().to(serie).emit('py_transfer_terminal', { pedido_por: socketId, serie: serie, terminalIn: terminalIn, terminalOut: terminalOut });
 
             res.json({
@@ -224,11 +219,8 @@ export const storeController = {
         const { socketId } = req.params;
         try {
 
-            let onlineStore = Object.values(tiendasOnline);
+            getIO().to('grupo_tiendas').emit('py_delete_cola_panama', { pedido_por: socketId });
 
-            onlineStore.filter((store) => {
-                getIO().to(store.socketId).emit('py_delete_cola_panama', { pedido_por: socketId });
-            });
             res.json({
                 message: 'Se emitio señal de eliminar cola panama.'
             });
