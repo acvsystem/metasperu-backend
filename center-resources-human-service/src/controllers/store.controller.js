@@ -403,7 +403,7 @@ export const storeController = {
                                                     idHorario,
                                                     mappingDias[diaInfo.id_dia],
                                                     idRangoReal,
-                                                    n(user.dni),
+                                                    n(user.nro_documento),
                                                     n(user.nombre_completo)
                                                 ]
                                             );
