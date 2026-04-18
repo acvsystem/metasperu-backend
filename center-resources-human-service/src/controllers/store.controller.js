@@ -367,7 +367,7 @@ export const storeController = {
                             [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                         );
                         mappingDias[d.id] = resDia.insertId;
-
+                        console.log(d.notasDia);
                         // 3. Insertar Notas
                         if (d.notasDia) {
                             for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of Object.entries(d.notasDia)) {
