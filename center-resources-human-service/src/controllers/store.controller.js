@@ -603,15 +603,13 @@ export const storeController = {
                     mappingDias[d.id] = resDia.insertId;
                     console.log(d.notasDia);
                     if (d.notasDia) {
-                        for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of Object.entries(d.notasDia)) {
+                        for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of d.notasDia) {
                             // Solo insertamos si hay texto real
-                            if (observacion && String(observacion).trim() !== "") {
-                                await connection.execute(
-                                    `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
+                            await connection.execute(
+                                `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
                              VALUES (?, ?, ?)`,
-                                    [idHorario, mappingDias[idDiaJson], nombre_completo, nro_documento, n(observacion), fecha_registro]
-                                );
-                            }
+                                [idHorario, mappingDias[idDiaJson], nombre_completo, nro_documento, n(observacion), fecha_registro]
+                            );
                         }
                     }
                 }
