@@ -617,7 +617,7 @@ export const storeController = {
                     );
                     mappingDias[d.id] = resDia.insertId;
 
-                    if (d.notasDia) {
+                    if ((d.notasDia || []).length) {
                         console.log(d.notasDia);
                         for (const nt of d.notasDia) {
                             // Solo insertamos si hay texto real
