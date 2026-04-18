@@ -368,18 +368,15 @@ export const storeController = {
                             [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                         );
                         mappingDias[d.id] = resDia.insertId;
-                        console.log(d.notasDia);
-                        // 3. Insertar Notas
-                        if (d.notasDia) {
-                            for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of Object.entries(d.notasDia)) {
+                        
+                        if ((d.notasDia || []).length) {
+                            for (const nt of d.notasDia) {
                                 // Solo insertamos si hay texto real
-                                if (observacion && String(observacion).trim() !== "") {
-                                    await connection.execute(
-                                        `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
-                             VALUES (?, ?, ?)`,
-                                        [idHorario, mappingDias[idDiaJson], nombre_completo, nro_documento, n(observacion), fecha_registro]
-                                    );
-                                }
+                                await connection.execute(
+                                    `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
+                             VALUES (?, ?, ?, ?, ?, ?)`,
+                                    [idHorario, mappingDias[d.id], n(nt.nombre_completo), n(nt.nro_documento), n(nt.observacion), n(nt.fecha_registro)]
+                                );
                             }
                         }
                     }
@@ -481,7 +478,7 @@ export const storeController = {
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [obsDB] = await connection.execute(`SELECT * FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
-                    console.log(obsDB);
+                console.log(obsDB);
                 // Formatear dias
                 const diasFormateados = diasDB.map(d => {
                     // Filtramos las notas que corresponden a este día (d.ID_DIAS)
@@ -618,7 +615,6 @@ export const storeController = {
                     mappingDias[d.id] = resDia.insertId;
 
                     if ((d.notasDia || []).length) {
-                        console.log(d.notasDia);
                         for (const nt of d.notasDia) {
                             // Solo insertamos si hay texto real
                             await connection.execute(
