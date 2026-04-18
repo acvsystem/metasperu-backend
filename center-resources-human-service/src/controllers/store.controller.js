@@ -367,18 +367,18 @@ export const storeController = {
                             [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                         );
                         mappingDias[d.id] = resDia.insertId;
-                    }
 
-                    // 3. Insertar Notas
-                    if (item.notasDia) {
-                        for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
-                            // Solo insertamos si hay texto real
-                            if (observacion && String(observacion).trim() !== "") {
-                                await connection.execute(
-                                    `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
+                        // 3. Insertar Notas
+                        if (d.notasDia) {
+                            for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of Object.entries(d.notasDia)) {
+                                // Solo insertamos si hay texto real
+                                if (observacion && String(observacion).trim() !== "") {
+                                    await connection.execute(
+                                        `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
                              VALUES (?, ?, ?)`,
-                                    [idHorario, mappingDias[idDiaJson], n(observacion)]
-                                );
+                                        [idHorario, mappingDias[idDiaJson], nombre_completo, nro_documento, n(observacion), fecha_registro]
+                                    );
+                                }
                             }
                         }
                     }
