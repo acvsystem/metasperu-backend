@@ -601,8 +601,9 @@ export const storeController = {
                         [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                     );
                     mappingDias[d.id] = resDia.insertId;
-                    console.log(d.notasDia);
+                   
                     if (d.notasDia) {
+                         console.log(d.notasDia);
                         for (const [idDiaJson, nombre_completo, nro_documento, observacion, fecha_registro] of d.notasDia) {
                             // Solo insertamos si hay texto real
                             await connection.execute(
