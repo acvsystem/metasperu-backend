@@ -287,7 +287,8 @@ export const storeController = {
                         fecha: d.FECHA,
                         fecha_number: d.FECHA_NUMBER,
                         id: d.ID_DIAS,
-                        position: i + 1
+                        position: i + 1,
+                        notasDia: observations.map((nt) => nt.ID_OBS_DIAS == d.ID_DIAS)
                     })),
                     dias_trabajo: workDays.map(r => ({
                         id: r.ID_DIA_TRB,
