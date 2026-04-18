@@ -481,7 +481,7 @@ export const storeController = {
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [obsDB] = await connection.execute(`SELECT * FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
-
+                    console.log(obsDB);
                 // Formatear dias
                 const diasFormateados = diasDB.map(d => {
                     // Filtramos las notas que corresponden a este día (d.ID_DIAS)
