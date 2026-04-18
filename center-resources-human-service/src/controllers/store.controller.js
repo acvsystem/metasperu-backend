@@ -630,20 +630,6 @@ export const storeController = {
                     }
                 }
 
-                // 3. Insertar Notas
-                if (item.notasDia) {
-                    for (const [idDiaJson, observacion] of Object.entries(item.notasDia)) {
-                        // Solo insertamos si hay texto real
-                        if (observacion && String(observacion).trim() !== "") {
-                            await connection.execute(
-                                `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, OBSERVACION) 
-                             VALUES (?, ?, ?)`,
-                                [idHorario, mappingDias[idDiaJson], n(observacion)]
-                            );
-                        }
-                    }
-                }
-
                 // 4. Insertar Filas de Trabajo
                 if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
                     for (const fila of item.filasTrabajo) {
