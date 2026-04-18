@@ -480,7 +480,7 @@ export const storeController = {
                 const [rangosDB] = await connection.execute(`SELECT ID_RANGO_HORA, RANGO_HORA FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`, [idH]);
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
-                const [obsDB] = await connection.execute(`SELECT ID_OBS_DIAS, OBSERVACION FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
+                const [obsDB] = await connection.execute(`SELECT * FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
 
                 // Formatear dias
                 const diasFormateados = diasDB.map(d => {
