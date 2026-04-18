@@ -483,11 +483,25 @@ export const storeController = {
                 const [obsDB] = await connection.execute(`SELECT ID_OBS_DIAS, OBSERVACION FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
 
                 // Formatear dias
-                const diasFormateados = diasDB.map(d => ({
-                    id: d.POSITION, // Usamos la posición como ID relativo según tu ejemplo
-                    dia: d.DIA,
-                    fecha: d.FECHA
-                }));
+                const diasFormateados = diasDB.map(d => {
+                    // Filtramos las notas que corresponden a este día (d.ID_DIAS)
+                    const notasParaEsteDia = obsDB
+                        .filter(o => o.ID_OBS_DIAS === d.ID_DIAS)
+                        .map(o => ({
+                            nombre_completo: o.NOMBRE_COMPLETO,
+                            nro_documento: o.NRO_DOCUMENTO,
+                            observacion: o.OBSERVACION,
+                            fecha_registro: o.FECHA_REGISTRO
+                        }));
+
+                    return {
+                        id: d.POSITION,
+                        dia: d.DIA,
+                        fecha: d.FECHA,
+                        dayBlock: false, // O tu lógica de bloqueo actual
+                        notasDia: notasParaEsteDia // Aquí insertamos el array directamente
+                    };
+                });
 
                 // Reconstruir filasTrabajo (Agrupado por Rango Horario)
                 const filasTrabajo = rangosDB.map(r => ({
