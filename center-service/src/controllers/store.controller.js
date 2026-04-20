@@ -240,9 +240,9 @@ export const storeController = {
             if (rows.length === 0) {
                 return res.status(404).json({ error: "Token no válido o expirado" });
             }
-            console.log(rows[0].documentos[0]);
+    
             // 2. Parseamos el JSON que guardaste como string en la BD
-            const documentos = rows[0].documentos[0];
+            const documentos = rows[0].documentos;
 
             // 3. ENVIAMOS SOLO JSON (Aquí está la clave)
             // Usamos res.json() en lugar de res.render() o res.sendFile()
