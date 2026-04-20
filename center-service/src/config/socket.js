@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { emailService } from '../services/email.service.js';
+import { pool } from './db.js';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -187,52 +188,37 @@ function verificarYComparar(serie) {
 async function iniciarProcesoComparacion(serie) {
     let resultadosFinales = {};
 
+
+
+
+
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
+
+        const query = `
+            SELECT DESCIPRCION
+            FROM bd_metasperu.tb_lista_tienda t
+            WHERE t.SERIE_TIENDA = ${serie}
+        `;
+
+        const [rows] = await pool.execute(query);
+
+        const storeDescription = rows.map(t => {
+            return t;
+        });
+
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
-        if (serie == 'nn') {
+        if (resultadosFinales.length > 0) {
             emailService.pushToEmailQueue({
                 email: 'andrecanalesv@gmail.com',
-                subject: 'Documentos Pendientes - BBW JOCKEY - TEST',
+                subject: `Documentos Pendientes - ${storeDescription}`,
                 template: 'documentosPendientes',
                 variables: {
-                    tienda: 'BBW JOCKEY', // Esta es la variable {{tienda}}
-                    documentos: [ // Esta es la lista para el {{#each documentos}}
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                        { id: 'B7F1-00093991', tipo: 'Factura Electrónica', fecha: '2025-10-21' },
-                        { id: 'B7F1-00093992', tipo: 'Boleta de Venta', fecha: '2025-10-22' },
-                        { id: 'C2F1-00010001', tipo: 'Guía de Remisión', fecha: '2025-11-01' },
-                    ]
+                    tienda: storeDescription, // Esta es la variable {{tienda}}
+                    documentos: resultadosFinales.documents
                 }
             });
         }
-
 
         io.emit('documents_response_dashboard', resultadosFinales);
     } else {
@@ -254,7 +240,10 @@ function obtenerFaltantes(serieStore, store, servidor) {
     const faltantes = JSON.parse(store).filter(t => {
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
 
-        return !idsEnServidor.has(idNormalizadoTienda);
+        if (!idsEnServidor.has(idNormalizadoTienda)) {
+            const objDocumento = { id: idNormalizadoTienda, tipo: t.cmpTipo, fecha: t.cmpFecha }
+            return objDocumento;
+        }
     });
 
     console.log(`🚀 Documentos Faltantes ${serieStore} - ${faltantes.length}`);
