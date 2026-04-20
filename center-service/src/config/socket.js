@@ -189,7 +189,7 @@ async function iniciarProcesoComparacion(serie) {
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
-        if (resultadosFinales.length && serie == '7A') {
+        if (serie == '7A') {
             emailService.pushToEmailQueue({
                 email: 'andrecanalesv@gmail.com',
                 subject: 'Documentos Pendientes - BBW JOCKEY - TEST',
