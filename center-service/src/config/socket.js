@@ -214,16 +214,21 @@ async function iniciarProcesoComparacion(serie) {
                 { expiresIn: '8h' }
             );
 
-            const urlTemporal = `https://dev.metasperu.net.pe/s1/center/api/documentos-pendientes/${token}`;
+            await pool.execute("DELETE FROM enlaces_temporales WHERE expiracion < NOW()");
 
-            // 2. Guardar en Redis por 8 horas (28800 segundos)
-            await redis.setex(`docs_${token}`, 28800, JSON.stringify(resultadosFinales.documents));
+            const [result] = await pool.execute(
+                `INSERT INTO enlaces_temporales (token, documentos, expiracion) 
+                VALUES (?, ?, NOW() + INTERVAL 8 HOUR)`,
+                [token, JSON.stringify(resultadosFinales.documents)]
+            );
+
+            const urlTemporal = `https://dev.metasperu.net.pe/s1/center/api/documentos-pendientes/${token}`;
 
             await extraServices.enviarSlack(
                 `🚨 *ALERTA: Documentos Pendientes*\n` +
                 `*Tienda:*  ${storeDescription.DESCRIPCION}\n` +
                 `*Cantidad:*  ${resultadosFinales.length}\n` +
-                `*Documentos:* ${resultadosFinales.documents}`,
+                `*Documentos:* ${urlTemporal}`,
                 "Comparación de Documentos faltantes"
             );
 

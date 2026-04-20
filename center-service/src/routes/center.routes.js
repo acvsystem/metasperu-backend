@@ -35,14 +35,22 @@ router.post('/api/parameters/store', configurationController.postParametersStore
 
 // ---RUTA TEMPORAL DOCUMENTOS PENDIENTES SLACK
 router.get('/api/documentos-pendientes/:token', verifyToken, async (req, res) => {
-    const { token } = req.params;
-    const data = await redis.get(`docs_${token}`); // Asumiendo que usas ioredis
+    try {
+        const { token } = req.params;
+        // Buscamos el token y verificamos que la fecha actual sea menor a la de expiración
+        const [rows] = await pool.execute(
+            "SELECT documentos FROM enlaces_temporales WHERE token = ? AND expiracion > NOW()",
+            [token]
+        );
 
-    if (!data) return res.status(404).send('Enlace expirado o no encontrado.');
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Enlace expirado o no encontrado." });
+        }
 
-    const documentos = JSON.parse(data);
-    // Renderiza una vista simple o devuelve un JSON formateado
-    res.json(documentos);
+        res.json(JSON.parse(rows[0].documentos));
+    } catch (error) {
+        res.status(500).json({ error: "Error interno." });
+    }
 });
 
 export default router;
