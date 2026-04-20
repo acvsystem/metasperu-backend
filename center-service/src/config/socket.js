@@ -201,16 +201,16 @@ async function iniciarProcesoComparacion(serie) {
         const storeDescription = rows.find(t => {
             return t;
         });
-        console.log(storeDescription);
-        resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
+        resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
+        console.log(storeDescription.documents);
         if (resultadosFinales.length > 0) {
             emailService.pushToEmailQueue({
                 email: 'andrecanalesv@gmail.com',
-                subject: `Documentos Pendientes - ${storeDescription}`,
+                subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                 template: 'documentosPendientes',
                 variables: {
-                    tienda: storeDescription, // Esta es la variable {{tienda}}
+                    tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
                     documentos: resultadosFinales.documents
                 }
             });
@@ -231,7 +231,7 @@ function obtenerFaltantes(serieStore, store, servidor) {
     }
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
     const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
-    
+
     // 2. Filtramos los de la tienda que NO están en el servidor
     const faltantes = JSON.parse(store).filter(t => {
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
