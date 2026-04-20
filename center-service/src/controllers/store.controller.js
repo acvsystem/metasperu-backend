@@ -242,7 +242,7 @@ export const storeController = {
             }
             console.log(rows[0].documentos[0]);
             // 2. Parseamos el JSON que guardaste como string en la BD
-            const documentos = JSON.parse(rows[0].documentos[0]);
+            const documentos = rows[0].documentos[0];
 
             // 3. ENVIAMOS SOLO JSON (Aquí está la clave)
             // Usamos res.json() en lugar de res.render() o res.sendFile()
