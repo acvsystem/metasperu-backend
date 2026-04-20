@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { emailService } from '../services/email.service.js';
 import { pool } from './db.js';
+import { extraServices } from '../services/extra.services.js';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -203,10 +204,19 @@ async function iniciarProcesoComparacion(serie) {
         });
 
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
-        console.log(resultadosFinales.documents);
+
         if (resultadosFinales.length > 0) {
+
+            await extraServices.enviarSlack(
+                `🚨 *ALERTA: Documentos Pendientes*\n` +
+                `*Tienda:*  ${storeDescription.DESCRIPCION}\n` +
+                `*Cantidad:*  ${resultadosFinales.length}\n` +
+                `*Documentos:* ${resultadosFinales.documents}`,
+                "Comparación de Documentos faltantes"
+            );
+
             emailService.pushToEmailQueue({
-                email: 'andrecanalesv@gmail.com',
+                email: ['itperu@metasperu.com'],
                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                 template: 'documentosPendientes',
                 variables: {
