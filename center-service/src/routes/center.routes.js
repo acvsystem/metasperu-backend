@@ -34,9 +34,9 @@ router.get('/api/delete/cola/panama/:socketId', verifyToken, storeController.cal
 router.post('/api/parameters/store', configurationController.postParametersStore);
 
 // ---RUTA TEMPORAL DOCUMENTOS PENDIENTES SLACK
-router.get('/api/documentos-pendientes/:token', async (req, res) => {
+router.post('/api/documentos-pendientes/:token', async (req, res) => {
     try {
-        const { token } = req.params;
+        const { token } = req.body;
         console.log(token);
         // Buscamos el token y verificamos que la fecha actual sea menor a la de expiración
         const [rows] = await pool.execute(
