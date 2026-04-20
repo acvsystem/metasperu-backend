@@ -129,6 +129,7 @@ export const storeController = {
             getIO().to('servidor_backup').emit('py_request_documents_server');
             getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: socketId });
 
+
             res.json({
                 message: 'Se emitio señal de documentos'
             });
