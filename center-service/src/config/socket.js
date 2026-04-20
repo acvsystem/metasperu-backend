@@ -208,11 +208,7 @@ async function iniciarProcesoComparacion(serie) {
 
         if (resultadosFinales.length > 0) {
 
-            const token = jwt.sign(
-                { id: 'dp' },
-                'una_clave_muy_segura_y_larga_123456',
-                { expiresIn: '8h' }
-            );
+            const token = crypto.randomBytes(16).toString('hex');
 
             await pool.execute("DELETE FROM enlaces_temporales WHERE expiracion < NOW()");
 
