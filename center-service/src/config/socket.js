@@ -218,7 +218,7 @@ async function iniciarProcesoComparacion(serie) {
                 [token, JSON.stringify(resultadosFinales.documents)]
             );
 
-            const urlTemporal = `https://dev.metasperu.net.pe/s1/center/api/documentos-pendientes/${token}`;
+            const urlTemporal = `https://api.metasperu.net.pe/s1/center/api/documentos-pendientes/${token}`;
 
             await extraServices.enviarSlack(
                 `🚨 *ALERTA: Documentos Pendientes*\n` +
