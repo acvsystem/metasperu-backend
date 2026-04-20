@@ -37,6 +37,7 @@ router.post('/api/parameters/store', configurationController.postParametersStore
 router.get('/api/documentos-pendientes/:token', async (req, res) => {
     try {
         const { token } = req.params;
+        console.log(token);
         // Buscamos el token y verificamos que la fecha actual sea menor a la de expiración
         const [rows] = await pool.execute(
             "SELECT documentos FROM enlaces_temporales WHERE token = ? AND expiracion > NOW()",
