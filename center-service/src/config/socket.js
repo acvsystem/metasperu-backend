@@ -198,10 +198,10 @@ async function iniciarProcesoComparacion(serie) {
 
         const [rows] = await pool.execute(query);
 
-        const storeDescription = rows.map(t => {
+        const storeDescription = rows.find(t => {
             return t;
         });
-
+        console.log(storeDescription);
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
         if (resultadosFinales.length > 0) {
