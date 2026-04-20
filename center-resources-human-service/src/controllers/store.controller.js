@@ -368,7 +368,7 @@ export const storeController = {
                             [idHorario, n(d.dia), n(d.fecha), n(d.id)]
                         );
                         mappingDias[d.id] = resDia.insertId;
-                        
+
                         if ((d.notasDia || []).length) {
                             for (const nt of d.notasDia) {
                                 // Solo insertamos si hay texto real
@@ -693,9 +693,9 @@ export const storeController = {
 
 
 const CONFIG = {
-    MIN_TOLERANCIA_ENTRADA: 0,
+    MIN_TOLERANCIA_ENTRADA: 5,
     MIN_BREAK_PERMITIDO: 60,
-    MIN_TOLERANCIA_BREAK: 0,
+    MIN_TOLERANCIA_BREAK: 5,
     HORAS_LABORALES_META: 8
 };
 
