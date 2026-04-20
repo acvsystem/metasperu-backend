@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import { emailService } from '../services/email.service';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
