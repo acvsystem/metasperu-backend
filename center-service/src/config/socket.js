@@ -188,10 +188,6 @@ function verificarYComparar(serie) {
 async function iniciarProcesoComparacion(serie) {
     let resultadosFinales = {};
 
-
-
-
-
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
 
         const query = `
@@ -235,7 +231,7 @@ function obtenerFaltantes(serieStore, store, servidor) {
     }
     // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
     const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
-    console.log(store);
+    
     // 2. Filtramos los de la tienda que NO están en el servidor
     const faltantes = JSON.parse(store).filter(t => {
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
