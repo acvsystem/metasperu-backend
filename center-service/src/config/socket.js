@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { emailService } from '../services/email.service.js';
 import { pool } from './db.js';
 import { extraServices } from '../services/extra.services.js';
+import jwt from 'jsonwebtoken';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -206,6 +207,17 @@ async function iniciarProcesoComparacion(serie) {
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
         if (resultadosFinales.length > 0) {
+
+            const token = jwt.sign(
+                { id: 'dp' },
+                'una_clave_muy_segura_y_larga_123456',
+                { expiresIn: '8h' }
+            );
+
+            const urlTemporal = `https://dev.metasperu.net.pe/s1/center/api/documentos-pendientes/${token}`;
+
+            // 2. Guardar en Redis por 8 horas (28800 segundos)
+            await redis.setex(`docs_${token}`, 28800, JSON.stringify(resultadosFinales.documents));
 
             await extraServices.enviarSlack(
                 `🚨 *ALERTA: Documentos Pendientes*\n` +

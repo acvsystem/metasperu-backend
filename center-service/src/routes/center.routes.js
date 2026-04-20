@@ -33,5 +33,16 @@ router.get('/api/delete/cola/panama/:socketId', verifyToken, storeController.cal
 // ---RUTAS DE CONFIGURACION
 router.post('/api/parameters/store', configurationController.postParametersStore);
 
+// ---RUTA TEMPORAL DOCUMENTOS PENDIENTES SLACK
+router.get('/api/documentos-pendientes/:token', verifyToken, async (req, res) => {
+    const { token } = req.params;
+    const data = await redis.get(`docs_${token}`); // Asumiendo que usas ioredis
+
+    if (!data) return res.status(404).send('Enlace expirado o no encontrado.');
+
+    const documentos = JSON.parse(data);
+    // Renderiza una vista simple o devuelve un JSON formateado
+    res.json(documentos);
+});
 
 export default router;
