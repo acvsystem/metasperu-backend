@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { emailService } from '../services/email.service.js';
 import { pool } from './db.js';
 import { extraServices } from '../services/extra.services.js';
-import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
