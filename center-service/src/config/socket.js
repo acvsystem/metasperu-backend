@@ -224,27 +224,46 @@ async function iniciarProcesoComparacion(serie) {
 
 }
 
-function obtenerFaltantes(serieStore, store, servidor) {
+function obtenerFaltantes(serieStore, storeRaw, servidorRaw) {
+    try {
+        // 1. Parseo seguro con validación inicial
+        const store = JSON.parse(storeRaw || '[]');
+        const servidor = JSON.parse(servidorRaw || '[]');
 
-    if (!JSON.parse(store || '[]').length) {
-        return { serie: serieStore, documents: [], length: 0 };
-    }
-    // 1. Creamos un Set con los IDs del servidor para búsqueda rápida O(1)
-    const idsEnServidor = new Set(JSON.parse(servidor).map(s => s.cmpNumero));
-
-    // 2. Filtramos los de la tienda que NO están en el servidor
-    const faltantes = JSON.parse(store).filter(t => {
-        const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
-
-        if (!idsEnServidor.has(idNormalizadoTienda)) {
-            const objDocumento = { id: idNormalizadoTienda, tipo: t.cmpTipo, fecha: t.cmpFecha }
-            console.log(objDocumento);
-            return objDocumento;
+        if (store.length === 0) {
+            return { serie: serieStore, documents: [], length: 0 };
         }
-    });
-    console.log(faltantes);
-    console.log(`🚀 Documentos Faltantes ${serieStore} - ${faltantes.length}`);
-    return { serie: serieStore, documents: faltantes, length: faltantes.length };
+
+        // 2. Indexación eficiente de documentos del servidor
+        // Usamos un Set para búsquedas de O(1)
+        const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
+
+        // 3. Filtrado y transformación en una sola pasada
+        const faltantes = store.reduce((acc, t) => {
+            const idNormalizado = `${t.cmpSerie}-${String(t.cmpNumero).padStart(8, '0')}`;
+
+            if (!idsEnServidor.has(idNormalizado)) {
+                acc.push({
+                    id: idNormalizado,
+                    tipo: t.cmpTipo,
+                    fecha: t.cmpFecha
+                });
+            }
+            return acc;
+        }, []);
+
+        console.info(`🚀 Documentos Faltantes [${serieStore}]: ${faltantes.length} encontrados.`);
+
+        return {
+            serie: serieStore,
+            documents: faltantes,
+            length: faltantes.length
+        };
+
+    } catch (error) {
+        console.error("Error al procesar la comparación de documentos:", error);
+        return { serie: serieStore, documents: [], length: 0, error: true };
+    }
 }
 
 async function enviarActualizacionDashboard() {
