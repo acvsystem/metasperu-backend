@@ -4,6 +4,7 @@ export const extraServices = {
 
     enviarSlack: async (mensaje, emisor) => {
         try {
+            console.log("extraServices ",process.env.SLACK_WEBHOOK_URL);
             await axios.post(process.env.SLACK_WEBHOOK_URL, {
                 text: mensaje,
                 // Puedes personalizarlo más:
