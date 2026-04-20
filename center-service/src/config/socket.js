@@ -193,7 +193,7 @@ async function iniciarProcesoComparacion(serie) {
         const query = `
             SELECT DESCRIPCION
             FROM bd_metasperu.tb_lista_tienda t
-            WHERE t.SERIE_TIENDA = ${serie}
+            WHERE t.SERIE_TIENDA = '${serie}'
         `;
 
         const [rows] = await pool.execute(query);
