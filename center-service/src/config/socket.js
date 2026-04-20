@@ -238,10 +238,11 @@ function obtenerFaltantes(serieStore, store, servidor) {
 
         if (!idsEnServidor.has(idNormalizadoTienda)) {
             const objDocumento = { id: idNormalizadoTienda, tipo: t.cmpTipo, fecha: t.cmpFecha }
+            console.log(objDocumento);
             return objDocumento;
         }
     });
-
+    console.log(faltantes);
     console.log(`🚀 Documentos Faltantes ${serieStore} - ${faltantes.length}`);
     return { serie: serieStore, documents: faltantes, length: faltantes.length };
 }
