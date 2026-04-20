@@ -37,20 +37,27 @@ router.post('/api/parameters/store', configurationController.postParametersStore
 router.get('/api/documentos-pendientes/:token', async (req, res) => {
     try {
         const { token } = req.params;
-        console.log(token);
-        // Buscamos el token y verificamos que la fecha actual sea menor a la de expiración
+
+        // 1. Buscamos el token y verificamos que no haya expirado
         const [rows] = await pool.execute(
-            "SELECT documentos FROM enlaces_temporales WHERE token = ? AND expiracion > NOW()",
+            'SELECT documentos FROM enlaces_temporales WHERE token = ? AND expiracion > NOW()',
             [token]
         );
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: "Enlace expirado o no encontrado." });
+            return res.status(404).json({ error: "Token no válido o expirado" });
         }
 
-        res.json(JSON.parse(rows[0].documentos));
+        // 2. Parseamos el JSON que guardaste como string en la BD
+        const documentos = JSON.parse(rows[0].documentos);
+
+        // 3. ENVIAMOS SOLO JSON (Aquí está la clave)
+        // Usamos res.json() en lugar de res.render() o res.sendFile()
+        return res.status(200).json(documentos);
+
     } catch (error) {
-        res.status(500).json({ error: "Error interno." });
+        console.error(error);
+        return res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 
