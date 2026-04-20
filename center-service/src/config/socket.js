@@ -190,7 +190,7 @@ async function iniciarProcesoComparacion(serie) {
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
-        if (serie == '7A') {
+        if (serie == 'nn') {
             emailService.pushToEmailQueue({
                 email: 'andrecanalesv@gmail.com',
                 subject: 'Documentos Pendientes - BBW JOCKEY - TEST',
@@ -253,6 +253,7 @@ function obtenerFaltantes(serieStore, store, servidor) {
     // 2. Filtramos los de la tienda que NO están en el servidor
     const faltantes = JSON.parse(store).filter(t => {
         const idNormalizadoTienda = `${t.cmpSerie}-${t.cmpNumero.toString().padStart(8, '0')}`;
+        console.log(idNormalizadoTienda);
 
         return !idsEnServidor.has(idNormalizadoTienda);
     });
