@@ -225,7 +225,7 @@ async function iniciarProcesoComparacion(serie) {
                 `*Tienda:*  ${storeDescription.DESCRIPCION}\n` +
                 `*Cantidad:*  ${resultadosFinales.length}\n` +
                 `*Documentos:* ${urlTemporal}`,
-                "Comparación de Documentos faltantes"
+                "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
 
             emailService.pushToEmailQueue({
