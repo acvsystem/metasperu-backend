@@ -191,7 +191,7 @@ async function iniciarProcesoComparacion(serie) {
     if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
 
         const query = `
-            SELECT DESCIPRCION
+            SELECT DECRIPCION
             FROM bd_metasperu.tb_lista_tienda t
             WHERE t.SERIE_TIENDA = ${serie}
         `;
