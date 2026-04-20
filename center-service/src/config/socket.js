@@ -208,7 +208,7 @@ async function iniciarProcesoComparacion(serie) {
 
         if (resultadosFinales.length > 0) {
 
-            const token = crypto.randomBytes(16).toString('hex');
+            const token = crypto.randomBytes(25).toString('hex');
 
             await pool.execute("DELETE FROM enlaces_temporales WHERE expiracion < NOW()");
 
