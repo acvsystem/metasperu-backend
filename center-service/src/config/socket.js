@@ -203,7 +203,7 @@ async function iniciarProcesoComparacion(serie) {
         });
 
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
-        console.log(storeDescription.documents);
+        console.log(resultadosFinales.documents);
         if (resultadosFinales.length > 0) {
             emailService.pushToEmailQueue({
                 email: 'andrecanalesv@gmail.com',
