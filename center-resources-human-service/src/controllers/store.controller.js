@@ -1220,7 +1220,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
-            AND ESTADO = 'APROBADO' 
+            AND ESTADO = 'correcto' 
         `, [nroDocumento, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
