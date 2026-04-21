@@ -1168,14 +1168,30 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (data.total > UMBRAL_PART_TIME_SEMANAL) {
             const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
             if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
+                const rangoSemana = obtenerRangoSemana(semana);
                 // Guardamos el exceso el último día de esa semana o una fecha referencial
-                await guardarEnBD(data.nroDocumento, `SEMANA_${semana}`, excesoSemanal);
+                await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
             }
 
         }
     }
 }
 
+const obtenerRangoSemana = (fecha) => {
+    const d = new Date(fecha);
+    const day = d.getDay(); // 0 (Dom) a 6 (Sab)
+
+    // Ajustar para que Lunes sea 0 y Domingo sea 6
+    const diff = (d.getDate() - (day === 0 ? 6 : day - 1));
+
+    const lunes = new Date(d.setDate(diff));
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate() + 6);
+
+    const formato = (date) => date.toISOString().split('T')[0];
+
+    return `${formato(lunes)} al ${formato(domingo)}`;
+}
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
     const excesoTiempo = decimalATiempo(excesoDecimal); // Convierte "1.5" a "01:30"
@@ -1193,7 +1209,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
         `, [
             nroDocumento,
             excesoTiempo, // Acumulado
-            excesoTiempo, // Solicitado (inicial)
+            '00:00', // Solicitado (inicial)
             excesoTiempo, // Sobrante (inicial)
             fechaRef,
             nroDocumento,
