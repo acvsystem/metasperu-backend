@@ -1141,7 +1141,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (reg.dia === FECHA_HOY) return; // Excluir hoy
 
         const horas = parseFloat(reg.hrWorking);
-        const esPartTime = reg.FAX === '**';
+        const esPartTime = reg.tpAsociado === '**';
 
         if (esPartTime) {
             const semana = getNumeroSemana(reg.dia); // Función auxiliar
