@@ -1178,7 +1178,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
-        const [resultado] = await pool.query(`
+        const [resultado] = await dev_pool.query(`
             SELECT SUM(CAST(HR_EXTRA_SOBRANTE AS DECIMAL(10,2))) as totalHoras
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
