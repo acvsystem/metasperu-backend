@@ -1205,7 +1205,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         const [rows] = await dev_pool.query(`
-           SELECT HR_EXTRA_SOBRANTE FROM tb_hora_extra_empleado 
+           SELECT * FROM tb_hora_extra_empleado 
              WHERE NRO_DOCUMENTO_EMPLEADO = ? 
              AND FECHA BETWEEN ? AND ?
              AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
