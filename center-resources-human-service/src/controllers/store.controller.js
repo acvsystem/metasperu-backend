@@ -1127,55 +1127,79 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    const JORNADA_MAXIMA = 8;
+    const JORNADA_MAXIMA_DIARIA = 8.0;
+    const UMBRAL_PART_TIME_SEMANAL = 24.0;
     const MINIMO_PARA_REGISTRAR = 0.5;
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
-    // 1. Agrupar horas totales por día
-    const resumenDias = listaRegistros.reduce((acc, reg) => {
-        if (reg.dia === FECHA_HOY) return acc; // Excluir hoy
+    // Estructuras de agrupación
+    const resumenFullTime = {}; // { dia: totalHoras }
+    const resumenPartTime = {}; // { semana: { totalHoras: 0, documentos: [] } }
 
-        if (!acc[reg.dia]) acc[reg.dia] = { nroDocumento: reg.nroDocumento, totalHoras: 0 };
-        acc[reg.dia].totalHoras += parseFloat(reg.hrWorking);
-        return acc;
-    }, {});
+    listaRegistros.forEach(reg => {
+        if (reg.dia === FECHA_HOY) return; // Excluir hoy
 
-    // 2. Procesar cada día calculado
-    for (const [fecha, data] of Object.entries(resumenDias)) {
+        const horas = parseFloat(reg.hrWorking);
+        const esPartTime = reg.FAX === '**';
 
-        const exceso = Math.max(0, data.totalHoras - JORNADA_MAXIMA);
+        if (esPartTime) {
+            const semana = getNumeroSemana(reg.dia); // Función auxiliar
+            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento };
+            resumenPartTime[semana].total += horas;
+        } else {
+            // Lógica Full-Time (diaria)
+            if (!resumenFullTime[reg.dia]) resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
+            resumenFullTime[reg.dia].total += horas;
+        }
+    });
 
+    // 1. Procesar Full-Time (diario)
+    for (const [fecha, data] of Object.entries(resumenFullTime)) {
+        const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         if (exceso >= MINIMO_PARA_REGISTRAR) {
-            // Usamos INSERT IGNORE o validación de existencia para NO registrar si ya hay horas
-            // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
-            try {
-
-                const excesoTiempo = decimalATiempo(exceso);
-
-                await dev_pool.query(`
-                    INSERT INTO tb_hora_extra_empleado 
-                    (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
-                     HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-                    SELECT ?, ?, '0.0', ?, 'CORRECTO', 0, 0, ?, NOW()
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM tb_hora_extra_empleado 
-                        WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
-                    )
-                `, [
-                    data.nroDocumento,
-                    excesoTiempo,
-                    excesoTiempo,
-                    fecha,
-                    data.nroDocumento,
-                    fecha
-                ]);
-            } catch (err) {
-                console.error(`Error al procesar día ${fecha}:`, err);
-            }
+            await guardarEnBD(data.nroDocumento, fecha, exceso);
         }
     }
-};
 
+    // 2. Procesar Part-Time (semanal)
+    for (const [semana, data] of Object.entries(resumenPartTime)) {
+        if (data.total > UMBRAL_PART_TIME_SEMANAL) {
+            const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
+            // Guardamos el exceso el último día de esa semana o una fecha referencial
+            await guardarEnBD(data.nroDocumento, `SEMANA_${semana}`, excesoSemanal);
+        }
+    }
+}
+
+
+const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
+    const excesoTiempo = decimalATiempo(excesoDecimal); // Convierte "1.5" a "01:30"
+
+    try {
+        await dev_pool.query(`
+            INSERT INTO tb_hora_extra_empleado 
+            (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
+             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
+            SELECT ?, ?, ?, ?, 'CORRECTO', 0, 0, ?, NOW()
+            WHERE NOT EXISTS (
+                SELECT 1 FROM tb_hora_extra_empleado 
+                WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
+            )
+        `, [
+            nroDocumento,
+            excesoTiempo, // Acumulado
+            excesoTiempo, // Solicitado (inicial)
+            excesoTiempo, // Sobrante (inicial)
+            fechaRef,
+            nroDocumento,
+            fechaRef
+        ]);
+
+        console.log(`Registro exitoso para ${nroDocumento} en ${fechaRef}: ${excesoTiempo}`);
+    } catch (err) {
+        console.error(`Error al insertar en DB para ${nroDocumento} (${fechaRef}):`, err);
+    }
+}
 
 /**
  * Convierte un número decimal (ej. 1.5) a formato de tiempo "01:30"
@@ -1196,6 +1220,14 @@ const tiempoADecimal = (tiempo) => {
     if (!tiempo || typeof tiempo !== 'string') return 0;
     const [h, m] = tiempo.split(':').map(Number);
     return (h || 0) + ((m || 0) / 60);
+}
+
+// Función auxiliar para obtener semana del año
+const getNumeroSemana = (fecha) => {
+    const d = new Date(fecha);
+    const firstDayOfYear = new Date(d.getFullYear(), 0, 1);
+    const pastDaysOfYear = (d - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
