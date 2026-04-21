@@ -12,6 +12,7 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
+         console.log(data);
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
         console.log(respuesta);
         getIO().to(socket).emit('py_works_hours_employes_response', { data: respuesta });
