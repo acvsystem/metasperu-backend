@@ -20,14 +20,15 @@ export const storeController = {
 
         if (!fecha_desde || !fecha_hasta || !documento) {
             return res.status(400).json({ message: 'Fecha y documento son requeridos' });
-
-            try {
-                getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket });
-                res.status(200).json({ message: 'Se envio la solicitud con exito' });
-            } catch (error) {
-                res.status(500).json({ message: 'Error interno' });
-            }
         }
+        
+        try {
+            getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket });
+            res.status(200).json({ message: 'Se envio la solicitud con exito' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error interno' });
+        }
+
     },
     callAsistenceEmployesStore: async (req, res) => {
         const { fecha, tipoConsulta } = req.body; // Asegúrate que Python envíe la marca
