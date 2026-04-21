@@ -688,7 +688,87 @@ export const storeController = {
         } finally {
             if (connection) connection.release();
         }
+    },
+    postCreateBallotEmployes: async (req, res) => {
+        const { empleado, papeleta, detalles } = req.body;
+        const connection = await dev_pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. VALIDACIÓN DE NEGOCIO: Evitar papeletas duplicadas para el mismo empleado/fecha
+            const [existe] = await connection.execute(
+                `SELECT ID_HEAD_PAPELETA FROM tb_head_papeleta 
+             WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?`,
+                [empleado.nroDocumento, papeleta.fechaDesde]
+            );
+            if (existe.length > 0) throw new Error("Ya existe una papeleta para este empleado en esta fecha.");
+
+            // 2. GENERACIÓN DE CÓDIGO ÚNICO (Con bucle de reintento)
+            let esUnico = false, nuevoCodigo = "", intentos = 0;
+            const maxIntentos = 5;
+
+            while (!esUnico && intentos < maxIntentos) {
+                const [rows] = await connection.execute(
+                    `SELECT CODIGO_PAPELETA FROM tb_head_papeleta WHERE CODIGO_TIENDA = ? 
+                 ORDER BY ID_HEAD_PAPELETA DESC LIMIT 1`,
+                    [empleado.codigoTienda]
+                );
+
+                let correlativo = (rows.length > 0) ? parseInt(rows[0].CODIGO_PAPELETA.substring(4)) + 1 + intentos : 1;
+                nuevoCodigo = `P${empleado.codigoTienda}${correlativo.toString().padStart(7, '0')}`;
+
+                // Validar existencia real en base de datos
+                const [duplicado] = await connection.execute(
+                    `SELECT ID_HEAD_PAPELETA FROM tb_head_papeleta WHERE CODIGO_PAPELETA = ?`,
+                    [nuevoCodigo]
+                );
+
+                if (duplicado.length === 0) esUnico = true;
+                else intentos++;
+            }
+
+            if (!esUnico) throw new Error("Error: No se pudo generar un código único tras varios intentos.");
+
+            // 3. INSERTAR ENCABEZADO (tb_head_papeleta)
+            const [headerResult] = await connection.execute(
+                `INSERT INTO tb_head_papeleta (
+                CODIGO_PAPELETA, NOMBRE_COMPLETO, NRO_DOCUMENTO_EMPLEADO, ID_PAP_TIPO_PAPELETA, 
+                CARGO_EMPLEADO, FECHA_DESDE, FECHA_HASTA, HORA_SALIDA, HORA_LLEGADA, 
+                HORA_ACUMULADA, HORA_SOLICITADA, CODIGO_TIENDA, FECHA_CREACION, DESCRIPCION, ESTADO_PAPELETA, ISUPDATE
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 'REGISTRADO', 0)`,
+                [nuevoCodigo, empleado.nombre, empleado.nroDocumento, empleado.idTipoPapeleta,
+                    empleado.cargo, papeleta.fechaDesde, papeleta.fechaHasta, papeleta.horaSalida,
+                    papeleta.horaLlegada, papeleta.horaAcumulada, papeleta.horaSolicitada,
+                    empleado.codigoTienda, papeleta.descripcion]
+            );
+            const idHeadPapeleta = headerResult.insertId;
+
+            // 4. INSERTAR DETALLE (tb_detalle_papeleta)
+            for (const det of detalles) {
+                await connection.execute(
+                    `INSERT INTO tb_detalle_papeleta (
+                    DET_ID_HEAD_PAPELETA, DET_ID_HR_EXTRA, HR_EXTRA_ACUMULADO, 
+                    HR_EXTRA_SOLICITADO, HR_EXTRA_SOBRANTE, ESTADO, APROBADO, 
+                    SELECCIONADO, FECHA, FECHA_MODIFICACION
+                ) VALUES (?, ?, ?, ?, ?, 'REGISTRADO', 1, 1, ?, NOW())`,
+                    [idHeadPapeleta, det.idHrExtra, det.hrExtraAcumulado,
+                        det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
+                );
+            }
+
+            await connection.commit();
+            res.status(201).json({ success: true, codigo: nuevoCodigo });
+
+        } catch (error) {
+            await connection.rollback();
+            const code = error.message.includes("Ya existe") ? 409 : 500;
+            res.status(code).json({ error: error.message });
+        } finally {
+            connection.release();
+        }
     }
+
 };
 
 
@@ -774,7 +854,6 @@ const fmt = (minutosDecimales) => {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 };
 
-
 const searchPapeletaEmpleado = async (fecha, documento) => {
     try {
         const query = `
@@ -803,7 +882,6 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
         return { codigoPapeleta: "", isPapeleta: false };
     }
 }
-
 
 const searchHorarioEmpleado = async (fecha, documento) => {
     try {
@@ -998,3 +1076,32 @@ const minutosAHoras = (totalMinutos) => {
     const mins = totalMinutos % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
+
+const generarNuevoCodigo = async (codigoTienda) => {
+    // 1. Buscamos el último registro para esta tienda, ordenado por ID descendente
+    // Filtramos por el código de tienda si es necesario o buscamos el máximo
+    const [rows] = await pool.execute(
+        `SELECT CODIGO_PAPELETAS 
+         FROM tb_head_papeleta 
+         WHERE CODIGO_TIENDA = ? 
+         ORDER BY ID_HEAD_PAPELETA DESC 
+         LIMIT 1`,
+        [codigoTienda]
+    );
+
+    let nuevoCorrelativo = 1;
+
+    if (rows.length > 0) {
+        const ultimoCodigo = rows[0].CODIGO_PAPELETAS; // Ej: "P00100001"
+        // Extraemos solo la parte numérica (asumiendo formato fijo)
+        // Si el formato es P + 3 dígitos de tienda + 6 dígitos correlativo
+        const parteNumerica = parseInt(ultimoCodigo.substring(4));
+        nuevoCorrelativo = parteNumerica + 1;
+    }
+
+    // 2. Formateamos el número con ceros a la izquierda (ej: 000001)
+    const correlativoFormateado = nuevoCorrelativo.toString().padStart(6, '0');
+
+    // 3. Retornamos el código completo
+    return `P${codigoTienda}${correlativoFormateado}`;
+}

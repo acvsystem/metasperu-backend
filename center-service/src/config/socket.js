@@ -229,7 +229,7 @@ async function iniciarProcesoComparacion(serie) {
             );
 
             emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com'],
+                email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                 template: 'documentosPendientes',
                 variables: {

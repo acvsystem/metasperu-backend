@@ -15,6 +15,8 @@ router.post('/api/asistence/ejb/register/employes/response', storeController.pos
 
 // --- PAPELETAS EMPLEADOS ---
 router.post('/api/ballot/employes/store', storeController.postBallotEmployesStore);
+router.post('/api/create/ballot/employes', storeController.postCreateBallotEmployes);
+
 
 // --- RUTAS PARA HORARIOS TIENDAS
 router.get('/api/schedule/store', storeController.getScheduleStore);
@@ -22,4 +24,6 @@ router.post('/api/search/schedule/store', storeController.getSearchScheduleStore
 router.post('/api/register/schedule/store', storeController.getRegisterScheduleStore);
 router.post('/api/update/schedule/store', storeController.postUpdateScheduleStore);
 router.post('/api/one/search/schedule/store', storeController.getOneSearchScheduleStore);
+
+
 export default router;
