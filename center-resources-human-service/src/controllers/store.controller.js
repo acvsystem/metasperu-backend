@@ -1150,7 +1150,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
             try {
 
-                const excesoTiempo = decimalATiempo(excesoDecimal);
+                const excesoTiempo = decimalATiempo(exceso);
 
                 await dev_pool.query(`
                     INSERT INTO tb_hora_extra_empleado 
