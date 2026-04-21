@@ -13,7 +13,6 @@ export const storeController = {
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-        console.log(respuesta);
         getIO().to(socket).emit('py_works_hours_employes_response', { data: respuesta });
     },
     postHorusWorksEmployes: async (req, res) => {
@@ -1225,6 +1224,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             success: true,
             message: "Proceso completado correctamente",
             documento: nroDocumento,
+            horasExtras: rows,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal // Útil si necesitas validar lógicas internas
         };
