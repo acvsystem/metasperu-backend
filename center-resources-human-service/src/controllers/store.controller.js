@@ -1128,7 +1128,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    const JORNADA_MAXIMA = 8.3;
+    const JORNADA_MAXIMA = 8;
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // 1. Agrupar horas totales por día
