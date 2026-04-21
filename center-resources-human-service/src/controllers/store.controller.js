@@ -1205,20 +1205,25 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         const [resultado] = await dev_pool.query(`
-            SELECT SUM(CAST(HR_EXTRA_SOBRANTE AS DECIMAL(10,2))) as totalHoras
-            FROM tb_hora_extra_empleado 
-            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-            AND FECHA BETWEEN ? AND ?
-            AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
+            SELECT HR_EXTRA_SOBRANTE FROM tb_hora_extra_empleado 
+             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
+             AND FECHA BETWEEN ? AND ?
+             AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
         `, [nroDocumento, fechaInicio, fechaFin]);
 
-        const saldoFinal = resultado[0].totalHoras || 0;
+        // 2. Sumamos usando nuestra utilidad
+        const totalDecimal = rows.reduce((acc, row) => {
+            return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
+        }, 0);
+
+        // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
+        const totalTiempo = decimalATiempo(totalDecimal);
 
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
         return {
-            success: true,
-            message: "Proceso completado correctamente",
-            totalHorasDisponibles: saldoFinal
+            documento: nroDocumento,
+            totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
+            totalHorasDecimal: totalDecimal // Útil si necesitas validar lógicas internas
         };
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
