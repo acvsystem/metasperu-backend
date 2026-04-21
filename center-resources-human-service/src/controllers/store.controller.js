@@ -1146,7 +1146,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         if (esPartTime) {
             const semana = getNumeroSemana(reg.dia); // Función auxiliar
-            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento };
+            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento, fehca: reg.dia };
             resumenPartTime[semana].total += horas;
         } else {
             // Lógica Full-Time (diaria)
@@ -1168,7 +1168,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (data.total > UMBRAL_PART_TIME_SEMANAL) {
             const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
             if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                const rangoSemana = obtenerRangoSemana(semana);
+                const rangoSemana = obtenerRangoSemana(semana.fecha);
                 // Guardamos el exceso el último día de esa semana o una fecha referencial
                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
             }
