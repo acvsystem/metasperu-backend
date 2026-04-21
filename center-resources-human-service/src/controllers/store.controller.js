@@ -1127,6 +1127,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
+    console.log(listaRegistros);
     const JORNADA_MAXIMA_DIARIA = 8.0;
     const UMBRAL_PART_TIME_SEMANAL = 24.0;
     const MINIMO_PARA_REGISTRAR = 0.5;
