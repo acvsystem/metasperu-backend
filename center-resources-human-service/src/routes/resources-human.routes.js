@@ -25,5 +25,8 @@ router.post('/api/register/schedule/store', storeController.getRegisterScheduleS
 router.post('/api/update/schedule/store', storeController.postUpdateScheduleStore);
 router.post('/api/one/search/schedule/store', storeController.getOneSearchScheduleStore);
 
+// --- RUTA CONSULTA HORAS
+router.post('/api/hours/works/employes', storeController.postHorusWorksEmployes);
+router.post('/api/hours/works/employes/response', storeController.postHorusWorksEmployesResponse);
 
 export default router;

@@ -10,6 +10,25 @@ const arDataAsistenciaEmpleados = [{
 
 export const storeController = {
 
+    postHorusWorksEmployesResponse: async (req, res) => {
+        const { data, socket } = req.body;
+        console.log(data, socket);
+        getIO().to(socket).emit('py_works_hours_employes_response', { fecha_desde, fecha_hasta, documento, socket });
+    },
+    postHorusWorksEmployes: async (req, res) => {
+        const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
+
+        if (!fecha || !documento) {
+            return res.status(400).json({ message: 'Fecha y documento son requeridos' });
+
+            try {
+                getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket });
+                res.status(200).json({ message: 'Se envio la solicitud con exito' });
+            } catch (error) {
+                res.status(500).json({ message: 'Error interno' });
+            }
+        }
+    },
     callAsistenceEmployesStore: async (req, res) => {
         const { fecha, tipoConsulta } = req.body; // Asegúrate que Python envíe la marca
 
