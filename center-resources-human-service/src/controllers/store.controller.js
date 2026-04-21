@@ -1131,6 +1131,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     const JORNADA_MAXIMA_DIARIA = 8.0;
     const UMBRAL_PART_TIME_SEMANAL = 24.0;
     const MINIMO_PARA_REGISTRAR = 0.5;
+    const MINIMO_PARA_REGISTRAR_PART_TIME = 0.25;
+
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // Estructuras de agrupación
@@ -1166,8 +1168,11 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [semana, data] of Object.entries(resumenPartTime)) {
         if (data.total > UMBRAL_PART_TIME_SEMANAL) {
             const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
-            // Guardamos el exceso el último día de esa semana o una fecha referencial
-            await guardarEnBD(data.nroDocumento, `SEMANA_${semana}`, excesoSemanal);
+            if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
+                // Guardamos el exceso el último día de esa semana o una fecha referencial
+                await guardarEnBD(data.nroDocumento, `SEMANA_${semana}`, excesoSemanal);
+            }
+
         }
     }
 }
