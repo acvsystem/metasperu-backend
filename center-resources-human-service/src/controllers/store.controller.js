@@ -1178,19 +1178,34 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 }
 
 const obtenerRangoSemana = (fecha) => {
-    const d = new Date(fecha);
-    const day = d.getDay(); // 0 (Dom) a 6 (Sab)
+    // 1. Aseguramos que la fecha sea solo "YYYY-MM-DD"
+    const fechaLimpia = fechaStr.split(' ')[0];
+    const [year, month, day] = fechaLimpia.split('-').map(Number);
 
-    // Ajustar para que Lunes sea 0 y Domingo sea 6
-    const diff = (d.getDate() - (day === 0 ? 6 : day - 1));
+    // 2. Creamos el objeto Date usando partes separadas para evitar el desfase de zona horaria
+    // Nota: los meses en JS van de 0 a 11
+    const d = new Date(year, month - 1, day);
 
-    const lunes = new Date(d.setDate(diff));
+    // 3. Obtenemos el día de la semana (0=Domingo, 1=Lunes, ..., 6=Sábado)
+    const diaSemana = d.getDay();
+
+    // Ajuste para que el Lunes sea el inicio (si es Domingo, retrocedemos 6 días)
+    const diffToMonday = (diaSemana === 0 ? 6 : diaSemana - 1);
+
+    // 4. Calculamos Lunes y Domingo
+    const lunes = new Date(year, month - 1, day - diffToMonday);
     const domingo = new Date(lunes);
     domingo.setDate(lunes.getDate() + 6);
 
-    const formato = (date) => date.toISOString().split('T')[0];
+    // 5. Formateo manual (evitamos toISOString que causa errores con zonas horarias)
+    const formatear = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
 
-    return `${formato(lunes)} al ${formato(domingo)}`;
+    return `${formatear(lunes)} al ${formatear(domingo)}`;
 }
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
