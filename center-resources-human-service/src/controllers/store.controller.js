@@ -11,9 +11,10 @@ const arDataAsistenciaEmpleados = [{
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
-        const { data, socket } = req.body;
-        console.log(data, socket);
-        getIO().to(socket).emit('py_works_hours_employes_response', { fecha_desde, fecha_hasta, documento, socket });
+        const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
+        const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
+        console.log(respuesta);
+        getIO().to(socket).emit('py_works_hours_employes_response', { data: respuesta });
     },
     postHorusWorksEmployes: async (req, res) => {
         const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
@@ -21,7 +22,7 @@ export const storeController = {
         if (!fecha_desde || !fecha_hasta || !documento) {
             return res.status(400).json({ message: 'Fecha y documento son requeridos' });
         }
-        
+
         try {
             getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket });
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
@@ -1124,4 +1125,78 @@ const generarNuevoCodigo = async (codigoTienda) => {
 
     // 3. Retornamos el código completo
     return `P${codigoTienda}${correlativoFormateado}`;
+};
+
+const procesarYRegistrarHoras = async (listaRegistros) => {
+    const JORNADA_MAXIMA = 8.0;
+    const FECHA_HOY = new Date().toISOString().split('T')[0];
+
+    // 1. Agrupar horas totales por día
+    const resumenDias = listaRegistros.reduce((acc, reg) => {
+        if (reg.dia === FECHA_HOY) return acc; // Excluir hoy
+
+        if (!acc[reg.dia]) acc[reg.dia] = { nroDocumento: reg.nroDocumento, totalHoras: 0 };
+        acc[reg.dia].totalHoras += parseFloat(reg.hrWorking);
+        return acc;
+    }, {});
+
+    // 2. Procesar cada día calculado
+    for (const [fecha, data] of Object.entries(resumenDias)) {
+        const exceso = Math.max(0, data.totalHoras - JORNADA_MAXIMA);
+
+        if (exceso > 0) {
+            // Usamos INSERT IGNORE o validación de existencia para NO registrar si ya hay horas
+            // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
+            try {
+                await dev_pool.query(`
+                    INSERT INTO tb_hora_extra_empleado 
+                    (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
+                     HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
+                    SELECT ?, ?, '0.0', ?, 'PENDIENTE', 0, 0, ?, NOW()
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM tb_hora_extra_empleado 
+                        WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
+                    )
+                `, [
+                    data.nroDocumento,
+                    exceso.toFixed(2),
+                    exceso.toFixed(2),
+                    fecha,
+                    data.nroDocumento,
+                    fecha
+                ]);
+            } catch (err) {
+                console.error(`Error al procesar día ${fecha}:`, err);
+            }
+        }
+    }
+};
+
+const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
+    // 1. Ejecutamos el proceso de guardado (el que definimos antes)
+    await procesarYRegistrarHoras(listaRegistros);
+
+    // 2. Consultamos el saldo total en el rango solicitado por el frontend
+    try {
+        const [resultado] = await pool.query(`
+            SELECT SUM(CAST(HR_EXTRA_SOBRANTE AS DECIMAL(10,2))) as totalHoras
+            FROM tb_hora_extra_empleado 
+            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
+            AND FECHA BETWEEN ? AND ?
+            AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
+        `, [nroDocumento, fechaInicio, fechaFin]);
+
+        const saldoFinal = resultado[0].totalHoras || 0;
+
+        // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
+        return {
+            success: true,
+            message: "Proceso completado correctamente",
+            totalHorasDisponibles: saldoFinal
+        };
+    } catch (error) {
+        console.error("Error al obtener el saldo final:", error);
+        throw error;
+    }
 }
+
