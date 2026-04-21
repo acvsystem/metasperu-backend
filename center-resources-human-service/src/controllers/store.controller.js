@@ -1205,7 +1205,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
-        const [listaCompleta] = await pool.query(`
+        const [listaCompleta] = await dev_pool.query(`
             SELECT *
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
@@ -1215,7 +1215,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
-        const [listaCorrectos] = await pool.query(`
+        const [listaCorrectos] = await dev_pool.query(`
             SELECT HR_EXTRA_ACUMULADO 
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
