@@ -1168,7 +1168,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (data.total > UMBRAL_PART_TIME_SEMANAL) {
             const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
             if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                const rangoSemana = obtenerRangoSemana(semana.fecha);
+                console.log(semana);
+                const rangoSemana = obtenerRangoSemana(semana[semana].fecha);
                 // Guardamos el exceso el último día de esa semana o una fecha referencial
                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
             }
