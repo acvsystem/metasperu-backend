@@ -1156,7 +1156,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                     INSERT INTO tb_hora_extra_empleado 
                     (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
                      HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-                    SELECT ?, ?, '0.0', ?, 'PENDIENTE', 0, 0, ?, NOW()
+                    SELECT ?, ?, '0.0', ?, 'CORRECTO', 0, 0, ?, NOW()
                     WHERE NOT EXISTS (
                         SELECT 1 FROM tb_hora_extra_empleado 
                         WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
@@ -1204,16 +1204,28 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
-        const [rows] = await dev_pool.query(`
-           SELECT * FROM tb_hora_extra_empleado 
-             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-             AND FECHA BETWEEN ? AND ?
-             AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
+        // 1. Obtener listado TOTAL (independientemente del estado)
+        const [listaCompleta] = await pool.query(`
+            SELECT *
+            FROM tb_hora_extra_empleado 
+            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
+            AND FECHA BETWEEN ? AND ?
+            ORDER BY FECHA DESC
         `, [nroDocumento, fechaInicio, fechaFin]);
 
-        // 2. Sumamos usando nuestra utilidad
-        const totalDecimal = rows.reduce((acc, row) => {
-            return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
+        // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
+        // Ajusta 'APROBADO' por el valor real en tu BD
+        const [listaCorrectos] = await pool.query(`
+            SELECT HR_EXTRA_ACUMULADO 
+            FROM tb_hora_extra_empleado 
+            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
+            AND FECHA BETWEEN ? AND ?
+            AND ESTADO = 'APROBADO' 
+        `, [nroDocumento, fechaInicio, fechaFin]);
+
+        // 3. Sumar solo los correctos usando la utilidad que creamos
+        const totalDecimal = listaCorrectos.reduce((acc, row) => {
+            return acc + tiempoADecimal(row.HR_EXTRA_ACUMULADO);
         }, 0);
 
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
@@ -1224,7 +1236,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             success: true,
             message: "Proceso completado correctamente",
             documento: nroDocumento,
-            horasExtras: rows,
+            horasExtras: listaCompleta,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal // Útil si necesitas validar lógicas internas
         };
