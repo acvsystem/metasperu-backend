@@ -1129,6 +1129,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
     const JORNADA_MAXIMA = 8;
+    const MINIMO_PARA_REGISTRAR = 0.5;
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // 1. Agrupar horas totales por día
@@ -1145,7 +1146,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         const exceso = Math.max(0, data.totalHoras - JORNADA_MAXIMA);
 
-        if (exceso > 0) {
+        if (exceso >= MINIMO_PARA_REGISTRAR) {
             // Usamos INSERT IGNORE o validación de existencia para NO registrar si ya hay horas
             // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
             try {
