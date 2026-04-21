@@ -12,7 +12,6 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
-         console.log(data);
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
         console.log(respuesta);
         getIO().to(socket).emit('py_works_hours_employes_response', { data: respuesta });
@@ -1129,7 +1128,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    const JORNADA_MAXIMA = 8.3;
+    const JORNADA_MAXIMA = 8.0;
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // 1. Agrupar horas totales por día
@@ -1143,10 +1142,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // 2. Procesar cada día calculado
     for (const [fecha, data] of Object.entries(resumenDias)) {
-        const horasTrabajadas = parseFloat(reg.hrWorking);
-        const excesoDecimal = Math.max(0, horasTrabajadas - JORNADA_MAXIMA);
 
-        if (excesoDecimal > 0) {
+        const exceso = Math.max(0, data.totalHoras - JORNADA_MAXIMA);
+
+        if (exceso > 0) {
             // Usamos INSERT IGNORE o validación de existencia para NO registrar si ya hay horas
             // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
             try {
@@ -1157,7 +1156,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                     INSERT INTO tb_hora_extra_empleado 
                     (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
                      HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-                    SELECT ?, ?, '00:00', ?, 'PENDIENTE', 0, 0, ?, NOW()
+                    SELECT ?, ?, '0.0', ?, 'PENDIENTE', 0, 0, ?, NOW()
                     WHERE NOT EXISTS (
                         SELECT 1 FROM tb_hora_extra_empleado 
                         WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
@@ -1206,7 +1205,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         const [resultado] = await dev_pool.query(`
-            SELECT HR_EXTRA_SOBRANTE FROM tb_hora_extra_empleado 
+           SELECT HR_EXTRA_SOBRANTE FROM tb_hora_extra_empleado 
              WHERE NRO_DOCUMENTO_EMPLEADO = ? 
              AND FECHA BETWEEN ? AND ?
              AND (ESTADO = 'PENDIENTE' OR ESTADO = 'APROBADO')
@@ -1222,6 +1221,8 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
         return {
+            success: true,
+            message: "Proceso completado correctamente",
             documento: nroDocumento,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal // Útil si necesitas validar lógicas internas
