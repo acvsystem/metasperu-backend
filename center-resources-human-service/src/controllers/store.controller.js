@@ -1128,7 +1128,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    const JORNADA_MAXIMA = 8.0;
+    const JORNADA_MAXIMA = 8.3;
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // 1. Agrupar horas totales por día
@@ -1142,25 +1142,29 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // 2. Procesar cada día calculado
     for (const [fecha, data] of Object.entries(resumenDias)) {
-        const exceso = Math.max(0, data.totalHoras - JORNADA_MAXIMA);
+        const horasTrabajadas = parseFloat(reg.hrWorking);
+        const excesoDecimal = Math.max(0, horasTrabajadas - JORNADA_MAXIMA);
 
-        if (exceso > 0) {
+        if (excesoDecimal > 0) {
             // Usamos INSERT IGNORE o validación de existencia para NO registrar si ya hay horas
             // La mejor forma es un INSERT que falle si la combinación (DNI, FECHA) ya existe
             try {
+
+                const excesoTiempo = decimalATiempo(excesoDecimal);
+
                 await dev_pool.query(`
                     INSERT INTO tb_hora_extra_empleado 
                     (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
                      HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-                    SELECT ?, ?, '0.0', ?, 'PENDIENTE', 0, 0, ?, NOW()
+                    SELECT ?, ?, '00:00', ?, 'PENDIENTE', 0, 0, ?, NOW()
                     WHERE NOT EXISTS (
                         SELECT 1 FROM tb_hora_extra_empleado 
                         WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
                     )
                 `, [
                     data.nroDocumento,
-                    exceso.toFixed(2),
-                    exceso.toFixed(2),
+                    excesoTiempo,
+                    excesoTiempo,
                     fecha,
                     data.nroDocumento,
                     fecha
@@ -1171,6 +1175,28 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         }
     }
 };
+
+
+/**
+ * Convierte un número decimal (ej. 1.5) a formato de tiempo "01:30"
+ */
+const decimalATiempo = (decimal) => {
+    const horas = Math.floor(decimal);
+    const minutos = Math.round((decimal - horas) * 60);
+    // Aseguramos que tengan 2 dígitos
+    const hStr = String(horas).padStart(2, '0');
+    const mStr = String(minutos).padStart(2, '0');
+    return `${hStr}:${mStr}`;
+}
+
+/**
+ * Convierte un tiempo "HH:MM" a número decimal para poder sumar
+ */
+const tiempoADecimal = (tiempo) => {
+    if (!tiempo || typeof tiempo !== 'string') return 0;
+    const [h, m] = tiempo.split(':').map(Number);
+    return (h || 0) + ((m || 0) / 60);
+}
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
