@@ -1135,27 +1135,30 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     const FECHA_HOY = new Date().toISOString().split('T')[0];
 
     // Estructuras de agrupación
-    const resumenFullTime = {}; // { dia: totalHoras }
-    const resumenPartTime = {}; // { semana: { totalHoras: 0, documentos: [] } }
+    const resumenFullTime = {}; // { dia: { total, nroDocumento } }
+    const resumenPartTimeDias = {}; // { dia: { total, nroDocumento } }
 
+    // 1. Clasificación inicial
     listaRegistros.forEach(reg => {
-        if (reg.dia === FECHA_HOY) return; // Excluir hoy
+        if (reg.dia === FECHA_HOY) return;
 
         const horas = parseFloat(reg.hrWorking);
         const esPartTime = reg.tpAsociado === '**';
 
         if (esPartTime) {
-            const semana = reg.dia; // Función auxiliar
-            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento, fecha: reg.dia };
-            resumenPartTime[semana].total += horas;
+            if (!resumenPartTimeDias[reg.dia]) {
+                resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
+            }
+            resumenPartTimeDias[reg.dia].total += horas;
         } else {
-            // Lógica Full-Time (diaria)
-            if (!resumenFullTime[reg.dia]) resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
+            if (!resumenFullTime[reg.dia]) {
+                resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
+            }
             resumenFullTime[reg.dia].total += horas;
         }
     });
 
-    // 1. Procesar Full-Time (diario)
+    // 2. Procesar Full-Time (Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         if (exceso >= MINIMO_PARA_REGISTRAR) {
@@ -1163,23 +1166,28 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         }
     }
 
-    // 2. Procesar Part-Time (semanal)
-    for (const [semana, data] of Object.entries(resumenPartTime)) {
+    // 3. Procesar Part-Time (Semanal - consolidando por rango)
+    const resumenPorRangoSemana = {};
+    for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
+        const rango = obtenerRangoSemana(dia);
+        if (!resumenPorRangoSemana[rango]) {
+            resumenPorRangoSemana[rango] = { total: 0, nroDocumento: data.nroDocumento };
+        }
+        resumenPorRangoSemana[rango].total += data.total;
+    }
+
+    // Guardar excedentes Part-Time
+    for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
         if (data.total > UMBRAL_PART_TIME_SEMANAL) {
             const excesoSemanal = data.total - UMBRAL_PART_TIME_SEMANAL;
             if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                console.log(semana);
-                const rangoSemana = obtenerRangoSemana(semana);
-                // Guardamos el exceso el último día de esa semana o una fecha referencial
                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
             }
-
         }
     }
 }
 
 const obtenerRangoSemana = (fechaStr) => {
-    console.log(fechaStr);
     // 1. Aseguramos que la fecha sea solo "YYYY-MM-DD"
     const fechaLimpia = fechaStr.split(' ')[0];
     const [year, month, day] = fechaLimpia.split('-').map(Number);
