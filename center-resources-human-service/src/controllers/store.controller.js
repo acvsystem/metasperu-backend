@@ -1178,6 +1178,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 }
 
 const obtenerRangoSemana = (fechaStr) => {
+    console.log(fechaStr);
     // 1. Aseguramos que la fecha sea solo "YYYY-MM-DD"
     const fechaLimpia = fechaStr.split(' ')[0];
     const [year, month, day] = fechaLimpia.split('-').map(Number);
