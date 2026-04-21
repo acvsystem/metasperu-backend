@@ -1146,7 +1146,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         if (esPartTime) {
             const semana = getNumeroSemana(reg.dia); // Función auxiliar
-            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento, fehca: reg.dia };
+            if (!resumenPartTime[semana]) resumenPartTime[semana] = { total: 0, nroDocumento: reg.nroDocumento, fecha: reg.dia };
             resumenPartTime[semana].total += horas;
         } else {
             // Lógica Full-Time (diaria)
