@@ -18,7 +18,7 @@ export const storeController = {
     postHorusWorksEmployes: async (req, res) => {
         const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
 
-        if (!fecha || !documento) {
+        if (!fecha_desde || !fecha_hasta ||!documento) {
             return res.status(400).json({ message: 'Fecha y documento son requeridos' });
 
             try {
