@@ -12,8 +12,18 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
+        const responseVacio = {
+            success: true,
+            message: "Proceso completado correctamente",
+            documento: documento,
+            horasExtras: [],
+            totalHorasFormato: "00:00", // Ejemplo: "12:30"
+            totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
+        };
+
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-        getIO().to(socket).emit('py_works_hours_employes_response', { data: respuesta });
+
+        getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
         const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
