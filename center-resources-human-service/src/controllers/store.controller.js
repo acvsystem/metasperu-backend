@@ -787,6 +787,31 @@ export const storeController = {
         } finally {
             connection.release();
         }
+    },
+    getTypeBallot: async (req, res) => {
+        try {
+            // 1. Seleccionamos solo las columnas necesarias (evita exponer info innecesaria)
+            // 2. Usamos la sintaxis de desestructuración correctamente
+            const [rows] = await pool.query(`
+        SELECT ID_TIPO_PAPELETA, DESCRIPCION 
+        FROM TB_TIPO_PAPELETA
+    `);
+
+            // 3. Retornamos un objeto estructurado, es más escalable que retornar solo el array
+            res.status(200).json({
+                success: true,
+                data: rows,
+                count: rows.length
+            });
+
+        } catch (error) {
+            // 4. Registro de errores en consola y respuesta al cliente
+            console.error('Error al obtener tipos de papeleta:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor al recuperar los tipos de papeleta'
+            });
+        }
     }
 
 };
