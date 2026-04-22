@@ -1323,7 +1323,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
-            ORDER BY FECHA DESC
+            ORDER BY FECHA ASC
         `, [nroDocumento, fechaInicio, fechaFin]);
 
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
