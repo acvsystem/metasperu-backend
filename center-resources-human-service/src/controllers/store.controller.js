@@ -1197,11 +1197,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                 resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
             }
             resumenPartTimeDias[reg.dia].total += horas;
+            resumenFullTime[reg.dia].count += 1; // Incrementamos contador
         } else {
             if (!resumenFullTime[reg.dia]) {
                 resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
             }
             resumenFullTime[reg.dia].total += horas;
+            resumenFullTime[reg.dia].count += 1; // Incrementamos contador
         }
     });
 
