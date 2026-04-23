@@ -1209,7 +1209,9 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         if (exceso >= MINIMO_PARA_REGISTRAR) {
-            await guardarEnBD(data.nroDocumento, fecha, exceso);
+            const observacion = data.count === 1 ? "1 solo registro" : null;
+            const esUnSoloRegistro = data.count === 1;
+            await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esUnSoloRegistro ? 1 : 0);
         }
     }
 
@@ -1265,32 +1267,34 @@ const obtenerRangoSemana = (fechaStr) => {
     return `${formatear(lunes)} al ${formatear(domingo)}`;
 }
 
-const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
-    const excesoTiempo = decimalATiempo(excesoDecimal); // Convierte "1.5" a "01:30"
+const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
+    const excesoTiempo = decimalATiempo(excesoDecimal);
+    const estado = isAprobacion ? 'APROBACION' : 'DISPONIBLE';
 
     try {
         await dev_pool.query(`
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
-             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-            SELECT ?, ?, ?, ?, 'DISPONIBLE', 0, 0, ?, NOW()
+             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
+            SELECT ?, ?, ?, ?, ?, 0, 0, ?, NOW(), ?, ?
             WHERE NOT EXISTS (
                 SELECT 1 FROM tb_hora_extra_empleado 
                 WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
             )
         `, [
             nroDocumento,
-            excesoTiempo, // Acumulado
-            '00:00', // Solicitado (inicial)
-            excesoTiempo, // Sobrante (inicial)
-            fechaRef,
-            nroDocumento,
-            fechaRef
+            excesoTiempo,       // HR_EXTRA_ACUMULADO
+            '00:00',            // HR_EXTRA_SOLICITADO
+            excesoTiempo,       // HR_EXTRA_SOBRANTE
+            estado,             // ESTADO
+            fechaRef,           // FECHA
+            observacion,        // OBSERVACION
+            isAprobacion,       // ISAPROBACION (nuevo valor)
+            nroDocumento,       // WHERE EXISTS
+            fechaRef            // WHERE EXISTS
         ]);
-
-        console.log(`Registro exitoso para ${nroDocumento} en ${fechaRef}: ${excesoTiempo}`);
     } catch (err) {
-        console.error(`Error al insertar en DB para ${nroDocumento} (${fechaRef}):`, err);
+        console.error(`Error al insertar:`, err);
     }
 }
 
