@@ -785,6 +785,19 @@ export const storeController = {
                     [idHeadPapeleta, det.idHrExtra, det.hrExtraAcumulado,
                         det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
                 );
+
+                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "UTILIZADO" : "CORRECTO";
+
+                // 3. Actualizar la tabla maestra de horas extras del empleado
+                await connection.execute(
+                    `UPDATE tb_hora_extra_empleado 
+                     SET HR_EXTRA_SOLICITADO = ?, 
+                     HR_EXTRA_SOBRANTE = ?, 
+                     ESTADO = ? 
+                     WHERE ID_HR_EXTRA = ?`,
+                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, det.idHrExtra]
+                );
+
             }
 
             await connection.commit();
