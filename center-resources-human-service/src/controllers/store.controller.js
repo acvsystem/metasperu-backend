@@ -75,7 +75,6 @@ export const storeController = {
         try {
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                console.log(arDataAsistenciaEmpleados);
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 getIO().emit('dashboard_refresh_empleados');
             });
@@ -202,7 +201,6 @@ export const storeController = {
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
             const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
-            console.log('TB_DETALLE_PAPELETA', rowsDetail, idHead);
             // 5. Respuesta estructurada
             return res.status(200).json({
                 success: true,
