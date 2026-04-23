@@ -201,7 +201,7 @@ export const storeController = {
 
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
-            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
+            const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
             console.log('TB_DETALLE_PAPELETA',rowsDetail, idHead);
             // 5. Respuesta estructurada
             return res.status(200).json({
