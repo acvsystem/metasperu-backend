@@ -806,7 +806,7 @@ export const storeController = {
         } catch (error) {
             await connection.rollback();
             const code = error.message.includes("Ya existe") ? 409 : 500;
-            res.status(500).json({ error: error.message });
+            res.status(201).json({ error: error.message });
         } finally {
             connection.release();
         }
