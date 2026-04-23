@@ -793,9 +793,10 @@ export const storeController = {
                     `UPDATE tb_hora_extra_empleado 
                      SET HR_EXTRA_SOLICITADO = ?, 
                      HR_EXTRA_SOBRANTE = ?, 
-                     ESTADO = ? 
+                     ESTADO = ? ,
+                     SELECCIONADO = ?
                      WHERE ID_HR_EXTRA = ?`,
-                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, det.idHrExtra]
+                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, det.idHrExtra, nuevoEstado == 'UTILIZADO' ? 1 : 0]
                 );
 
             }
