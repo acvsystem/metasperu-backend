@@ -202,7 +202,7 @@ export const storeController = {
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
             const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
-            console.log('TB_DETALLE_PAPELETA',rowsDetail, idHead);
+            console.log('TB_DETALLE_PAPELETA', rowsDetail, idHead);
             // 5. Respuesta estructurada
             return res.status(200).json({
                 success: true,
@@ -796,7 +796,7 @@ export const storeController = {
                      ESTADO = ? ,
                      SELECCIONADO = ?
                      WHERE ID_HR_EXTRA = ?`,
-                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, det.idHrExtra, nuevoEstado == 'UTILIZADO' ? 1 : 0]
+                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'UTILIZADO' ? 1 : 0, det.idHrExtra]
                 );
 
             }
