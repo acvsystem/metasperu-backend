@@ -786,7 +786,7 @@ export const storeController = {
                         det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
                 );
 
-                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "UTILIZADO" : "CORRECTO";
+                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "UTILIZADO" : "DISPONIBLE";
 
                 // 3. Actualizar la tabla maestra de horas extras del empleado
                 await connection.execute(
@@ -1274,7 +1274,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal) => {
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
              HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION)
-            SELECT ?, ?, ?, ?, 'CORRECTO', 0, 0, ?, NOW()
+            SELECT ?, ?, ?, ?, 'DISPONIBLE', 0, 0, ?, NOW()
             WHERE NOT EXISTS (
                 SELECT 1 FROM tb_hora_extra_empleado 
                 WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
@@ -1346,7 +1346,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
-            AND ESTADO = 'correcto' 
+            AND ESTADO = 'DISPONIBLE' 
         `, [nroDocumento, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
