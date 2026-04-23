@@ -1351,7 +1351,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const totalDecimal = listaCorrectos.reduce((acc, row) => {
-            return acc + tiempoADecimal(row.HR_EXTRA_ACUMULADO);
+            return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
 
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
