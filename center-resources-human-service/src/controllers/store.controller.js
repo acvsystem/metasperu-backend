@@ -1342,7 +1342,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
         const [listaCorrectos] = await dev_pool.query(`
-            SELECT HR_EXTRA_ACUMULADO 
+            SELECT HR_EXTRA_SOBRANTE 
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
