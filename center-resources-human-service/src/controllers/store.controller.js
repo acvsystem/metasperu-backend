@@ -855,6 +855,14 @@ export const storeController = {
             });
         }
 
+        const [existe] = await connection.execute(
+            `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
+             WHERE ID_HORA_EXTRA = ?`,
+            [id_hora_extra]
+        );
+
+        if (existe.length > 0) throw new Error("Ya existe una solicitud para esta hora extra.");
+
         const query = `
                     SELECT DESCRIPCION
                     FROM bd_metasperu.tb_lista_tienda t
@@ -894,6 +902,12 @@ export const storeController = {
             ]);
 
 
+            const query_update_hora_extra = `
+                    UPDATE tb_hora_extra_empleado SET ESTADO = 'ESPERA APROBACION' 
+                    WHERE ID_HR_EXTRA = ${id_hora_extra};`;
+
+            const [rows] = await dev_pool.execute(query_update_hora_extra);
+
             const results = emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com'],
                 subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
@@ -910,6 +924,8 @@ export const storeController = {
             res.status(201).json({
                 success: true,
                 message: "Solicitud de autorización enviada con exito.",
+                id_hora_extra: id_hora_extra,
+                estado: 'ESPERA APROBACION',
                 id: result.insertId
             });
 
@@ -1278,18 +1294,22 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const horas = parseFloat(reg.hrWorking);
         const esPartTime = reg.tpAsociado === '**';
 
+        const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
+
         if (esPartTime) {
             if (!resumenPartTimeDias[reg.dia]) {
                 resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0 };
             }
             resumenPartTimeDias[reg.dia].total += horas;
             resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+            if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
         } else {
             if (!resumenFullTime[reg.dia]) {
                 resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0 };
             }
             resumenFullTime[reg.dia].total += horas;
             resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+            if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
     });
 
@@ -1297,9 +1317,27 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         if (exceso >= MINIMO_PARA_REGISTRAR) {
-            const observacion = data.count === 1 ? "1 solo registro" : null;
-            const esUnSoloRegistro = data.count === 1;
-            await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esUnSoloRegistro ? 1 : 0);
+            let observacion = null;
+            let esAprobacion = 0;
+
+            if (data.count === 1) {
+                observacion = "Solo tiene 1 solo registro de marcacion";
+                esAprobacion = 1;
+            } else if (data.especial) {
+                observacion = "No marco salida";
+                esAprobacion = 1;
+            } else if (data.count == 3) {
+                observacion = "Solo tiene 3 registro de marcacion";
+                esAprobacion = 1;
+            } else if (data.count > 4) {
+                observacion = "Tiene mas de 4 registros";
+                esAprobacion = 1;
+            } else if (data.count == 2) {
+                observacion = "Solo tiene 2 registro de marcacion";
+                esAprobacion = 1;
+            }
+
+            await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esAprobacion);
         }
     }
 
