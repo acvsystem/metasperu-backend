@@ -898,7 +898,7 @@ export const storeController = {
                 nombreCompleto,
                 fecha,           // "2026-04-24"
                 codigoTienda,
-                nivel || 'SISTEMAS'
+                nivel.nivel || 'SISTEMAS'
             ]);
 
 
@@ -1508,14 +1508,14 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
         if (rows && rows.length > 0) {
             const diaDescanso = rows[0].DIA; // Ejemplo: "08:30 a 17:30"
 
-            return "RECURSOS HUMANOS";
+            return { nivel: "RECURSOS HUMANOS" };
         }
 
-        return "GENERAL"; // Valor por defecto
+        return { nivel: "GENERAL" }; // Valor por defecto
 
     } catch (error) {
         console.error("Error en searchHorarioEmpleado:", error);
-        return "GENERAR ERROR";
+        return { nivel: "GENERAR ERROR" };
     }
 }
 
