@@ -901,7 +901,7 @@ export const storeController = {
                 variables: {
                     fecha: fecha,
                     nombre: nombreCompleto,
-                    documento: '562156665',
+                    documento: nroDocumento,
                     horas: horasAcumuladas,
                     motivo: comentario
                 }
