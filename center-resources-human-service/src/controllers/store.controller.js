@@ -855,7 +855,7 @@ export const storeController = {
             });
         }
 
-        const [existe] = await connection.execute(
+        const [existe] = await dev_pool.execute(
             `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
              WHERE ID_HORA_EXTRA = ?`,
             [id_hora_extra]
