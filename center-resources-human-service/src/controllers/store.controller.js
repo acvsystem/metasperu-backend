@@ -1326,14 +1326,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             } else if (data.especial) {
                 observacion = "No marco salida";
                 esAprobacion = 1;
-            } else if (data.count == 3) {
-                observacion = "Solo tiene 3 registro de marcacion";
-                esAprobacion = 1;
-            } else if (data.count > 4) {
-                observacion = "Tiene mas de 4 registros";
-                esAprobacion = 1;
-            } else if (data.count == 2) {
-                observacion = "Solo tiene 2 registro de marcacion";
+            } else if (data.count > 2) {
+                observacion = "Marcacion irregular, verifique marcaciones.";
                 esAprobacion = 1;
             }
 
