@@ -904,7 +904,8 @@ export const storeController = {
                     documento: nroDocumento,
                     horas: horasAcumuladas,
                     motivo: comentario
-                }
+                },
+                archivo: []
             });
 
             res.status(201).json({
