@@ -1497,18 +1497,26 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 const validarNivelAutorizar = async (fecha, horaExtra) => {
     try {
-        const query = `
-            SELECT * 
-            FROM tb_detalle_papeleta 
-            WHERE HR_EXTRA_ACUMULADO = ? AND FECHA = ?
-        `;
 
-        const [rows] = await pool.query(query, [horaExtra, fecha]);
+        const query_head = `
+            SELECT ID_HEAD_PAPELETA 
+            FROM tb_head_papeleta 
+            WHERE FECHA_DESDE = ?;`;
+
+        const [rows] = await dev_pool.query(query_head, [fecha]);
 
         if (rows && rows.length > 0) {
-            const diaDescanso = rows[0].DIA; // Ejemplo: "08:30 a 17:30"
+            const query_detail = `
+            SELECT * 
+            FROM tb_detalle_papeleta 
+            WHERE DET_ID_HEAD_PAPELETA = ? AND HR_EXTRA_ACUMULADO = ?
+        `;
 
-            return { nivel: "RECURSOS HUMANOS" };
+            const [rows_detail] = await dev_pool.query(query_detail, [rows[0]['ID_HEAD_PAPELETA'], horaExtra]);
+
+            if (rows_detail && rows_detail.length > 0) {
+                return { nivel: "RECURSOS HUMANOS" };
+            }
         }
 
         return { nivel: "GENERAL" }; // Valor por defecto
