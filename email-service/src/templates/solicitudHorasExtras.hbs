@@ -46,25 +46,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {{#each context}}
                     <tr>
-                        <td style="white-space: nowrap;">{{this.fecha}}</td>
+                        <td style="white-space: nowrap;">{{fecha}}</td>
                         <td>
-                            <span class="emp-name">{{this.nombre}}</span>
-                            <span class="emp-id">DNI: {{this.documento}}</span>
+                            <span class="emp-name">{{nombre}}</span>
+                            <span class="emp-id">DNI: {{documento}}</span>
                         </td>
                         <td style="text-align: center;">
-                            <span class="extra-time">{{this.horas}}</span>
+                            <span class="extra-time">{{horas}}</span>
                         </td>
                     </tr>
-                    {{#if this.motivo}}
                     <tr>
                         <td colspan="3" style="background-color: #fffaf0; font-size: 12px; color: #7b341e; padding: 8px 15px;">
-                            <strong>Motivo:</strong> {{this.motivo}}
+                            <strong>Motivo:</strong> {{motivo}}
                         </td>
                     </tr>
-                    {{/if}}
-                    {{/each}}
                 </tbody>
             </table>
         </div>
