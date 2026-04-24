@@ -1497,33 +1497,27 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 const validarNivelAutorizar = async (fecha, horaExtra) => {
     try {
-
-        const query_head = `
-            SELECT ID_HEAD_PAPELETA 
-            FROM tb_head_papeleta 
-            WHERE FECHA_DESDE = ?;`;
-
-        const [rows] = await dev_pool.query(query_head, [fecha]);
-
-        if (rows && rows.length > 0) {
-            const query_detail = `
-            SELECT * 
-            FROM tb_detalle_papeleta 
-            WHERE DET_ID_HEAD_PAPELETA = ? AND HR_EXTRA_ACUMULADO = ?
+        // Combinamos ambas tablas en un solo JOIN
+        const query = `
+            SELECT d.ID_DETALLE 
+            FROM tb_head_papeleta h
+            INNER JOIN tb_detalle_papeleta d ON h.ID_HEAD_PAPELETA = d.DET_ID_HEAD_PAPELETA
+            WHERE h.FECHA_DESDE = ? 
+            AND d.HR_EXTRA_ACUMULADO = ?
+            LIMIT 1;
         `;
 
-            const [rows_detail] = await dev_pool.query(query_detail, [rows[0]['ID_HEAD_PAPELETA'], horaExtra]);
+        const [rows] = await dev_pool.query(query, [fecha, horaExtra]);
 
-            if (rows_detail && rows_detail.length > 0) {
-                return { nivel: "RECURSOS HUMANOS" };
-            }
-        }
-
-        return { nivel: "GENERAL" }; // Valor por defecto
+        // Si encontramos al menos un registro, el nivel es RRHH
+        return {
+            nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL"
+        };
 
     } catch (error) {
-        console.error("Error en searchHorarioEmpleado:", error);
-        return { nivel: "GENERAR ERROR" };
+        console.error("Error al validar nivel de autorización:", error);
+        // Es mejor devolver null o un estado de error manejable
+        return { nivel: "ERROR" };
     }
-}
+};
 
