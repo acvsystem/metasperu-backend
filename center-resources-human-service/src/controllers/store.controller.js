@@ -837,6 +837,7 @@ export const storeController = {
     },
     postSolicitudHoursWorksEmployes: async (req, res) => {
         const {
+            id_hora_extra,
             nroDocumento,
             nombreCompleto,
             horasAcumuladas,
@@ -854,7 +855,6 @@ export const storeController = {
             });
         }
 
-
         const query = `
                     SELECT DESCRIPCION
                     FROM bd_metasperu.tb_lista_tienda t
@@ -871,6 +871,7 @@ export const storeController = {
         try {
             const query = `
             INSERT INTO tb_autorizar_hr_extra (
+                ID_HORA_EXTRA,
                 HR_EXTRA_ACOMULADO, 
                 NRO_DOCUMENTO_EMPLEADO, 
                 NOMBRE_COMPLETO, 
@@ -879,10 +880,11 @@ export const storeController = {
                 FECHA, 
                 CODIGO_TIENDA,  
                 NIVEL
-            ) VALUES (?, ?, ?, 0, 0, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)
         `;
 
             const [result] = await dev_pool.query(query, [
+                id_hora_extra,
                 horasAcumuladas, // "01:30"
                 nroDocumento,
                 nombreCompleto,
