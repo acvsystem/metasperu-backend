@@ -894,7 +894,7 @@ export const storeController = {
 
             const results = emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com'],
-                subject: `Solicitud de autorización de horas extras - ${storeDescription.DESCRIPCION}`,
+                subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
                 template: 'solicitudHorasExtras',
                 variables: {
                     fecha: fecha,
