@@ -16,12 +16,12 @@ export const emailService = {
             subject: data.subject,
             template: data.template,
             context: data.variables,
-            archivo: {
+            archivo: data.archivo ? {
                 filename: data.archivo.filename,
                 // Convertimos el Buffer a string Base64
                 content: data.archivo.content.toString('base64'),
                 encoding: 'base64' // Añadimos esta pista para el worker
-            }
+            } : []
         };
 
         channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
