@@ -29,5 +29,7 @@ router.post('/api/one/search/schedule/store', storeController.getOneSearchSchedu
 router.post('/api/hours/works/employes', storeController.postHorusWorksEmployes);
 router.post('/api/hours/works/employes/response', storeController.postHorusWorksEmployesResponse);
 
+// --- SOLICITUDES EN BALLOT
+router.post('/api/solicitude/approval/hours/works/employes', storeController.postSolicitudHoursWorksEmployes);
 
 export default router;

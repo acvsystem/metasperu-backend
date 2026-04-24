@@ -834,6 +834,90 @@ export const storeController = {
                 message: 'Error interno del servidor al recuperar los tipos de papeleta'
             });
         }
+    },
+    postSolicitudHoursWorksEmployes: async (req, res) => {
+        const {
+            nroDocumento,
+            nombreCompleto,
+            horasAcumuladas,
+            fecha,
+            codigoTienda,
+            nivel,
+            comentario
+        } = req.body;
+
+        // Validaciones básicas
+        if (!nroDocumento || !horasAcumuladas || !fecha) {
+            return res.status(400).json({
+                success: false,
+                message: "Faltan datos obligatorios (Documento, Horas o Fecha)."
+            });
+        }
+
+
+        const query = `
+                    SELECT DESCRIPCION
+                    FROM bd_metasperu.tb_lista_tienda t
+                    WHERE t.SERIE_TIENDA = '${codigoTienda}'
+                `;
+
+        const [rows] = await pool.execute(query);
+
+        const storeDescription = rows.find(t => {
+            return t;
+        });
+
+
+        try {
+            const query = `
+            INSERT INTO tb_autorizar_hr_extra (
+                HR_EXTRA_ACOMULADO, 
+                NRO_DOCUMENTO_EMPLEADO, 
+                NOMBRE_COMPLETO, 
+                APROBADO, 
+                RECHAZADO, 
+                FECHA, 
+                CODIGO_TIENDA,  
+                NIVEL
+            ) VALUES (?, ?, ?, 0, 0, ?, ?, ?)
+        `;
+
+            const [result] = await dev_pool.query(query, [
+                horasAcumuladas, // "01:30"
+                nroDocumento,
+                nombreCompleto,
+                fecha,           // "2026-04-24"
+                codigoTienda,
+                nivel || 'SISTEMAS'
+            ]);
+
+
+            const results = emailService.pushToEmailQueue({
+                email: ['itperu@metasperu.com'],
+                subject: `Solicitud de autorización de horas extras - ${storeDescription.DESCRIPCION}`,
+                template: 'solicitudHorasExtras',
+                variables: {
+                    fecha: fecha,
+                    nombre: nombreCompleto,
+                    documento: nroDocumento,
+                    horas: horasAcumuladas,
+                    motivo: comentario
+                }
+            });
+
+            res.status(201).json({
+                success: true,
+                message: "Solicitud de autorización enviada con exito.",
+                id: result.insertId
+            });
+
+        } catch (error) {
+            console.error("Error al registrar autorización:", error);
+            res.status(500).json({
+                success: false,
+                message: "Error interno del servidor al procesar la solicitud."
+            });
+        }
     }
 
 };
