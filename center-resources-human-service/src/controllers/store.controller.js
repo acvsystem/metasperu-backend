@@ -874,7 +874,7 @@ export const storeController = {
             return t;
         });
 
-        const nivel = validarNivelAutorizar(fecha, horasAcumuladas);
+        const nivel = await validarNivelAutorizar(fecha, horasAcumuladas);
         console.log(nivel);
         try {
             const query = `
