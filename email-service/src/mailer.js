@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename)
 const viewPath = path.resolve(__dirname, './templates/');
 
 
-console.log(transporter);
+console.log(viewPath);
 // Configurar plantillas
 transporter.use('compile', hbs({
     viewEngine: {
