@@ -843,7 +843,6 @@ export const storeController = {
             horasAcumuladas,
             fecha,
             codigoTienda,
-            nivel,
             comentario
         } = req.body;
 
@@ -875,6 +874,7 @@ export const storeController = {
             return t;
         });
 
+        const nivel = validarNivelAutorizar(fecha, horasAcumuladas);
 
         try {
             const query = `
@@ -1492,6 +1492,30 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
         throw error;
+    }
+}
+
+const validarNivelAutorizar = async (fecha, horaExtra) => {
+    try {
+        const query = `
+            SELECT * 
+            FROM tb_detalle_papeleta 
+            WHERE HR_EXTRA_ACUMULADO = ? AND FECHA = ?
+        `;
+
+        const [rows] = await pool.query(query, [horaExtra, fecha]);
+
+        if (rows && rows.length > 0) {
+            const diaDescanso = rows[0].DIA; // Ejemplo: "08:30 a 17:30"
+
+            return "RECURSOS HUMANOS";
+        }
+
+        return "GENERAL"; // Valor por defecto
+
+    } catch (error) {
+        console.error("Error en searchHorarioEmpleado:", error);
+        return "GENERAR ERROR";
     }
 }
 
