@@ -1321,7 +1321,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             let esAprobacion = 0;
             console.log(fecha, decimalATiempo(exceso));
             const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
-
+            console.log(nivel.nivel);
             if (nivel.nivel == 'RECURSON HUMANOS') {
                 observacion = "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
