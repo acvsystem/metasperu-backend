@@ -875,7 +875,7 @@ export const storeController = {
         });
 
         const nivel = await validarNivelAutorizar(fecha, horasAcumuladas);
-        console.log(nivel);
+        console.log("NIVEL",nivel);
         try {
             const query = `
             INSERT INTO tb_autorizar_hr_extra (
