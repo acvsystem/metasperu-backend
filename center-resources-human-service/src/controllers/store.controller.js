@@ -875,7 +875,7 @@ export const storeController = {
         });
 
         const nivel = await validarNivelAutorizar(fecha, horasAcumuladas);
-        console.log("NIVEL",nivel);
+
         try {
             const query = `
             INSERT INTO tb_autorizar_hr_extra (
@@ -1320,14 +1320,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             let observacion = null;
             let esAprobacion = 0;
 
-            if (data.count === 1) {
-                observacion = "Solo tiene 1 solo registro de marcacion";
-                esAprobacion = 1;
-            } else if (data.especial) {
-                observacion = "No marco salida";
-                esAprobacion = 1;
-            } else if (data.count > 2) {
-                observacion = "Marcacion irregular, verifique marcaciones.";
+            const nivel = await validarNivelAutorizar(fecha, data.total);
+
+           if (nivel.nivel == 'RECURSON HUMANOS') {
+                observacion = "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
             }
 
