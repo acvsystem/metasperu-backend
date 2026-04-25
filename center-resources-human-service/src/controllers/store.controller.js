@@ -1319,8 +1319,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (exceso >= MINIMO_PARA_REGISTRAR) {
             let observacion = null;
             let esAprobacion = 0;
-            console.log(fecha, data.total);
-            const nivel = await validarNivelAutorizar(fecha, data.total);
+            console.log(fecha, decimalATiempo(exceso));
+            const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
 
             if (nivel.nivel == 'RECURSON HUMANOS') {
                 observacion = "Tiene una papeleta ese dia.";
