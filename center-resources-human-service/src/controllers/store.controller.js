@@ -1499,11 +1499,10 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
     try {
         // Combinamos ambas tablas en un solo JOIN
         const query = `
-            SELECT d.ID_DETALLE 
+            SELECT * 
             FROM tb_head_papeleta h
-            INNER JOIN tb_detalle_papeleta d ON h.ID_HEAD_PAPELETA = d.DET_ID_HEAD_PAPELETA
             WHERE h.FECHA_DESDE = ? 
-            AND d.HR_EXTRA_ACUMULADO = ?
+            AND h.HORA_SOLICITADA = ?
             LIMIT 1;
         `;
 
