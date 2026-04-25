@@ -936,6 +936,56 @@ export const storeController = {
                 message: "Error interno del servidor al procesar la solicitud."
             });
         }
+    },
+    postApprovalHoursWorksEmployes: async (req, res) => {
+        const { id_hrx, aprobado } = req.body;
+
+        // Validación de entrada
+        if (!id_hrx) {
+            return res.status(400).json({ success: false, message: 'ID de autorización requerido.' });
+        }
+
+        const connection = await dev_pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Uso de parámetros (?) para prevenir inyección SQL
+            // 2. Simplificación de la lógica de actualización
+            const query = `
+            UPDATE tb_autorizar_hr_extra 
+            SET APROBADO = ?, RECHAZADO = ? 
+            WHERE ID_AUTH_HR_EXT = ?
+        `;
+
+            // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
+            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
+
+            const [result] = await connection.execute(query, values);
+
+            if (result.affectedRows === 0) {
+                await connection.rollback();
+                return res.status(404).json({ success: false, message: 'Registro no encontrado.' });
+            }
+
+            await connection.commit();
+
+            res.status(200).json({
+                success: true,
+                message: aprobado ? 'Autorización aprobada.' : 'Autorización rechazada.',
+            });
+
+        } catch (error) {
+            await connection.rollback();
+            console.error("Error en postApprovalHoursWorksEmployes:", error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor al registrar la respuesta.'
+            });
+        } finally {
+            // 3. SIEMPRE liberar la conexión al pool
+            connection.release();
+        }
     }
 
 };

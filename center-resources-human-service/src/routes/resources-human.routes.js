@@ -31,5 +31,6 @@ router.post('/api/hours/works/employes/response', storeController.postHorusWorks
 
 // --- SOLICITUDES EN BALLOT
 router.post('/api/solicitude/approval/hours/works/employes', storeController.postSolicitudHoursWorksEmployes);
+router.post('/api/approval/hours/works/employes', storeController.postApprovalHoursWorksEmployes);
 
 export default router;
