@@ -874,7 +874,7 @@ export const storeController = {
             return t;
         });
 
-        const nivel = await validarNivelAutorizar(fecha, horasAcumuladas);
+        const nivel = comentario == 'Tiene una papeleta ese dia.' ? 'RECURSOS HUMANOS' : 'GENERAL';
 
         try {
             const query = `
@@ -898,7 +898,7 @@ export const storeController = {
                 nombreCompleto,
                 fecha,           // "2026-04-24"
                 codigoTienda,
-                nivel.nivel || 'SISTEMAS'
+                nivel || 'SISTEMAS'
             ]);
 
 
@@ -1319,10 +1319,25 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (exceso >= MINIMO_PARA_REGISTRAR) {
             let observacion = null;
             let esAprobacion = 0;
-            console.log(fecha, decimalATiempo(exceso));
+
             const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
-            console.log(nivel.nivel);
-            if (nivel.nivel == 'RECURSOS HUMANOS') {
+
+            if (data.count === 1) {
+                observacion = "Solo tiene 1 solo registro de marcacion";
+                esAprobacion = 1;
+            } else if (data.especial) {
+                observacion = "No marco salida";
+                esAprobacion = 1;
+            } else if (data.count == 3) {
+                observacion = "Solo tiene 3 registro de marcacion";
+                esAprobacion = 1;
+            } else if (data.count > 4) {
+                observacion = "Tiene mas de 4 registros";
+                esAprobacion = 1;
+            } else if (data.count == 2) {
+                observacion = "Solo tiene 2 registro de marcacion";
+                esAprobacion = 1;
+            } else if (nivel.nivel == 'RECURSOS HUMANOS') {
                 observacion = "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
             }
