@@ -938,7 +938,7 @@ export const storeController = {
         }
     },
     postApprovalHoursWorksEmployes: async (req, res) => {
-        const { id_auth_hrx, id_hrx, aprobado, comentario } = req.body;
+        const { id_auth_hrx, id_hrx, aprobado, comentario, usuario } = req.body;
 
         // Validación de entrada
         if (!id_hrx) {
@@ -954,11 +954,11 @@ export const storeController = {
             // 2. Simplificación de la lógica de actualización
             const query = `
             UPDATE tb_autorizar_hr_extra 
-            SET APROBADO = ?, RECHAZADO = ?, COMENTARIO = ? 
+            SET APROBADO = ?, RECHAZADO = ?, COMENTARIO = ?, USUARIO_MODF = ? 
             WHERE ID_AUTH_HR_EXT = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, id_auth_hrx];
+            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, usuario, id_auth_hrx];
 
             const [result] = await connection.execute(query, values);
 
