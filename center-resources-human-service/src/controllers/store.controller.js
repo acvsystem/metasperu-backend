@@ -958,7 +958,7 @@ export const storeController = {
             WHERE ID_AUTH_HR_EXT = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_auth_hrx, comentario];
+            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, id_auth_hrx];
 
             const [result] = await connection.execute(query, values);
 
