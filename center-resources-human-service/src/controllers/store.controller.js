@@ -965,11 +965,11 @@ export const storeController = {
 
             const query_hrx = `
             UPDATE tb_hora_extra_empleado 
-            SET APROBADO = ?, RECHAZADO = ? 
-            WHERE ID_AUTH_HR_EXT = ?`;
+            SET ESTADO = ?, APROBADO = ? 
+            WHERE ID_HR_EXTRA = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values_hrx = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
+            const values_hrx = [aprobado ? 'DISPONIBLE' : 'RECHAZADO', aprobado ? 1 : 0, id_hrx];
 
             await connection.execute(query_hrx, values_hrx);
 
