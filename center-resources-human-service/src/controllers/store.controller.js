@@ -955,13 +955,23 @@ export const storeController = {
             const query = `
             UPDATE tb_autorizar_hr_extra 
             SET APROBADO = ?, RECHAZADO = ? 
-            WHERE ID_AUTH_HR_EXT = ?
-        `;
+            WHERE ID_AUTH_HR_EXT = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
+            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_auth_hrx];
 
             const [result] = await connection.execute(query, values);
+
+
+            const query_hrx = `
+            UPDATE tb_hora_extra_empleado 
+            SET APROBADO = ?, RECHAZADO = ? 
+            WHERE ID_AUTH_HR_EXT = ?`;
+
+            // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
+            const values_hrx = [aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
+
+            await connection.execute(query_hrx, values_hrx);
 
             if (result.affectedRows === 0) {
                 await connection.rollback();
