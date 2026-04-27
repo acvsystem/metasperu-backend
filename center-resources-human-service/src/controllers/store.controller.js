@@ -1068,7 +1068,7 @@ export const storeController = {
                 nombre_completo: item.NOMBRE_COMPLETO,
                 estado_auth: item.APROBADO === 1 ? 'APROBADO' : (item.RECHAZADO === 1 ? 'RECHAZADO' : 'ESPERA'),
                 fecha: item.FECHA,
-                descripcion: item.DESCRIPCION,
+                descripcion: item.DESCRIPCION || 'OFICINA',
                 id_hora_extra: item.ID_HORA_EXTRA,
                 comentario: item.COMENTARIO,
                 usuario_modf: item.USUARIO_MODF
