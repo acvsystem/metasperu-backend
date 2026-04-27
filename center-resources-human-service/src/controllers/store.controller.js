@@ -994,8 +994,10 @@ export const storeController = {
 
         try {
             const query = `
-            SELECT * FROM tb_autorizar_hr_extra 
-            WHERE CODIGO_TIENDA = ? AND NIVEL = ?
+            SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
+            FROM tb_autorizar_hr_extra h
+            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA; 
+            WHERE h.CODIGO_TIENDA = ? AND h.NIVEL = ?
         `;
 
             const nivelConsulta = nivel == 'RRHH' ? 'RECURSOS HUMANOS' : 'GENERAL';
@@ -1019,13 +1021,31 @@ export const storeController = {
     getAllApprovalHoursWorksEmployes: async (req, res) => {
         const connection = await dev_pool.getConnection();
         try {
-            const query = `SELECT * FROM tb_autorizar_hr_extra;`;
+            const query = `SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
+                           FROM tb_autorizar_hr_extra h
+                           INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;`;
 
             const [result] = await connection.execute(query);
 
+            const parseData = result.map(item => {
+                return {
+                    id_auth_hr_ext: item.ID_AUTH_HR_EXT,
+                    hr_extra: item.HR_EXTRA_ACOMULADO,
+                    nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
+                    nombre_completo: item.NOMBRE_COMPLETO,
+                    aprobado: item.APROBADO,
+                    rechazado: item.RECHAZADO,
+                    fecha: item.FECHA,
+                    descripcion: item.DESCRIPCION,
+                    id_hora_extra: item.ID_HORA_EXTRA,
+                    comentario: item.COMENTARIO,
+                    usuario_modf: item.USUARIO_MODF
+                }
+            });
+
             res.status(200).json({
                 success: true,
-                data: result,
+                data: parseData,
             });
 
         } catch (error) {
