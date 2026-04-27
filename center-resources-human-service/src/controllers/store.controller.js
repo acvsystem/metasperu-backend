@@ -1006,7 +1006,7 @@ export const storeController = {
             const query = `
             SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
             FROM tb_autorizar_hr_extra h
-            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA; 
+            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA; 
             WHERE h.CODIGO_TIENDA = ? AND h.NIVEL = ?
         `;
 
@@ -1048,7 +1048,7 @@ export const storeController = {
         try {
             const query = `SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
                            FROM tb_autorizar_hr_extra h
-                           INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;`;
+                           INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;`;
 
             const [result] = await connection.execute(query);
 
