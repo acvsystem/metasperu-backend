@@ -1021,7 +1021,7 @@ export const storeController = {
         try {
             const query = `SELECT * FROM tb_autorizar_hr_extra;`;
 
-            const [result] = await connection.execute(query, values);
+            const [result] = await connection.execute(query);
 
             res.status(200).json({
                 success: true,
