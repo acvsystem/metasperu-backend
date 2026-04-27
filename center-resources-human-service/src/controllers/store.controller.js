@@ -1044,41 +1044,45 @@ export const storeController = {
         }
     },
     getAllApprovalHoursWorksEmployes: async (req, res) => {
-        const connection = await dev_pool.getConnection();
+        let connection;
         try {
-            const query = `SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
-                           FROM tb_autorizar_hr_extra h
-                           INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;`;
+            // 1. Obtener conexión
+            connection = await dev_pool.getConnection();
 
+            const query = `
+            SELECT ID_AUTH_HR_EXT, HR_EXTRA_ACOMULADO, NRO_DOCUMENTO_EMPLEADO, 
+                   NOMBRE_COMPLETO, APROBADO, RECHAZADO, FECHA, DESCRIPCION, 
+                   ID_HORA_EXTRA, COMENTARIO, USUARIO_MODF 
+            FROM tb_autorizar_hr_extra h
+            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;
+        `;
+
+            // 2. Ejecutar consulta
             const [result] = await connection.execute(query);
 
-            const parseData = result.map(item => {
-                return {
-                    id_auth_hr_ext: item.ID_AUTH_HR_EXT,
-                    hr_extra: item.HR_EXTRA_ACOMULADO,
-                    nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
-                    nombre_completo: item.NOMBRE_COMPLETO,
-                    estado_auth: item.APROBADO == 1 ? 'APROBADO' : item.RECHAZADO == 1 ? 'RECHAZADO' : 'ESPERA',
-                    fecha: item.FECHA,
-                    descripcion: item.DESCRIPCION,
-                    id_hora_extra: item.ID_HORA_EXTRA,
-                    comentario: item.COMENTARIO,
-                    usuario_modf: item.USUARIO_MODF
-                }
-            });
+            // 3. Mapeo de datos (más eficiente)
+            const parseData = result.map(item => ({
+                id_auth_hr_ext: item.ID_AUTH_HR_EXT,
+                hr_extra: item.HR_EXTRA_ACOMULADO,
+                nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
+                nombre_completo: item.NOMBRE_COMPLETO,
+                estado_auth: item.APROBADO === 1 ? 'APROBADO' : (item.RECHAZADO === 1 ? 'RECHAZADO' : 'ESPERA'),
+                fecha: item.FECHA,
+                descripcion: item.DESCRIPCION,
+                id_hora_extra: item.ID_HORA_EXTRA,
+                comentario: item.COMENTARIO,
+                usuario_modf: item.USUARIO_MODF
+            }));
 
-            res.status(200).json({
-                success: true,
-                data: parseData,
-            });
+            res.status(200).json({ success: true, data: parseData });
 
         } catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error interno del servidor.'
-            });
+            console.error("Error en getAllApprovalHoursWorksEmployes:", error);
+            res.status(500).json({ success: false, message: 'Error al consultar autorizaciones.' });
+        } finally {
+            // 4. PUNTO CRÍTICO: Liberar conexión siempre
+            if (connection) connection.release();
         }
-
     }
 
 };
