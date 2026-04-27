@@ -206,7 +206,7 @@ async function iniciarProcesoComparacion(serie) {
 
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
-        if (resultadosFinales.length > 10) {
+        if (resultadosFinales.length > 20) {
 
             const token = crypto.randomBytes(25).toString('hex');
 
@@ -228,7 +228,7 @@ async function iniciarProcesoComparacion(serie) {
                 "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
 
-            emailService.pushToEmailQueue({
+           /* emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                 template: 'documentosPendientes',
@@ -236,7 +236,7 @@ async function iniciarProcesoComparacion(serie) {
                     tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
                     documentos: resultadosFinales.documents
                 }
-            });
+            });*/
         }
 
         io.emit('documents_response_dashboard', resultadosFinales);

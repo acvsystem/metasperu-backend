@@ -986,6 +986,15 @@ export const storeController = {
             // 3. SIEMPRE liberar la conexión al pool
             connection.release();
         }
+    },
+    getApprovalHoursWorksEmployes: async (req, res) => {
+        const connection = await dev_pool.getConnection();
+
+        try {
+            
+        } catch (error) {
+            
+        }
     }
 
 };
