@@ -33,5 +33,6 @@ router.post('/api/hours/works/employes/response', storeController.postHorusWorks
 router.post('/api/solicitude/approval/hours/works/employes', storeController.postSolicitudHoursWorksEmployes);
 router.post('/api/approval/hours/works/employes', storeController.postApprovalHoursWorksEmployes);
 router.get('/api/solicitude/hours/works/employes', storeController.getApprovalHoursWorksEmployes);
+router.get('/api/all/solicitude/hours/works/employes', storeController.getAllApprovalHoursWorksEmployes);
 
 export default router;

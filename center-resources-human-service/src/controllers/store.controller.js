@@ -988,13 +988,53 @@ export const storeController = {
         }
     },
     getApprovalHoursWorksEmployes: async (req, res) => {
+        const { codigoTienda, nivel } = req.body;
+
         const connection = await dev_pool.getConnection();
 
         try {
-            
+            const query = `
+            SELECT * FROM tb_autorizar_hr_extra 
+            WHERE CODIGO_TIENDA = ? AND NIVEL = ?
+        `;
+
+            const nivelConsulta = nivel == 'RRHH' ? 'RECURSOS HUMANOS' : 'GENERAL';
+
+            const values = [codigoTienda, nivelConsulta];
+
+            const [result] = await connection.execute(query, values);
+
+            res.status(200).json({
+                success: true,
+                data: result,
+            });
+
         } catch (error) {
-            
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor.'
+            });
         }
+    },
+    getAllApprovalHoursWorksEmployes: async (req, res) => {
+        const connection = await dev_pool.getConnection();
+        try {
+            const query = `SELECT * FROM tb_autorizar_hr_extra;`;
+
+            const [result] = await connection.execute(query, values);
+
+            res.status(200).json({
+                success: true,
+                data: result,
+            });
+
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor.'
+            });
+        }
+
     }
 
 };
