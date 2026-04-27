@@ -1006,9 +1006,25 @@ export const storeController = {
 
             const [result] = await connection.execute(query, values);
 
+            const parseData = result.map(item => {
+                return {
+                    id_auth_hr_ext: item.ID_AUTH_HR_EXT,
+                    hr_extra: item.HR_EXTRA_ACOMULADO,
+                    nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
+                    nombre_completo: item.NOMBRE_COMPLETO,
+                    aprobado: item.APROBADO,
+                    rechazado: item.RECHAZADO,
+                    fecha: item.FECHA,
+                    descripcion: item.DESCRIPCION,
+                    id_hora_extra: item.ID_HORA_EXTRA,
+                    comentario: item.COMENTARIO,
+                    usuario_modf: item.USUARIO_MODF
+                }
+            });
+
             res.status(200).json({
                 success: true,
-                data: result,
+                data: parseData,
             });
 
         } catch (error) {
