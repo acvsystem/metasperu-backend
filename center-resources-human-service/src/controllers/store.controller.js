@@ -938,7 +938,7 @@ export const storeController = {
         }
     },
     postApprovalHoursWorksEmployes: async (req, res) => {
-        const { id_hrx, aprobado } = req.body;
+        const { id_auth_hrx, id_hrx, aprobado } = req.body;
 
         // Validación de entrada
         if (!id_hrx) {
