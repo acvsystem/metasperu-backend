@@ -1112,7 +1112,7 @@ export const storeController = {
         }
     },
     getAllBallotEmployesStore: async (req, res) => {
-        const { codestore } = req.params;
+        const { codestore } = req.body;
 
         const connection = await pool.getConnection();
 

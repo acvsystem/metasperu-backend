@@ -17,7 +17,7 @@ router.post('/api/asistence/ejb/register/employes/response', storeController.pos
 router.post('/api/ballot/employes/store', storeController.postBallotEmployesStore);
 router.post('/api/create/ballot/employes', storeController.postCreateBallotEmployes);
 router.get('/api/type/ballot', storeController.getTypeBallot);
-router.get('/api/all/ballot/employes/store/:codestore', storeController.getAllBallotEmployesStore);
+router.get('/api/all/ballot/employes/store', storeController.getAllBallotEmployesStore);
 
 // --- RUTAS PARA HORARIOS TIENDAS
 router.get('/api/schedule/store', storeController.getScheduleStore);
