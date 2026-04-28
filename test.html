@@ -1,75 +1,68 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discrepancia Tipo de Cambio</title>
+    <meta charset="utf-8">
+    <style>
+        .body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; }
+        .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .header { background-color: #1e40af; padding: 30px; text-align: center; }
+        .header h1 { margin: 0; color: #ffffff; font-size: 22px; letter-spacing: 1.5px; text-transform: uppercase; }
+        
+        .content { padding: 30px; text-align: center; }
+        /* Badge verde para éxito */
+        .status-badge { display: inline-block; background-color: #f0fdf4; color: #166534; padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 13px; border: 1px solid #bbf7d0; margin-bottom: 20px; }
+        
+        .main-info { background: #ffffff; border: 1px solid #edf2f7; border-radius: 8px; width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .main-info th { background: #f7fafc; color: #718096; font-size: 11px; text-transform: uppercase; padding: 10px; border-bottom: 2px solid #edf2f7; }
+        .main-info td { padding: 15px 10px; color: #2d3748; font-size: 14px; border-bottom: 1px solid #edf2f7; }
+
+        /* Estilo de caja de confirmación positiva */
+        .success-box { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; text-align: left; margin: 0 5px; }
+        .success-box strong { color: #166534; display: block; margin-bottom: 5px; font-size: 13px; }
+        .success-text { color: #15803d; font-size: 14px; }
+
+        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #a0aec0; font-size: 12px; border-top: 1px solid #edf2f7; }
+    </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
-        <tr>
-            <td align="center" style="padding: 20px 0;">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                    
+<body class="body">
+    <div class="wrapper">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+        </div>
+        
+        <div class="content">
+            <div class="status-badge">✔ HORA EXTRA APROBADA</div>
+            <p style="color: #4a5568; font-size: 14px; margin-bottom: 25px;">Estimado(a) colaborador(a), su solicitud de hora extra ha sido validada y aprobada correctamente.</p>
+            
+            <table class="main-info">
+                <thead>
                     <tr>
-                        <td align="center" bgcolor="#1d42ba" style="padding: 40px 20px;">
-                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">METAS PERÚ S.A.C</h1>
-                        </td>
+                        <th>Tienda</th>
+                        <th>Fecha</th>
+                        <th>H. Extra</th>
                     </tr>
-
+                </thead>
+                <tbody>
                     <tr>
-                        <td style="padding: 40px 40px 20px 40px; text-align: center;">
-                            <div style="display: inline-block; border: 1px solid #ffcccc; border-radius: 20px; padding: 5px 20px; margin-bottom: 30px; background-color: #fff5f5;">
-                                <p style="color: #d93025; font-weight: bold; margin: 0; font-size: 14px;">
-                                    <span style="margin-right: 5px;">⚠️</span> DIFERENCIA EN TIPO DE CAMBIO
-                                </p>
-                            </div>
-
-                            <p style="color: #5f6368; font-size: 16px; line-height: 1.5; margin: 0;">
-                                Se ha detectado una inconsistencia entre el tipo de cambio del <strong>Sistema de Ventas</strong> y el publicado por <strong>SUNAT</strong>.
-                            </p>
-                        </td>
+                        <td style="font-weight: bold; color: #1e40af;">{{tienda}}</td>
+                        <td>{{fecha}}</td>
+                        <td style="font-family: monospace; font-weight: bold;">{{horas}}</td>
                     </tr>
+                </tbody>
+            </table>
 
-                    <tr>
-                        <td style="padding: 20px 40px;">
-                            <table border="0" cellpadding="15" cellspacing="0" width="100%" style="border-collapse: collapse; background-color: #f8fbff; border: 1px solid #eef3f7;">
-                                <tr style="border-bottom: 1px solid #eef3f7;">
-                                    <th style="color: #70757a; font-size: 12px; text-transform: uppercase; text-align: center; width: 50%;">T.C. Sistema Ventas</th>
-                                    <th style="color: #70757a; font-size: 12px; text-transform: uppercase; text-align: center; width: 50%;">T.C. SUNAT</th>
-                                </tr>
-                                <tr>
-                                    <td style="color: #d93025; font-weight: bold; font-size: 22px; text-align: center;">
-                                        S/ {{tcSistema}}
-                                    </td>
-                                    <td style="color: #1d42ba; font-weight: bold; font-size: 22px; text-align: center;">
-                                        S/ {{tcSunat}}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td colspan="2" style="padding: 10px; text-align: center; border-top: 1px solid #eef3f7;">
-                                        <p style="color: #70757a; font-size: 12px; margin: 0;">Fecha de consulta: <strong>{{fecha}}</strong></p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-
-                    <tr>
-                        <td style="padding: 30px 40px; background-color: #fcfcfc; border-top: 1px solid #eeeeee; text-align: center;">
-                            <p style="color: #9aa0a6; font-size: 12px; margin: 0 0 5px 0;">
-                                Sistema de Monitoreo Automático de Contabilidad
-                            </p>
-                            <p style="color: #9aa0a6; font-size: 12px; margin: 0; font-weight: bold;">
-                                &copy; 2026 Metas Perú S.A.C
-                            </p>
-                        </td>
-                    </tr>
-
-                </table>
-            </td>
-        </tr>
-    </table>
+            <div class="success-box">
+                <strong>Comentario de autorización:</strong>
+                <span class="success-text">"{{comentario}}"</span>
+            </div>
+            
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 25px;">Responsable de validación: {{usuarioResponsable}}</p>
+        </div>
+        
+        <div class="footer">
+            Este es un correo informativo del Sistema de Gestión de Tiempos.<br>
+            © 2026 Metas Perú S.A.C
+        </div>
+    </div>
 </body>
 </html>

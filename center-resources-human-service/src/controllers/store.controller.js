@@ -938,7 +938,7 @@ export const storeController = {
         }
     },
     postApprovalHoursWorksEmployes: async (req, res) => {
-        const { id_auth_hrx, id_hrx, aprobado, comentario, usuario } = req.body;
+        const { id_auth_hrx, id_hrx, aprobado, comentario, usuario, nombre_empleado, hr_extra, tienda, fecha } = req.body;
 
         // Validación de entrada
         if (!id_hrx) {
@@ -962,6 +962,32 @@ export const storeController = {
 
             const [result] = await connection.execute(query, values);
 
+            if (aprobado) {
+                const results = emailService.pushToEmailQueue({
+                    email: ['itperu@metasperu.com'],
+                    subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
+                    template: 'aprobacionHoraExtra',
+                    variables: {
+                        tienda: tienda,
+                        fecha: fecha,
+                        hrx: hr_extra,
+                        usuario_responsable: usuario
+                    }
+                });
+            } else {
+                const results = emailService.pushToEmailQueue({
+                    email: ['itperu@metasperu.com'],
+                    subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
+                    template: 'rechazoHoraExtra',
+                    variables: {
+                        tienda: tienda,
+                        fecha: fecha,
+                        hrx: hr_extra,
+                        comentario: comentario,
+                        usuario_responsable: usuario
+                    }
+                });
+            }
 
             const query_hrx = `
             UPDATE tb_hora_extra_empleado 

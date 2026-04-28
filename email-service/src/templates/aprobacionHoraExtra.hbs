@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        .body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .header {
+            background-color: #1e40af;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 22px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .content {
+            padding: 30px;
+            text-align: center;
+        }
+
+        /* Badge verde para éxito */
+        .status-badge {
+            display: inline-block;
+            background-color: #f0fdf4;
+            color: #166534;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 13px;
+            border: 1px solid #bbf7d0;
+            margin-bottom: 20px;
+        }
+
+        .main-info {
+            background: #ffffff;
+            border: 1px solid #edf2f7;
+            border-radius: 8px;
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+
+        .main-info th {
+            background: #f7fafc;
+            color: #718096;
+            font-size: 11px;
+            text-transform: uppercase;
+            padding: 10px;
+            border-bottom: 2px solid #edf2f7;
+        }
+
+        .main-info td {
+            padding: 15px 10px;
+            color: #2d3748;
+            font-size: 14px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        /* Estilo de caja de confirmación positiva */
+        .success-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 15px;
+            text-align: left;
+            margin: 0 5px;
+        }
+
+        .success-box strong {
+            color: #166534;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        .success-text {
+            color: #15803d;
+            font-size: 14px;
+        }
+
+        .footer {
+            background: #f8fafc;
+            padding: 20px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 12px;
+            border-top: 1px solid #edf2f7;
+        }
+    </style>
+</head>
+
+<body class="body">
+    <div class="wrapper">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+        </div>
+
+        <div class="content">
+            <div class="status-badge">✔ HORA EXTRA APROBADA</div>
+            <p style="color: #4a5568; font-size: 14px; margin-bottom: 25px;">Estimado(a) colaborador(a), su solicitud de
+                hora extra ha sido validada y aprobada correctamente.</p>
+
+            <table class="main-info">
+                <thead>
+                    <tr>
+                        <th>Tienda</th>
+                        <th>Fecha</th>
+                        <th>H. Extra</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: bold; color: #1e40af;">{{tienda}}</td>
+                        <td>{{fecha}}</td>
+                        <td style="font-family: monospace; font-weight: bold;">{{horas}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 25px;">Responsable de validación:
+                {{usuario_responsable}}</p>
+        </div>
+
+        <div class="footer">
+            Este es un correo informativo del Sistema de Gestión de Tiempos.<br>
+            © 2026 Metas Perú S.A.C
+        </div>
+    </div>
+</body>
+
+</html>
