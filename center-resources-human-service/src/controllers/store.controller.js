@@ -1032,7 +1032,7 @@ export const storeController = {
             const query = `
             SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
             FROM tb_autorizar_hr_extra h
-            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA; 
+            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA 
             WHERE h.CODIGO_TIENDA = ? AND h.NIVEL = ?
         `;
 
@@ -1078,7 +1078,7 @@ export const storeController = {
             const query = `
             SELECT ID_AUTH_HR_EXT, HR_EXTRA_ACOMULADO, NRO_DOCUMENTO_EMPLEADO, 
                    NOMBRE_COMPLETO, APROBADO, RECHAZADO, FECHA, DESCRIPCION, 
-                   ID_HORA_EXTRA, COMENTARIO, USUARIO_MODF 
+                   ID_HORA_EXTRA, COMENTARIO, USUARIO_MODF, EMAIL 
             FROM tb_autorizar_hr_extra h
             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;
         `;
@@ -1097,7 +1097,8 @@ export const storeController = {
                 descripcion: item.DESCRIPCION || 'OFICINA',
                 id_hora_extra: item.ID_HORA_EXTRA,
                 comentario: item.COMENTARIO,
-                usuario_modf: item.USUARIO_MODF
+                usuario_modf: item.USUARIO_MODF,
+                email: item.EMAIL || ''
             }));
 
             res.status(200).json({ success: true, data: parseData });
