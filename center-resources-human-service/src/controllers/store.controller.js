@@ -1113,22 +1113,34 @@ export const storeController = {
     },
     getAllBallotEmployesStore: async (req, res) => {
         const { codestore } = req.body;
-
-        const connection = await pool.getConnection();
+        const currentYear = new Date().getFullYear();
+        let connection;
 
         try {
-            let query = `SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION as TIENDA,h.FECHA_CREACION,h.FECHA_DESDE,h.HORA_SOLICITADA,p.DESCRIPCION,h.NOMBRE_COMPLETO
-                           FROM bd_metasperu.tb_head_papeleta h 
-                           INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
-                           INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA`;
+            connection = await pool.getConnection();
+
+            // Construcción segura de la consulta
+            let query = `
+            SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION as TIENDA, 
+                   h.FECHA_CREACION, h.FECHA_DESDE, h.HORA_SOLICITADA, 
+                   p.DESCRIPCION, h.NOMBRE_COMPLETO
+            FROM bd_metasperu.tb_head_papeleta h 
+            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+            INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA
+            WHERE YEAR(h.FECHA_CREACION) = ?
+        `;
+
+            const params = [currentYear];
 
             if (codestore) {
-                query += ` WHERE h.CODIGO_TIENDA = '${codestore}' ORDER BY ID_HEAD_PAPELETA DESC;`;
-            } else {
-                query += ` ORDER BY ID_HEAD_PAPELETA DESC;`;
+                query += ` AND h.CODIGO_TIENDA = ?`;
+                params.push(codestore);
             }
 
-            const [result] = await connection.execute(query);
+            query += ` ORDER BY h.ID_HEAD_PAPELETA DESC;`;
+
+            // Ejecución usando parámetros para evitar SQL Injection
+            const [result] = await connection.execute(query, params);
 
             const parseData = result.map(item => ({
                 id_papaleta: item.ID_HEAD_PAPELETA,
@@ -1142,8 +1154,10 @@ export const storeController = {
             }));
 
             res.status(200).json({ success: true, data: parseData });
+
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Error al consultar papeletas.' });
+            console.error("Error en getAllBallotEmployesStore:", error);
+            res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         } finally {
             if (connection) connection.release();
         }
