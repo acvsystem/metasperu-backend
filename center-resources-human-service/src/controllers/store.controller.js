@@ -1117,7 +1117,7 @@ export const storeController = {
         const connection = await pool.getConnection();
 
         try {
-            let query = `SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION,h.FECHA_CREACION,h.FECHA_DESDE,h.HORA_SOLICITADA,p.DESCRIPCION,h.NOMBRE_COMPLETO
+            let query = `SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION as TIENDA,h.FECHA_CREACION,h.FECHA_DESDE,h.HORA_SOLICITADA,p.DESCRIPCION,h.NOMBRE_COMPLETO
                            FROM bd_metasperu.tb_head_papeleta h 
                            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
                            INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA`;
@@ -1133,7 +1133,7 @@ export const storeController = {
             const parseData = result.map(item => ({
                 id_papaleta: item.ID_HEAD_PAPELETA,
                 codigo_papeleta: item.CODIGO_PAPELETA,
-                tienda: item.DESCRIPCION,
+                tienda: item.TIENDA,
                 fecha_creacion: item.FECHA_CREACION,
                 fecha_papeleta: item.FECHA_DESDE,
                 hora_solicitada: item.HORA_SOLICITADA,
