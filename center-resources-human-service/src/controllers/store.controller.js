@@ -1110,6 +1110,43 @@ export const storeController = {
             // 4. PUNTO CRÍTICO: Liberar conexión siempre
             if (connection) connection.release();
         }
+    },
+    getAllBallotEmployesStore: async (req, res) => {
+        const { codestore } = req.params;
+
+        const connection = await pool.getConnection();
+
+        try {
+            let query = `SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION,h.FECHA_CREACION,h.FECHA_DESDE,h.HORA_SOLICITADA,p.DESCRIPCION,h.NOMBRE_COMPLETO
+                           FROM bd_metasperu.tb_head_papeleta h 
+                           INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+                           INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA`;
+
+            if (codestore) {
+                query += ` WHERE h.CODIGO_TIENDA = '${codestore}' ORDER BY ID_HEAD_PAPELETA DESC;`;
+            } else {
+                query += ` ORDER BY ID_HEAD_PAPELETA DESC;`;
+            }
+
+            const [result] = await connection.execute(query);
+
+            const parseData = result.map(item => ({
+                id_papaleta: item.ID_HEAD_PAPELETA,
+                codigo_papeleta: item.CODIGO_PAPELETA,
+                tienda: item.DESCRIPCION,
+                fecha_creacion: item.FECHA_CREACION,
+                fecha_papeleta: item.FECHA_DESDE,
+                hora_solicitada: item.HORA_SOLICITADA,
+                concepto: item.DESCRIPCION,
+                nombre_empleado: item.NOMBRE_COMPLETO
+            }));
+
+            res.status(200).json({ success: true, data: parseData });
+        } catch (error) {
+            res.status(500).json({ success: false, message: 'Error al consultar papeletas.' });
+        } finally {
+            if (connection) connection.release();
+        }
     }
 
 };
