@@ -188,7 +188,7 @@ export const storeController = {
         try {
             // 2. Consulta de Cabecera
             const headQuery = `SELECT * FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
-            const [rowsHead] = await dev_pool.query(headQuery, [codeBallot]);
+            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
 
             // 3. Verificación de existencia
             if (rowsHead.length === 0) {
@@ -200,7 +200,7 @@ export const storeController = {
 
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
-            const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
+            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
             // 5. Respuesta estructurada
             return res.status(200).json({
                 success: true,
