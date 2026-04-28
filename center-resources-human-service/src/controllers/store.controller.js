@@ -187,7 +187,29 @@ export const storeController = {
 
         try {
             // 2. Consulta de Cabecera
-            const headQuery = `SELECT * FROM TB_HEAD_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
+            const headQuery = `SELECT 
+                            h.CARGO_EMPLEADO,
+                            h.CODIGO_PAPELETA,
+                            h.CODIGO_TIENDA,
+                            h.DESCRIPCION,
+                            h.ESTADO_PAPELETA,
+                            h.FECHA_CREACION,
+                            h.FECHA_DESDE,
+                            h.FECHA_HASTA,
+                            h.HORA_ACUMULADA,
+                            h.HORA_LLEGADA,
+                            h.HORA_SALIDA,
+                            h.HORA_SOLICITADA,
+                            h.ID_HEAD_PAPELETA,
+                            h.ID_PAP_TIPO_PAPELETA,
+                            h.ISUPDATE,
+                            h.NOMBRE_COMPLETO,
+                            h.NRO_DOCUMENTO_EMPLEADO,
+                            t.DESCRIPCION AS TIENDA,
+                            p.DESCRIPCION AS TIPO_PAPELETA
+                            FROM bd_metasperu.tb_head_papeleta h 
+                            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+                            INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
             const [rowsHead] = await pool.query(headQuery, [codeBallot]);
 
             // 3. Verificación de existencia
