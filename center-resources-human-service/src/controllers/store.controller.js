@@ -1146,7 +1146,7 @@ export const storeController = {
             SELECT h.ID_HEAD_PAPELETA, h.CODIGO_PAPELETA, t.DESCRIPCION as TIENDA, 
                    h.FECHA_CREACION, h.FECHA_DESDE, h.HORA_SOLICITADA, 
                    p.DESCRIPCION, h.NOMBRE_COMPLETO
-            FROM bd_metasperu.tb_head_papeleta h 
+            FROM tb_head_papeleta h 
             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA
             WHERE YEAR(h.FECHA_CREACION) = ?
