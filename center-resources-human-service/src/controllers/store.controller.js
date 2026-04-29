@@ -1538,28 +1538,33 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     listaRegistros.forEach(reg => {
         if (reg.dia === FECHA_HOY) return;
 
-        const horas = parseFloat(reg.hrWorking);
-        const esPartTime = reg.tpAsociado === '**';
+        const cajasExcluidas = ['9M1', '9M2', '9M3'];
 
-        const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
+        if (!cajasExcluidas.includes(reg.caja)) {
+            const horas = parseFloat(reg.hrWorking);
+            const esPartTime = reg.tpAsociado === '**';
 
-        if (esPartTime) {
-            if (!resumenPartTimeDias[reg.dia]) {
-                resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
+            const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
+
+            if (esPartTime) {
+                if (!resumenPartTimeDias[reg.dia]) {
+                    resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
+                }
+                resumenPartTimeDias[reg.dia].total += horas;
+                resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+                resumenFullTime[reg.dia].registros.push(reg);
+                if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
+            } else {
+                if (!resumenFullTime[reg.dia]) {
+                    resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
+                }
+                resumenFullTime[reg.dia].total += horas;
+                resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+                resumenFullTime[reg.dia].registros.push(reg);
+                if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
             }
-            resumenPartTimeDias[reg.dia].total += horas;
-            resumenFullTime[reg.dia].count += 1; // Incrementamos contador
-            resumenFullTime[reg.dia].registros.push(reg);
-            if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
-        } else {
-            if (!resumenFullTime[reg.dia]) {
-                resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
-            }
-            resumenFullTime[reg.dia].total += horas;
-            resumenFullTime[reg.dia].count += 1; // Incrementamos contador
-            resumenFullTime[reg.dia].registros.push(reg);
-            if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
+
     });
 
     // 2. Procesar Full-Time (Diario)
