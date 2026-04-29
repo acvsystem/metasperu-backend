@@ -1545,17 +1545,19 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         if (esPartTime) {
             if (!resumenPartTimeDias[reg.dia]) {
-                resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0 };
+                resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
             }
             resumenPartTimeDias[reg.dia].total += horas;
             resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+            resumenFullTime[reg.dia].registros.push(reg);
             if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
         } else {
             if (!resumenFullTime[reg.dia]) {
-                resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0 };
+                resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
             }
             resumenFullTime[reg.dia].total += horas;
             resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+            resumenFullTime[reg.dia].registros.push(reg);
             if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
     });
