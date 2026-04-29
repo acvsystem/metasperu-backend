@@ -210,7 +210,7 @@ export const storeController = {
                             FROM tb_head_papeleta h 
                             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
                             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
-            const [rowsHead] = await dev_pool.query(headQuery, [codeBallot]);
+            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
 
             // 3. Verificación de existencia
             if (rowsHead.length === 0) {
@@ -222,7 +222,7 @@ export const storeController = {
 
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM tb_detalle_papeleta WHERE DET_ID_HEAD_PAPELETA = ?`;
-            const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
+            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
             // 5. Respuesta estructurada
             return res.status(200).json({
                 success: true,
@@ -380,7 +380,7 @@ export const storeController = {
         const n = (val) => (val === undefined || val === null ? null : val);
 
         // Obtenemos una conexión del pool para la transacción
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
@@ -504,7 +504,7 @@ export const storeController = {
                 message: 'Parámetros incompletos (rango_fecha, codigoTienda)'
             });
         }
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             // 1. Obtener todas las cabeceras/cargos en el rango
@@ -617,7 +617,7 @@ export const storeController = {
             console.error("No se pudo crear el backup local, pero continuamos...", err);
         }
 
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
@@ -741,7 +741,7 @@ export const storeController = {
     },
     postCreateBallotEmployes: async (req, res) => {
         const { empleado, papeleta, detalles } = req.body;
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
@@ -876,7 +876,7 @@ export const storeController = {
             });
         }
 
-        const [existe] = await dev_pool.execute(
+        const [existe] = await pool.execute(
             `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
              WHERE ID_HORA_EXTRA = ?`,
             [id_hora_extra]
@@ -913,7 +913,7 @@ export const storeController = {
             ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)
         `;
 
-            const [result] = await dev_pool.query(query, [
+            const [result] = await pool.query(query, [
                 id_hora_extra,
                 horasAcumuladas, // "01:30"
                 nroDocumento,
@@ -928,7 +928,7 @@ export const storeController = {
                     UPDATE tb_hora_extra_empleado SET ESTADO = 'ESPERA APROBACION' 
                     WHERE ID_HR_EXTRA = ${id_hora_extra};`;
 
-            const [rows] = await dev_pool.execute(query_update_hora_extra);
+            const [rows] = await pool.execute(query_update_hora_extra);
 
             const results = emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com'],
@@ -967,7 +967,7 @@ export const storeController = {
             return res.status(400).json({ success: false, message: 'ID de autorización requerido.' });
         }
 
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
@@ -1048,7 +1048,7 @@ export const storeController = {
     getApprovalHoursWorksEmployes: async (req, res) => {
         const { codigoTienda, nivel } = req.body;
 
-        const connection = await dev_pool.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             const query = `
@@ -1095,7 +1095,7 @@ export const storeController = {
         let connection;
         try {
             // 1. Obtener conexión
-            connection = await dev_pool.getConnection();
+            connection = await pool.getConnection();
 
             const query = `
             SELECT ID_AUTH_HR_EXT, HR_EXTRA_ACOMULADO, NRO_DOCUMENTO_EMPLEADO, 
@@ -1139,7 +1139,7 @@ export const storeController = {
         let connection;
 
         try {
-            connection = await dev_pool.getConnection();
+            connection = await pool.getConnection();
 
             // Construcción segura de la consulta
             let query = `
@@ -1644,7 +1644,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
     const estado = isAprobacion ? 'APROBACION' : 'DISPONIBLE';
 
     try {
-        await dev_pool.query(`
+        await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
              HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
@@ -1706,7 +1706,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
-        const [listaCompleta] = await dev_pool.query(`
+        const [listaCompleta] = await pool.query(`
             SELECT *
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
@@ -1716,7 +1716,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
-        const [listaCorrectos] = await dev_pool.query(`
+        const [listaCorrectos] = await pool.query(`
             SELECT HR_EXTRA_SOBRANTE 
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
@@ -1758,7 +1758,7 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
             LIMIT 1;
         `;
 
-        const [rows] = await dev_pool.query(query, [fecha, horaExtra]);
+        const [rows] = await pool.query(query, [fecha, horaExtra]);
 
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
