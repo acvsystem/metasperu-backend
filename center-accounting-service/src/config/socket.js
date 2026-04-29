@@ -112,6 +112,13 @@ export const initSocket = (server) => {
                             `_El servicio no retornó valores para la fecha indicada._`,
                             "Comparación de Tipo de Cambio"
                         );
+
+                        emailService.pushToEmailQueue({
+                            email: ['itperu@metasperu.com'],
+                            subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                            template: 'alertaDiffTipoChambio',
+                            variables: { tcSistema: `0.000`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
+                        });
                     } else if (ventaRetail === ventaSunat) {
                         await extraServices.enviarSlack(
                             `✅ *Sincronización Correcta*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n*Sunat:* S/ ${ventaSunat.toFixed(3)}`,
