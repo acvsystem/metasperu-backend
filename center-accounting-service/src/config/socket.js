@@ -80,8 +80,7 @@ export const initSocket = (server) => {
                 const dataExchangeRate = JSON.parse(data.exchangeRate);
                 const socketId = data.pedido_por;
 
-                // Si no hay datos en el array, no procesar
-                if (!dataExchangeRate || dataExchangeRate.length === 0) return;
+               
 
                 const { cFecha: fechaHoy, cCotiActual: cotizacionRetail } = dataExchangeRate[0];
 
