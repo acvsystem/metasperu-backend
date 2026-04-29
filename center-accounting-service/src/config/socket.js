@@ -74,11 +74,33 @@ export const initSocket = (server) => {
         socket.on('py_response_exchange_rate', async (data) => {
             try {
                 // 1. Validación de seguridad
-                if (!data.exchangeRate) return;
+                if (!data.exchangeRate) {
+                    await extraServices.enviarSlack(
+                        `🚨 *ALERTA: Diferencia detectada*\n` +
+                        `*Fecha:* ${fechaHoy}\n` +
+                        `*FrontRetail:* S/ 0.000\n` +
+                        `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
+                        `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
+                        "Comparación de Tipo de Cambio"
+                    );
+
+                    const results = emailService.pushToEmailQueue({
+                        email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
+                        subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                        template: 'alertaDiffTipoChambio',
+                        variables: {
+                            tcSistema: `0.000`,
+                            tcSunat: `${ventaSunat.toFixed(3)}`,
+                            fecha: fechaHoy
+                        }
+                    });
+
+                    return;
+                };
 
                 const dataExchangeRate = JSON.parse(data.exchangeRate);
                 const socketId = data.pedido_por;
-                console.log(socketId);
+
                 // Si no hay datos en el array, no procesar
                 if (!dataExchangeRate || dataExchangeRate.length === 0) return;
 
@@ -116,7 +138,7 @@ export const initSocket = (server) => {
                                 `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
                                 "Comparación de Tipo de Cambio"
                             );
-                            
+
                             const results = emailService.pushToEmailQueue({
                                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                                 subject: `Diferencia Tipo Cambio FRONT RETAIL`,
