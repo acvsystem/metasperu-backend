@@ -74,7 +74,8 @@ export const initSocket = (server) => {
         socket.on('py_response_exchange_rate', async (data) => {
             try {
                 // 1. Validación de seguridad
-                if (!data.exchangeRate) {
+                console.log(data);
+                if (!data.exchangeRate || !data.length) {
                     await extraServices.enviarSlack(
                         `🚨 *ALERTA: Diferencia detectada*\n` +
                         `*Fecha:* ${fechaHoy}\n` +
@@ -84,16 +85,16 @@ export const initSocket = (server) => {
                         "Comparación de Tipo de Cambio"
                     );
 
-                   /* const results = emailService.pushToEmailQueue({
-                        email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
-                        subject: `Diferencia Tipo Cambio FRONT RETAIL`,
-                        template: 'alertaDiffTipoChambio',
-                        variables: {
-                            tcSistema: `0.000`,
-                            tcSunat: `${ventaSunat.toFixed(3)}`,
-                            fecha: fechaHoy
-                        }
-                    });*/
+                    /* const results = emailService.pushToEmailQueue({
+                         email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
+                         subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                         template: 'alertaDiffTipoChambio',
+                         variables: {
+                             tcSistema: `0.000`,
+                             tcSunat: `${ventaSunat.toFixed(3)}`,
+                             fecha: fechaHoy
+                         }
+                     });*/
 
                     return;
                 };
