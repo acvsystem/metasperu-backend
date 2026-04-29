@@ -221,8 +221,8 @@ export const storeController = {
             const idHead = headData.ID_HEAD_PAPELETA;
 
             // 4. Consulta de Detalle
-            const detailQuery = `SELECT * FROM TB_DETALLE_PAPELETA WHERE DET_ID_HEAD_PAPELETA = ?`;
-            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
+            const detailQuery = `SELECT * FROM tb_detalle_papeleta WHERE DET_ID_HEAD_PAPELETA = ?`;
+            const [rowsDetail] = await dev_pool.query(detailQuery, [idHead]);
             // 5. Respuesta estructurada
             return res.status(200).json({
                 success: true,
