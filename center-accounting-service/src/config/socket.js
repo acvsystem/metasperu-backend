@@ -114,7 +114,7 @@ export const initSocket = (server) => {
                         );
 
                         emailService.pushToEmailQueue({
-                            email: ['itperu@metasperu.com'],
+                            email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
                             variables: { tcSistema: `0.000`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
@@ -132,7 +132,7 @@ export const initSocket = (server) => {
                         );
 
                         emailService.pushToEmailQueue({
-                            email: ['itperu@metasperu.com'],
+                            email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
                             variables: { tcSistema: `${ventaRetail.toFixed(3)}`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
