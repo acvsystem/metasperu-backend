@@ -210,7 +210,7 @@ export const storeController = {
                             FROM bd_metasperu.tb_head_papeleta h 
                             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
                             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
-            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
+            const [rowsHead] = await dev_pool.query(headQuery, [codeBallot]);
 
             // 3. Verificación de existencia
             if (rowsHead.length === 0) {
@@ -1139,7 +1139,7 @@ export const storeController = {
         let connection;
 
         try {
-            connection = await pool.getConnection();
+            connection = await dev_pool.getConnection();
 
             // Construcción segura de la consulta
             let query = `
