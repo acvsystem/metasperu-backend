@@ -73,31 +73,9 @@ export const initSocket = (server) => {
 
         socket.on('py_response_exchange_rate', async (data) => {
             try {
-                // 1. Validación de seguridad
-                console.log(data);
-                if (!data.exchangeRate || !data.length) {
-                    await extraServices.enviarSlack(
-                        `🚨 *ALERTA: Diferencia detectada*\n` +
-                        `*Fecha:* ${fechaHoy}\n` +
-                        `*FrontRetail:* S/ 0.000\n` +
-                        `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
-                        `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
-                        "Comparación de Tipo de Cambio"
-                    );
 
-                    /* const results = emailService.pushToEmailQueue({
-                         email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
-                         subject: `Diferencia Tipo Cambio FRONT RETAIL`,
-                         template: 'alertaDiffTipoChambio',
-                         variables: {
-                             tcSistema: `0.000`,
-                             tcSunat: `${ventaSunat.toFixed(3)}`,
-                             fecha: fechaHoy
-                         }
-                     });*/
-
-                    return;
-                };
+                const hoy = new Date();
+                const fechaFormateada = hoy.toISOString().split('T')[0];
 
                 const dataExchangeRate = JSON.parse(data.exchangeRate);
                 const socketId = data.pedido_por;
@@ -113,18 +91,18 @@ export const initSocket = (server) => {
                     // --- PASO 1: BUSCAR EN DB LOCAL ---
                     const [localRows] = await pool.execute(
                         'SELECT venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
-                        [fechaHoy]
+                        [fechaHoy || fechaFormateada]
                     );
 
                     if (localRows.length > 0) {
                         const ventaSunat = parseFloat(localRows[0].venta);
-                        const ventaRetail = parseFloat(cotizacionRetail);
+                        const ventaRetail = parseFloat(cotizacionRetail || "0.000");
 
                         // Comparación robusta
                         if (ventaRetail === ventaSunat) {
                             await extraServices.enviarSlack(
                                 `✅ *Sincronización Correcta*\n` +
-                                `*Fecha:* ${fechaHoy}\n` +
+                                `*Fecha:* ${fechaHoy || fechaFormateada}\n` +
                                 `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
                                 `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
                                 `_Los valores coinciden perfectamente._`,
@@ -133,23 +111,23 @@ export const initSocket = (server) => {
                         } else {
                             await extraServices.enviarSlack(
                                 `🚨 *ALERTA: Diferencia detectada*\n` +
-                                `*Fecha:* ${fechaHoy}\n` +
+                                `*Fecha:* ${fechaHoy || fechaFormateada}\n` +
                                 `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
                                 `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
                                 `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
                                 "Comparación de Tipo de Cambio"
                             );
 
-                            const results = emailService.pushToEmailQueue({
-                                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
-                                subject: `Diferencia Tipo Cambio FRONT RETAIL`,
-                                template: 'alertaDiffTipoChambio',
-                                variables: {
-                                    tcSistema: `${ventaRetail.toFixed(3)}`,
-                                    tcSunat: `${ventaSunat.toFixed(3)}`,
-                                    fecha: fechaHoy
-                                }
-                            });
+                            /* const results = emailService.pushToEmailQueue({
+                                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
+                                 subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                                 template: 'alertaDiffTipoChambio',
+                                 variables: {
+                                     tcSistema: `${ventaRetail.toFixed(3)}`,
+                                     tcSunat: `${ventaSunat.toFixed(3)}`,
+                                     fecha: fechaHoy
+                                 }
+                             });*/
                         }
                     } else {
                         console.log(`⚠️ No se encontró registro SUNAT en DB para la fecha ${fechaHoy}`);
