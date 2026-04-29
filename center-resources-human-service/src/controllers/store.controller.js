@@ -1608,6 +1608,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             }
         }
     }
+
+    return resumenFullTime;
 }
 
 const obtenerRangoSemana = (fechaStr) => {
@@ -1703,7 +1705,7 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
-    await procesarYRegistrarHoras(listaRegistros);
+    const registros = await procesarYRegistrarHoras(listaRegistros);
 
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
@@ -1741,7 +1743,8 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             documento: nroDocumento,
             horasExtras: listaCompleta,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
-            totalHorasDecimal: totalDecimal // Útil si necesitas validar lógicas internas
+            totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
+            registros: registros
         };
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
