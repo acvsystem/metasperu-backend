@@ -1675,7 +1675,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
  */
 const decimalATiempo = (decimal) => {
     const horas = Math.floor(decimal);
-    const minutos = Math.round((decimal - horas) * 60);
+    const minutos = Math.round((decimal - horas) % 60);
     // Aseguramos que tengan 2 dígitos
     const hStr = String(horas).padStart(2, '0');
     const mStr = String(minutos).padStart(2, '0');
