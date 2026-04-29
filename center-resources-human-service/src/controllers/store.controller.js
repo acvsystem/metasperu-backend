@@ -207,7 +207,7 @@ export const storeController = {
                             h.NRO_DOCUMENTO_EMPLEADO,
                             t.DESCRIPCION AS TIENDA,
                             p.DESCRIPCION AS TIPO_PAPELETA
-                            FROM bd_metasperu.tb_head_papeleta h 
+                            FROM tb_head_papeleta h 
                             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
                             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
             const [rowsHead] = await dev_pool.query(headQuery, [codeBallot]);
