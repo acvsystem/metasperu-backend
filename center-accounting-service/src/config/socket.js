@@ -73,73 +73,72 @@ export const initSocket = (server) => {
 
         socket.on('py_response_exchange_rate', async (data) => {
             try {
-
-                const hoy = new Date();
-                const fechaFormateada = hoy.toISOString().split('T')[0];
-
-                const dataExchangeRate = JSON.parse(data.exchangeRate);
                 const socketId = data.pedido_por;
+                let dataExchangeRate = [];
+                let fechaHoy = new Date().toISOString().split('T')[0]; // Fecha actual por defecto
+                let cotizacionRetail = 0.00;
 
-               
+                // 1. Normalización de datos
+                if (data.exchangeRate) {
+                    try {
+                        const parsed = JSON.parse(data.exchangeRate);
+                        if (parsed && parsed.length > 0) {
+                            dataExchangeRate = parsed;
+                            fechaHoy = dataExchangeRate[0].cFecha;
+                            cotizacionRetail = parseFloat(dataExchangeRate[0].cCotiActual);
+                        }
+                    } catch (e) {
+                        console.error("Error al parsear exchangeRate:", e);
+                    }
+                }
 
-                const { cFecha: fechaHoy, cCotiActual: cotizacionRetail } = dataExchangeRate[0];
-
-                // Caso: Respuesta para el proceso automático del Cron
+                // 2. Si es para el cron, realizamos la lógica de comparación/notificación
                 if (socketId === 'cron_accounting') {
 
-                    // --- PASO 1: BUSCAR EN DB LOCAL ---
+                    // Si no hubo datos, cotizacionRetail es 0.00, lo que disparará la alerta
                     const [localRows] = await pool.execute(
                         'SELECT venta FROM tb_tipo_cambio_cache WHERE fecha = ?',
-                        [fechaHoy || fechaFormateada]
+                        [fechaHoy]
                     );
 
-                    if (localRows.length > 0) {
-                        const ventaSunat = parseFloat(localRows[0].venta);
-                        const ventaRetail = parseFloat(cotizacionRetail || "0.000");
+                    const ventaSunat = localRows.length > 0 ? parseFloat(localRows[0].venta) : 0;
+                    const ventaRetail = cotizacionRetail;
 
-                        // Comparación robusta
-                        if (ventaRetail === ventaSunat) {
-                            await extraServices.enviarSlack(
-                                `✅ *Sincronización Correcta*\n` +
-                                `*Fecha:* ${fechaHoy || fechaFormateada}\n` +
-                                `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
-                                `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
-                                `_Los valores coinciden perfectamente._`,
-                                "Comparación de Tipo de Cambio"
-                            );
-                        } else {
-                            await extraServices.enviarSlack(
-                                `🚨 *ALERTA: Diferencia detectada*\n` +
-                                `*Fecha:* ${fechaHoy || fechaFormateada}\n` +
-                                `*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n` +
-                                `*Sunat:* S/ ${ventaSunat.toFixed(3)}\n` +
-                                `*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
-                                "Comparación de Tipo de Cambio"
-                            );
-
-                            /* const results = emailService.pushToEmailQueue({
-                                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
-                                 subject: `Diferencia Tipo Cambio FRONT RETAIL`,
-                                 template: 'alertaDiffTipoChambio',
-                                 variables: {
-                                     tcSistema: `${ventaRetail.toFixed(3)}`,
-                                     tcSunat: `${ventaSunat.toFixed(3)}`,
-                                     fecha: fechaHoy
-                                 }
-                             });*/
-                        }
+                    if (ventaRetail === 0) {
+                        await extraServices.enviarSlack(
+                            `⚠️ *ALERTA: Sin datos de Tipo de Cambio*\n` +
+                            `*Fecha:* ${fechaHoy}\n` +
+                            `*FrontRetail:* S/ 0.000\n` +
+                            `_El servicio no retornó valores para la fecha indicada._`,
+                            "Comparación de Tipo de Cambio"
+                        );
+                    } else if (ventaRetail === ventaSunat) {
+                        await extraServices.enviarSlack(
+                            `✅ *Sincronización Correcta*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n*Sunat:* S/ ${ventaSunat.toFixed(3)}`,
+                            "Comparación de Tipo de Cambio"
+                        );
                     } else {
-                        console.log(`⚠️ No se encontró registro SUNAT en DB para la fecha ${fechaHoy}`);
+                        // Lógica de diferencia detectada (tu código original)
+                        await extraServices.enviarSlack(
+                            `🚨 *ALERTA: Diferencia detectada*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n*Sunat:* S/ ${ventaSunat.toFixed(3)}\n*Diferencia:* S/ ${(ventaRetail - ventaSunat).toFixed(3)}`,
+                            "Comparación de Tipo de Cambio"
+                        );
+
+                        emailService.pushToEmailQueue({
+                            email: ['itperu@metasperu.com'],
+                            subject: `Diferencia Tipo Cambio FRONT RETAIL`,
+                            template: 'alertaDiffTipoChambio',
+                            variables: { tcSistema: `${ventaRetail.toFixed(3)}`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
+                        });
                     }
 
                 } else {
                     // Caso: Respuesta para un usuario en el Dashboard
-                    io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate);
+                    io.to(socketId).emit('dashboard_exchange_rate_store', dataExchangeRate.length > 0 ? dataExchangeRate : [{ cFecha: fechaHoy, cCotiActual: "0.000" }]);
                 }
 
             } catch (error) {
                 console.error('❌ Error en py_response_exchange_rate:', error.message);
-                // Opcional: Avisar a Slack que el procesamiento falló
             }
         });
 
