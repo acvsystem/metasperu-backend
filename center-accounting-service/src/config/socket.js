@@ -84,7 +84,7 @@ export const initSocket = (server) => {
                         "Comparación de Tipo de Cambio"
                     );
 
-                    const results = emailService.pushToEmailQueue({
+                   /* const results = emailService.pushToEmailQueue({
                         email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                         subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                         template: 'alertaDiffTipoChambio',
@@ -93,7 +93,7 @@ export const initSocket = (server) => {
                             tcSunat: `${ventaSunat.toFixed(3)}`,
                             fecha: fechaHoy
                         }
-                    });
+                    });*/
 
                     return;
                 };
