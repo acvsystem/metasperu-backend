@@ -1655,7 +1655,7 @@ const verificarDiaLibre = async (documento, fecha) => {
             AND FECHA_NUMBER = '${fechaLimpia}' OR FECHA = '${fecha}';
         `);
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
-        const [rows] = await pool.execute(query, [documento, fechaFormatoBD, fecha]);
+        const [rows] = await pool.execute(query, [documento, fechaLimpia, fecha]);
 
         // Si el query devuelve filas, significa que ES su día libre
         return rows.length > 0;
