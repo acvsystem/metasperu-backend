@@ -1750,6 +1750,7 @@ const decimalATiempo = (decimal) => {
  * Convierte un tiempo "HH:MM" a número decimal para poder sumar
  */
 const tiempoADecimal = (tiempo) => {
+    console.log(tiempo);
     if (!tiempo || typeof tiempo !== 'string') return 0;
     const [h, m] = tiempo.split(':').map(Number);
     return (h || 0) + ((m || 0) / 60);
@@ -1793,7 +1794,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
-        console.log(totalDecimal);
+        
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
 
