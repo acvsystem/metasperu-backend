@@ -806,7 +806,7 @@ export const storeController = {
                         det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
                 );
 
-                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "UTILIZADO" : "DISPONIBLE";
+                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "utilizado" : "correcto";
 
                 // 3. Actualizar la tabla maestra de horas extras del empleado
                 await connection.execute(
@@ -1017,7 +1017,7 @@ export const storeController = {
             WHERE ID_HR_EXTRA = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values_hrx = [aprobado ? 'DISPONIBLE' : 'RECHAZADO', aprobado ? 1 : 0, id_hrx];
+            const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, id_hrx];
 
             await connection.execute(query_hrx, values_hrx);
 
@@ -1705,7 +1705,7 @@ const obtenerRangoSemana = (fechaStr) => {
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
     const excesoTiempo = decimalATiempo(excesoDecimal);
-    const estado = isAprobacion ? 'APROBACION' : 'DISPONIBLE';
+    const estado = isAprobacion ? 'aprobacion' : 'correcto';
 
     try {
         await pool.query(`
@@ -1785,7 +1785,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             FROM tb_hora_extra_empleado 
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
-            AND ESTADO = 'DISPONIBLE' 
+            AND ESTADO = 'correcto' 
         `, [nroDocumento, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
