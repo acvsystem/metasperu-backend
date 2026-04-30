@@ -1574,7 +1574,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         var esAprobacion = 0;
         let exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-        console.log(esDiaLibre);
+        console.log(fecha, esDiaLibre);
         if (esDiaLibre) {
             // Si es día libre, TODO lo trabajado es extra
             exceso = data.total;
@@ -1637,7 +1637,7 @@ const verificarDiaLibre = async (documento, fecha) => {
         const d = new Date(fecha);
         // Usamos +1 en el mes porque getMonth() va de 0 a 11
         const fechaFormatoBD = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
-        console.log(fechaFormatoBD);
+
 
         const query = `
             SELECT TB_DIAS_HORARIO.ID_DIAS 
