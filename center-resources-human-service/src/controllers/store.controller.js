@@ -1738,7 +1738,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
  * Convierte un número decimal (ej. 1.5) a formato de tiempo "01:30"
  */
 const decimalATiempo = (decimal) => {
-    console.log(decimal);
+    
     const horas = Math.floor(decimal);
     const minutos = Math.round((decimal - horas) % 60);
     // Aseguramos que tengan 2 dígitos
@@ -1754,6 +1754,7 @@ const tiempoADecimal = (tiempo) => {
     
     if (!tiempo || typeof tiempo !== 'string') return 0;
     const [h, m] = tiempo.split(':').map(Number);
+    console.log(tiempo,(h || 0) + ((m || 0) / 60));
     return (h || 0) + ((m || 0) / 60);
 }
 
@@ -1795,7 +1796,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
-        
+        console.log(totalDecimal);
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
 
