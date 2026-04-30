@@ -1636,16 +1636,20 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 const verificarDiaLibre = async (documento, fecha) => {
     try {
         // Tu query adaptado para usar parámetros seguros
+        const d = new Date(fecha);
+        // Usamos +1 en el mes porque getMonth() va de 0 a 11
+        const fechaFormatoBD = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+
         const query = `
             SELECT TB_DIAS_HORARIO.ID_DIAS 
             FROM TB_DIAS_LIBRE 
             INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
             WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = ?
-            AND FECHA_NUMBER = ?
+            AND FECHA_NUMBER = ? OR FECHA = ?
         `;
 
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
-        const [rows] = await pool.execute(query, [documento, fecha]);
+        const [rows] = await pool.execute(query, [documento, fechaFormatoBD, fecha]);
 
         // Si el query devuelve filas, significa que ES su día libre
         return rows.length > 0;
