@@ -1614,6 +1614,15 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         }
     }
 
+    const resumenPorRangoSemana = {};
+    for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
+        const rango = obtenerRangoSemana(dia);
+        if (!resumenPorRangoSemana[rango]) {
+            resumenPorRangoSemana[rango] = { total: 0, nroDocumento: data.nroDocumento };
+        }
+        resumenPorRangoSemana[rango].total += data.total;
+    }
+
     // 3. Procesar Part-Time (Semanal)
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
         const totalSemanal = Math.round(data.total * 60) / 60;
