@@ -1840,7 +1840,7 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
             nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL",
-            horas: rows[0].HORA_SOLICITADA
+            horas: ((rows || [])[0] || {}).HORA_SOLICITADA || '00:00'
         };
 
     } catch (error) {
