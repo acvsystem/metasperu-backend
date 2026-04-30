@@ -1575,7 +1575,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // AJUSTE 2: Usar un pequeño margen al convertir a tiempo para asegurar que 
         // 1.999999 horas se interprete correctamente como 2:00 y no 1:59
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + 0.0001));
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo_hrx(excesoPreliminar + 0.0001));
 
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
@@ -1712,7 +1712,7 @@ const obtenerRangoSemana = (fechaStr) => {
 }
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
-    const excesoTiempo = decimalATiempo(excesoDecimal);
+    const excesoTiempo = decimalATiempo_hrx(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
 
     try {
