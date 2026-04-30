@@ -1712,7 +1712,7 @@ const obtenerRangoSemana = (fechaStr) => {
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
     const excesoTiempo = decimalATiempo(excesoDecimal);
-    const estado = isAprobacion ? 'aprobacion' : 'correcto';
+    const estado = isAprobacion ? 'aprobar' : 'correcto';
 
     try {
         await pool.query(`
