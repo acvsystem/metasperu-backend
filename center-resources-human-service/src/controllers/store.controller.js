@@ -1574,7 +1574,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         var esAprobacion = 0;
         const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-
+        console.log(esDiaLibre);
         if (esDiaLibre) {
             // Si es día libre, TODO lo trabajado es extra
             exceso = data.total;
