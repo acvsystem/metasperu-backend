@@ -1552,7 +1552,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                 }
                 resumenPartTimeDias[reg.dia].total += horas;
               //  resumenFullTime[reg.dia].count += 1; // Incrementamos contador
-                resumenFullTime[reg.dia].registros.push(reg);
+                //resumenFullTime[reg.dia].registros.push(reg);
                 if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
             } else {
                 if (!resumenFullTime[reg.dia]) {
