@@ -1575,14 +1575,21 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
 
+        const excesoPreliminar = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar));
+
+        // 2. Sumar horas de papeleta si existen
+        const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
+        const totalEfectivo = data.total + horasPapeletaDecimal;
+
         if (esDiaLibre) {
             // Si es día libre, TODO lo trabajado es extra
-            exceso = data.total;
+            exceso = totalEfectivo;
             observacion = "Trabajo en su dia de descanso.";
             esAprobacion = 1;
         } else {
-            exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
-            const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
+
+            exceso = Math.max(0, totalEfectivo - JORNADA_MAXIMA_DIARIA);
 
             if (data.count === 1) {
                 observacion = "Solo tiene 1 solo registro de marcacion";
@@ -1747,6 +1754,7 @@ const decimalATiempo = (decimal) => {
     return `${hStr}:${mStr}`;
 }
 
+
 /**
  * Convierte un tiempo "HH:MM" a número decimal para poder sumar
  */
@@ -1799,7 +1807,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         console.log(totalDecimal);
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
-        console.log(totalDecimal,totalTiempo);
+        console.log(totalDecimal, totalTiempo);
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
         return {
             success: true,
@@ -1831,7 +1839,8 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
 
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
-            nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL"
+            nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL",
+            horas: rows[0].HORA_SOLICITADA
         };
 
     } catch (error) {
