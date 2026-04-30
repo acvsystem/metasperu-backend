@@ -816,7 +816,7 @@ export const storeController = {
                      ESTADO = ? ,
                      SELECCIONADO = ?
                      WHERE ID_HR_EXTRA = ?`,
-                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'UTILIZADO' ? 1 : 0, det.idHrExtra]
+                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'utilizado' ? 1 : 0, det.idHrExtra]
                 );
 
             }
@@ -925,7 +925,7 @@ export const storeController = {
 
 
             const query_update_hora_extra = `
-                    UPDATE tb_hora_extra_empleado SET ESTADO = 'ESPERA APROBACION' 
+                    UPDATE tb_hora_extra_empleado SET ESTADO = 'espera aprobacion' 
                     WHERE ID_HR_EXTRA = ${id_hora_extra};`;
 
             const [rows] = await pool.execute(query_update_hora_extra);
@@ -947,7 +947,7 @@ export const storeController = {
                 success: true,
                 message: "Solicitud de autorización enviada con exito.",
                 id_hora_extra: id_hora_extra,
-                estado: 'ESPERA APROBACION',
+                estado: 'espera aprobacion',
                 id: result.insertId
             });
 
@@ -1070,7 +1070,7 @@ export const storeController = {
                     hr_extra: item.HR_EXTRA_ACOMULADO,
                     nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
                     nombre_completo: item.NOMBRE_COMPLETO,
-                    estado_auth: item.APROBADO == 1 ? 'APROBADO' : item.RECHAZADO == 1 ? 'RECHAZADO' : 'ESPERA',
+                    estado_auth: item.APROBADO == 1 ? 'aprobado' : item.RECHAZADO == 1 ? 'rechazado' : 'espera',
                     fecha: item.FECHA,
                     descripcion: item.DESCRIPCION,
                     id_hora_extra: item.ID_HORA_EXTRA,
@@ -1114,7 +1114,7 @@ export const storeController = {
                 hr_extra: item.HR_EXTRA_ACOMULADO,
                 nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
                 nombre_completo: item.NOMBRE_COMPLETO,
-                estado_auth: item.APROBADO === 1 ? 'APROBADO' : (item.RECHAZADO === 1 ? 'RECHAZADO' : 'ESPERA'),
+                estado_auth: item.APROBADO === 1 ? 'aprobado' : (item.RECHAZADO === 1 ? 'rechazado' : 'espera'),
                 fecha: item.FECHA,
                 descripcion: item.DESCRIPCION || 'OFICINA',
                 id_hora_extra: item.ID_HORA_EXTRA,
@@ -1574,7 +1574,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         var esAprobacion = 0;
 
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-        console.log(fecha, esDiaLibre);
+        
         if (esDiaLibre) {
             // Si es día libre, TODO lo trabajado es extra
             exceso = data.total;
@@ -1790,9 +1790,10 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const totalDecimal = listaCorrectos.reduce((acc, row) => {
+            console.log(row.HR_EXTRA_SOBRANTE);
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
-
+        
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
 
