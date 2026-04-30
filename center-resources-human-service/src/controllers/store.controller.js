@@ -1540,7 +1540,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const cajasExcluidas = ['9M1', '9M2', '9M3'];
 
         if (!cajasExcluidas.includes(reg.caja)) {
-            const horas = parseFloat(reg.hrWorking);
+            const horas = parseFloat(reg.hrWorking) || 0;
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
@@ -1566,21 +1566,23 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let observacion = null;
         let esAprobacion = 0;
 
-        // AJUSTE 1: Redondear el total acumulado para evitar pérdida de precisión por decimales
-        data.total = Math.round(data.total * 10000) / 10000;
+        // --- CORRECCIÓN DE PRECISIÓN ---
+        // Redondeamos el total trabajado al minuto más cercano para evitar el "minuto menos"
+        // (Horas * 60 = minutos totales) -> redondeamos -> / 60 = horas decimales exactas
+        const totalRedondeado = Math.round(data.total * 60) / 60;
 
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
 
-        const excesoPreliminar = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
+        // Calculamos exceso preliminar con el valor redondeado
+        const excesoPreliminar = Math.max(0, totalRedondeado - JORNADA_MAXIMA_DIARIA);
 
-        // AJUSTE 2: Usar un pequeño margen al convertir a tiempo para asegurar que 
-        // 1.999999 horas se interprete correctamente como 2:00 y no 1:59
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + 0.0001));
+        // Enviamos a validar con un margen de seguridad
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + (0.5 / 60))); // +30 segundos de margen
 
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
-        // AJUSTE 3: Redondear el total efectivo final
-        let totalEfectivo = Math.round((data.total + horasPapeletaDecimal) * 10000) / 10000;
+        // Sumamos y volvemos a redondear al minuto
+        let totalEfectivo = Math.round((totalRedondeado + horasPapeletaDecimal) * 60) / 60;
 
         if (esDiaLibre) {
             exceso = totalEfectivo;
@@ -1604,8 +1606,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             }
         }
 
-        // Redondeo final del exceso antes de guardar
-        exceso = Math.round(exceso * 10000) / 10000;
+        // Redondeo final antes de guardar
+        exceso = Math.round(exceso * 60) / 60;
 
         if (exceso >= MINIMO_PARA_REGISTRAR) {
             await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esAprobacion);
@@ -1613,20 +1615,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     }
 
     // 3. Procesar Part-Time (Semanal)
-    const resumenPorRangoSemana = {};
-    for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
-        const rango = obtenerRangoSemana(dia);
-        if (!resumenPorRangoSemana[rango]) {
-            resumenPorRangoSemana[rango] = { total: 0, nroDocumento: data.nroDocumento };
-        }
-        resumenPorRangoSemana[rango].total += data.total;
-    }
-
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
-        // Redondear total semanal
-        const totalSemanal = Math.round(data.total * 10000) / 10000;
+        const totalSemanal = Math.round(data.total * 60) / 60;
         if (totalSemanal > UMBRAL_PART_TIME_SEMANAL) {
-            const excesoSemanal = Math.round((totalSemanal - UMBRAL_PART_TIME_SEMANAL) * 10000) / 10000;
+            const excesoSemanal = Math.round((totalSemanal - UMBRAL_PART_TIME_SEMANAL) * 60) / 60;
             if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
             }
