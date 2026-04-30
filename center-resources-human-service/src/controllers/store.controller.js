@@ -1635,7 +1635,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 const verificarDiaLibre = async (documento, fecha) => {
     try {
         // Tu query adaptado para usar parámetros seguros
-        const fechaLimpia = normalizarFechaParaBD(fechaSistema);
+        const fechaLimpia = normalizarFechaParaBD(fecha);
 
 
         const query = `
