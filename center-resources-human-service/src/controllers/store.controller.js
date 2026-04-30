@@ -1551,7 +1551,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                     resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
                 }
                 resumenPartTimeDias[reg.dia].total += horas;
-                resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+              //  resumenFullTime[reg.dia].count += 1; // Incrementamos contador
                 resumenFullTime[reg.dia].registros.push(reg);
                 if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
             } else {
