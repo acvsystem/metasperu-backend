@@ -1569,10 +1569,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // 2. Procesar Full-Time (Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-
+        let exceso = 0;
         var observacion = null;
         var esAprobacion = 0;
-        let exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
+
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
         console.log(fecha, esDiaLibre);
         if (esDiaLibre) {
@@ -1581,6 +1581,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             observacion = "Trabajo en su dia de descanso.";
             esAprobacion = 1;
         } else {
+            exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
             const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
 
             if (data.count === 1) {
@@ -1634,9 +1635,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 const verificarDiaLibre = async (documento, fecha) => {
     try {
         // Tu query adaptado para usar parámetros seguros
-        const d = new Date(fecha);
-        // Usamos +1 en el mes porque getMonth() va de 0 a 11
-        const fechaFormatoBD = `${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+        const fechaLimpia = normalizarFechaParaBD(fechaSistema);
 
 
         const query = `
@@ -1653,7 +1652,7 @@ const verificarDiaLibre = async (documento, fecha) => {
             FROM TB_DIAS_LIBRE 
             INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
             WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = '${documento}'
-            AND FECHA_NUMBER = '${fechaFormatoBD}' OR FECHA = '${fecha}';
+            AND FECHA_NUMBER = '${fechaLimpia}' OR FECHA = '${fecha}';
         `);
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
         const [rows] = await pool.execute(query, [documento, fechaFormatoBD, fecha]);
@@ -1664,6 +1663,13 @@ const verificarDiaLibre = async (documento, fecha) => {
         console.error("Error al verificar día libre:", error);
         return false; // Por seguridad, si falla, asumimos que no es libre
     }
+};
+
+const normalizarFechaParaBD = (fechaSistema) => {
+    // fechaSistema suele ser "YYYY-MM-DD"
+    const [anio, mes, dia] = fechaSistema.split('-');
+    // parseInt elimina los ceros a la izquierda (04 -> 4)
+    return `${parseInt(dia)}-${parseInt(mes)}-${anio}`;
 };
 
 const obtenerRangoSemana = (fechaStr) => {
