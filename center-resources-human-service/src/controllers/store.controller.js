@@ -1647,6 +1647,14 @@ const verificarDiaLibre = async (documento, fecha) => {
             AND FECHA_NUMBER = ? OR FECHA = ?;
         `;
 
+
+        console.log(`
+            SELECT TB_DIAS_HORARIO.ID_DIAS 
+            FROM TB_DIAS_LIBRE 
+            INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
+            WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = '${documento}'
+            AND FECHA_NUMBER = '${fechaFormatoBD}' OR FECHA = '${fecha}';
+        `);
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
         const [rows] = await pool.execute(query, [documento, fechaFormatoBD, fecha]);
 
