@@ -1574,7 +1574,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         var esAprobacion = 0;
 
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-        
+
         if (esDiaLibre) {
             // Si es día libre, TODO lo trabajado es extra
             exceso = data.total;
@@ -1790,10 +1790,10 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const totalDecimal = listaCorrectos.reduce((acc, row) => {
-            console.log(row.HR_EXTRA_SOBRANTE);
+
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
-        
+        console.log(totalDecimal);
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
 
