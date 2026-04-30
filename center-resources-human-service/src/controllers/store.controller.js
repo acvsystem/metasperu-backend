@@ -1569,8 +1569,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // 2. Procesar Full-Time (Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-        const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
 
+        let observacion = null;
+        let esAprobacion = 0;
+        const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
         const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
 
         if (esDiaLibre) {
@@ -1580,8 +1582,6 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             esAprobacion = 1;
         } else {
 
-            let observacion = null;
-            let esAprobacion = 0;
 
             const nivel = await validarNivelAutorizar(fecha, decimalATiempo(exceso));
 
