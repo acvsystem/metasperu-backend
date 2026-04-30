@@ -1551,7 +1551,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                     resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, registros: [] };
                 }
                 resumenPartTimeDias[reg.dia].total += horas;
-              //  resumenFullTime[reg.dia].count += 1; // Incrementamos contador
+                //  resumenFullTime[reg.dia].count += 1; // Incrementamos contador
                 //resumenFullTime[reg.dia].registros.push(reg);
                 if (esTurnoEspecial) resumenPartTimeDias[reg.dia].especial = true;
             } else {
@@ -1570,7 +1570,16 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 2. Procesar Full-Time (Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         const exceso = Math.max(0, data.total - JORNADA_MAXIMA_DIARIA);
-        if (exceso >= MINIMO_PARA_REGISTRAR) {
+
+        const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
+
+        if (esDiaLibre) {
+            // Si es día libre, TODO lo trabajado es extra
+            exceso = data.total;
+            observacion = "Trabajo en su dia de descanso.";
+            esAprobacion = 1;
+        } else {
+
             let observacion = null;
             let esAprobacion = 0;
 
@@ -1589,9 +1598,12 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                 observacion = "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
             }
+        }
 
+        if (exceso >= MINIMO_PARA_REGISTRAR) {
             await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esAprobacion);
         }
+
     }
 
     // 3. Procesar Part-Time (Semanal - consolidando por rango)
@@ -1616,6 +1628,32 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     return resumenFullTime;
 }
+
+
+/**
+ * Consulta en la BD si el trabajador tiene ese día como libre
+ */
+const verificarDiaLibre = async (documento, fecha) => {
+    try {
+        // Tu query adaptado para usar parámetros seguros
+        const query = `
+            SELECT TB_DIAS_HORARIO.ID_DIAS 
+            FROM TB_DIAS_LIBRE 
+            INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
+            WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = ?
+            AND FECHA_NUMBER = ?
+        `;
+
+        // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
+        const [rows] = await pool.execute(query, [documento, fecha]);
+
+        // Si el query devuelve filas, significa que ES su día libre
+        return rows.length > 0;
+    } catch (error) {
+        console.error("Error al verificar día libre:", error);
+        return false; // Por seguridad, si falla, asumimos que no es libre
+    }
+};
 
 const obtenerRangoSemana = (fechaStr) => {
     // 1. Aseguramos que la fecha sea solo "YYYY-MM-DD"
