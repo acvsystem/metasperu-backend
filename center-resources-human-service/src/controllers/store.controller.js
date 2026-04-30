@@ -1575,7 +1575,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // AJUSTE 2: Usar un pequeño margen al convertir a tiempo para asegurar que 
         // 1.999999 horas se interprete correctamente como 2:00 y no 1:59
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + 0.0001));
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo_hrx(excesoPreliminar + 0.0001));
 
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
@@ -1712,7 +1712,7 @@ const obtenerRangoSemana = (fechaStr) => {
 }
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
-    const excesoTiempo = decimalATiempo(excesoDecimal);
+    const excesoTiempo = decimalATiempo_hrx(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
 
     try {
@@ -1746,7 +1746,6 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
  * Convierte un número decimal (ej. 1.5) a formato de tiempo "01:30"
  */
 const decimalATiempo = (decimal) => {
-
     const horas = Math.floor(decimal);
     const minutos = Math.round((decimal - horas) * 60);
     // Aseguramos que tengan 2 dígitos
@@ -1755,6 +1754,14 @@ const decimalATiempo = (decimal) => {
     return `${hStr}:${mStr}`;
 }
 
+const decimalATiempo_hrx = (decimal) => {
+    const horas = Math.floor(decimal);
+    const minutos = Math.round((decimal - horas) % 60);
+    // Aseguramos que tengan 2 dígitos
+    const hStr = String(horas).padStart(2, '0');
+    const mStr = String(minutos).padStart(2, '0');
+    return `${hStr}:${mStr}`;
+}
 
 /**
  * Convierte un tiempo "HH:MM" a número decimal para poder sumar
