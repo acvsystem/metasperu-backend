@@ -1546,7 +1546,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
           
-            const minutos = minutosAHoras(calcularDiferenciaMinutos(reg.hrIn, reg.hrOut));
+            const minutos = calcularDiferenciaMinutos(reg.hrIn, reg.hrOut);
+            console.log(reg.dia,minutos);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
@@ -1577,7 +1578,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
-        console.log(data.totalMins);
+        
         // Suma total efectiva en minutos (Exacta)
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
