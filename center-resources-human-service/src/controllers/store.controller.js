@@ -1533,7 +1533,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
-
+console.log(listaRegistros);
     // 1. Clasificación inicial y conversión a MINUTOS
     listaRegistros.forEach(reg => {
         if (reg.dia === FECHA_HOY) return;
