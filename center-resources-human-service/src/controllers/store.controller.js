@@ -1863,7 +1863,7 @@ const hrPapeleta = async (fecha, documento) => {
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha]);
+        const [rows] = await pool.query(query, [fecha, documento]);
 
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
