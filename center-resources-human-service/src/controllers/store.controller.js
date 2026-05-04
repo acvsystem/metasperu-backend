@@ -1579,12 +1579,12 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         // Enviamos a validar con un margen de seguridad
         const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + (0.5 / 60))); // +30 segundos de margen
 
-        const hrPapeleta = await hrPapeleta(fecha, data.nroDocumento);
-        console.log(hrPapeleta);
+        const horasPapeleta = await hrPapeleta(fecha, data.nroDocumento);
+        console.log(horasPapeleta);
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
         // Sumamos y volvemos a redondear al minuto
-        let totalEfectivo = Math.round((totalRedondeado + horasPapeletaDecimal + tiempoADecimal(hrPapeleta.horas)) * 60) / 60;
+        let totalEfectivo = Math.round((totalRedondeado + horasPapeletaDecimal + tiempoADecimal(horasPapeleta.horas)) * 60) / 60;
 
         if (esDiaLibre) {
             exceso = totalEfectivo;
