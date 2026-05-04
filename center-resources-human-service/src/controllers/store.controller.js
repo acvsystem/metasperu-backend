@@ -1487,7 +1487,7 @@ const calcularDiferenciaMinutos = (horaInicio, horaFin) => {
 };
 
 // Función para convertir minutos a formato legible "HH:mm"
-const minutosAHoras = async (totalMinutos) => {
+const minutosAHoras = (totalMinutos) => {
     const hrs = Math.floor(totalMinutos / 60);
     const mins = totalMinutos % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
@@ -1533,7 +1533,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
-console.log(listaRegistros);
+    console.log(listaRegistros);
     // 1. Clasificación inicial y conversión a MINUTOS
     listaRegistros.forEach(reg => {
         if (reg.dia === FECHA_HOY) return;
@@ -1545,9 +1545,9 @@ console.log(listaRegistros);
 
 
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
-          
+
             const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
-            console.log(reg.dia,minutos);
+            console.log(reg.dia, minutos);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
@@ -1578,7 +1578,7 @@ console.log(listaRegistros);
         const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
-        
+
         // Suma total efectiva en minutos (Exacta)
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
@@ -1766,7 +1766,6 @@ const tiempoADecimal = (tiempo) => {
 
     if (!tiempo || typeof tiempo !== 'string') return 0;
     const [h, m] = tiempo.split(':').map(Number);
-    console.log(tiempo, (h || 0) + ((m || 0) / 60));
     return (h || 0) + ((m || 0) / 60);
 }
 
