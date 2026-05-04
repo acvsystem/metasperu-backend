@@ -1578,7 +1578,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Enviamos a validar con un margen de seguridad
         const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + (0.5 / 60))); // +30 segundos de margen
-
+        console.log(1581, nivel);
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
         // Sumamos y volvemos a redondear al minuto
