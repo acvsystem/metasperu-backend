@@ -1638,11 +1638,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     return resumenFullTime;
 }
 
-const minutosAHoras = async (totalMinutos) => {
-    const hrs = Math.floor(totalMinutos / 60);
-    const mins = totalMinutos % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
+
 /**
  * Consulta en la BD si el trabajador tiene ese día como libre
  */
