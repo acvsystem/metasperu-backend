@@ -1569,7 +1569,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         // --- CORRECCIÓN DE PRECISIÓN ---
         // Redondeamos el total trabajado al minuto más cercano para evitar el "minuto menos"
         // (Horas * 60 = minutos totales) -> redondeamos -> / 60 = horas decimales exactas
-        const totalRedondeado = Math.round(data.total / 60) % 60;
+        const totalRedondeado = Math.round(data.total * 60) / 60;
 
         let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
 
