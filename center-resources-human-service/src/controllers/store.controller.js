@@ -1545,6 +1545,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
 
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
+            console.log(reg.hrWorking);
             const minutos = Math.round((parseFloat(reg.hrWorking) || 0) * 60);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
