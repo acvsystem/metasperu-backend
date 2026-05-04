@@ -1546,7 +1546,7 @@ console.log(listaRegistros);
 
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
           
-            const minutos = calcularDiferenciaMinutos(reg.hrIn, reg.hrOut);
+            const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
             console.log(reg.dia,minutos);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
