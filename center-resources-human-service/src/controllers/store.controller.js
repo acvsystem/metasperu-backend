@@ -1487,7 +1487,7 @@ const calcularDiferenciaMinutos = (horaInicio, horaFin) => {
 };
 
 // Función para convertir minutos a formato legible "HH:mm"
-const minutosAHoras = (totalMinutos) => {
+const minutosAHoras = async (totalMinutos) => {
     const hrs = Math.floor(totalMinutos / 60);
     const mins = totalMinutos % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
@@ -1638,7 +1638,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     return resumenFullTime;
 }
 
-const minutosAHoras = (totalMinutos) => {
+const minutosAHoras = async (totalMinutos) => {
     const hrs = Math.floor(totalMinutos / 60);
     const mins = totalMinutos % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
