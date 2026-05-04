@@ -1727,8 +1727,10 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             SELECT ?, ?, ?, ?, ?, 0, 0, ?, NOW(), ?, ?
             WHERE NOT EXISTS (
                 SELECT 1 FROM tb_hora_extra_empleado 
-                WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA = ?
-            )
+                WHERE NRO_DOCUMENTO_EMPLEADO = ? 
+                -- Comparamos que la fecha guardada EMPIECE con la fecha que estamos procesando
+                AND FECHA LIKE CONCAT(?, '%')
+            );
         `, [
             nroDocumento,
             excesoTiempo,       // HR_EXTRA_ACUMULADO
