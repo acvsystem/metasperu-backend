@@ -1541,8 +1541,11 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const cajasExcluidas = ['9M1', '9M2', '9M3'];
 
         if (!cajasExcluidas.includes(reg.caja)) {
+
+
+
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
-            const minutos = Math.round((parseInt(reg.hrWorking) || 0) * 60);
+            const minutos = Math.round((parseFloat(reg.hrWorking) || 0) * 60);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
@@ -1572,7 +1575,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
         const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
-        console.log(data.totalMins);
+
+        console.log(minutosAHoras(data.totalMins));
         // Suma total efectiva en minutos (Exacta)
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
@@ -1634,7 +1638,11 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     return resumenFullTime;
 }
 
-
+const minutosAHoras = (totalMinutos) => {
+    const hrs = Math.floor(totalMinutos / 60);
+    const mins = totalMinutos % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+};
 /**
  * Consulta en la BD si el trabajador tiene ese día como libre
  */
