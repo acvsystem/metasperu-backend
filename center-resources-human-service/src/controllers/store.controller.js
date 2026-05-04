@@ -1578,11 +1578,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Enviamos a validar con un margen de seguridad
         const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + (0.5 / 60))); // +30 segundos de margen
-        console.log(1581, nivel);
+
+        const hrPapeleta = await hrPapeleta(fecha, data.nroDocumento);
+        console.log(hrPapeleta);
         const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
 
         // Sumamos y volvemos a redondear al minuto
-        let totalEfectivo = Math.round((totalRedondeado + horasPapeletaDecimal) * 60) / 60;
+        let totalEfectivo = Math.round((totalRedondeado + horasPapeletaDecimal + tiempoADecimal(hrPapeleta.horas)) * 60) / 60;
 
         if (esDiaLibre) {
             exceso = totalEfectivo;
@@ -1851,3 +1853,26 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
     }
 };
 
+const hrPapeleta = async (fecha, documento) => {
+    try {
+        // Combinamos ambas tablas en un solo JOIN
+        const query = `
+            SELECT * 
+            FROM tb_head_papeleta h
+            WHERE h.FECHA_DESDE = ? AND NRO_DOCUMENTO_EMPLEADO = ?
+            LIMIT 1;
+        `;
+
+        const [rows] = await pool.query(query, [fecha]);
+
+        // Si encontramos al menos un registro, el nivel es RRHH
+        return {
+            horas: ((rows || [])[0] || {}).HORA_SOLICITADA || '00:00'
+        };
+
+    } catch (error) {
+        console.error("Error al validar nivel de autorización:", error);
+        // Es mejor devolver null o un estado de error manejable
+        return { nivel: "ERROR" };
+    }
+};
