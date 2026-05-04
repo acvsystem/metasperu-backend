@@ -1523,8 +1523,9 @@ const generarNuevoCodigo = async (codigoTienda) => {
 };
 
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    const JORNADA_MAXIMA_DIARIA = 8.0;
-    const UMBRAL_PART_TIME_SEMANAL = 24.0;
+    // Definimos constantes en minutos para evitar errores de coma flotante
+    const JORNADA_MAXIMA_MINS = 8.0 * 60; // 480 min
+    const UMBRAL_PT_SEMANAL_MINS = 24.0 * 60; // 1440 min
     const MINIMO_PARA_REGISTRAR = 0.5;
     const MINIMO_PARA_REGISTRAR_PART_TIME = 0.25;
 
@@ -1533,27 +1534,28 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
 
-    // 1. Clasificación inicial
+    // 1. Clasificación inicial y conversión a MINUTOS
     listaRegistros.forEach(reg => {
         if (reg.dia === FECHA_HOY) return;
 
         const cajasExcluidas = ['9M1', '9M2', '9M3'];
 
         if (!cajasExcluidas.includes(reg.caja)) {
-            const horas = parseFloat(reg.hrWorking) || 0;
+            // Convertimos hrWorking (decimal) a minutos enteros redondeados
+            const minutos = Math.round((parseFloat(reg.hrWorking) || 0) * 60);
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
             if (esPartTime) {
                 if (!resumenPartTimeDias[reg.dia]) {
-                    resumenPartTimeDias[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento };
+                    resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
                 }
-                resumenPartTimeDias[reg.dia].total += horas;
+                resumenPartTimeDias[reg.dia].totalMins += minutos;
             } else {
                 if (!resumenFullTime[reg.dia]) {
-                    resumenFullTime[reg.dia] = { total: 0, nroDocumento: reg.nroDocumento, count: 0, especial: false };
+                    resumenFullTime[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento, count: 0, especial: false };
                 }
-                resumenFullTime[reg.dia].total += horas;
+                resumenFullTime[reg.dia].totalMins += minutos;
                 resumenFullTime[reg.dia].count += 1;
                 if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
             }
@@ -1562,36 +1564,28 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // 2. Procesar Full-Time (Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-        let exceso = 0;
+        let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
 
-        // --- CORRECCIÓN DE PRECISIÓN ---
-        // Redondeamos el total trabajado al minuto más cercano para evitar el "minuto menos"
-        // (Horas * 60 = minutos totales) -> redondeamos -> / 60 = horas decimales exactas
-        const totalRedondeado = Math.round(data.total * 60) / 60;
+        // Obtener datos externos
+        const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
+        const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
+        const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
-        let esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
+        // Suma total efectiva en minutos (Exacta)
+        const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
-        // Calculamos exceso preliminar con el valor redondeado
-        const excesoPreliminar = Math.max(0, totalRedondeado - JORNADA_MAXIMA_DIARIA);
-
-        // Enviamos a validar con un margen de seguridad
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminar + (0.5 / 60))); // +30 segundos de margen
-
-        const horasPapeleta = await hrPapeleta(fecha, data.nroDocumento);
-       
-        //const horasPapeletaDecimal = nivel.horas ? tiempoADecimal(nivel.horas) : 0;
-
-        // Sumamos y volvemos a redondear al minuto
-        let totalEfectivo = Math.round((totalRedondeado + tiempoADecimal(horasPapeleta.horas)) * 60) / 60;
+        // Validar nivel de autorización (SIN sumarle márgenes de segundos)
+        const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - JORNADA_MAXIMA_MINS);
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60));
 
         if (esDiaLibre) {
-            exceso = totalEfectivo;
+            excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
             esAprobacion = 1;
         } else {
-            exceso = Math.max(0, totalEfectivo - JORNADA_MAXIMA_DIARIA);
+            excesoMins = excesoPreliminarMins;
 
             if (data.count === 1) {
                 observacion = "Solo tiene 1 solo registro de marcacion";
@@ -1608,30 +1602,31 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             }
         }
 
-        // Redondeo final antes de guardar
-        exceso = Math.round(exceso * 60) / 60;
+        // Convertir minutos de exceso a horas decimales para BD (ej. 0.5, 1.25)
+        const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
-        if (exceso >= MINIMO_PARA_REGISTRAR) {
-            await guardarEnBD(data.nroDocumento, fecha, exceso, observacion, esAprobacion);
+        if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
+            await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
+    // 3. Procesar Part-Time (Semanal)
     const resumenPorRangoSemana = {};
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
         const rango = obtenerRangoSemana(dia);
         if (!resumenPorRangoSemana[rango]) {
-            resumenPorRangoSemana[rango] = { total: 0, nroDocumento: data.nroDocumento };
+            resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
         }
-        resumenPorRangoSemana[rango].total += data.total;
+        resumenPorRangoSemana[rango].totalMins += data.totalMins;
     }
 
-    // 3. Procesar Part-Time (Semanal)
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
-        const totalSemanal = Math.round(data.total * 60) / 60;
-        if (totalSemanal > UMBRAL_PART_TIME_SEMANAL) {
-            const excesoSemanal = Math.round((totalSemanal - UMBRAL_PART_TIME_SEMANAL) * 60) / 60;
-            if (excesoSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                await guardarEnBD(data.nroDocumento, rangoSemana, excesoSemanal);
+        if (data.totalMins > UMBRAL_PT_SEMANAL_MINS) {
+            const excesoMinsSemanal = data.totalMins - UMBRAL_PT_SEMANAL_MINS;
+            const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
+
+            if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
+                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal);
             }
         }
     }
