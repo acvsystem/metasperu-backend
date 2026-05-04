@@ -1546,7 +1546,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
             // Convertimos hrWorking (decimal) a minutos enteros redondeados
           
-            const minutos = calcularDiferenciaMinutos(reg.hrIn, reg.hrOut);
+            const minutos = minutosAHoras(calcularDiferenciaMinutos(curr.hrIn, curr.hrOut));
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
 
