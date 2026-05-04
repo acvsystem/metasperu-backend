@@ -1572,7 +1572,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
         const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
-
+        console.log(data.totalMins);
         // Suma total efectiva en minutos (Exacta)
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
