@@ -1723,8 +1723,8 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
-             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION, APROBADO)
-            SELECT ?, ?, ?, ?, ?, 0, 0, ?, NOW(), ?, ?, ?
+             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
+            SELECT ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?
             WHERE NOT EXISTS (
                 SELECT 1 FROM tb_hora_extra_empleado 
                 WHERE NRO_DOCUMENTO_EMPLEADO = ? 
@@ -1737,10 +1737,10 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             '00:00',            // HR_EXTRA_SOLICITADO
             excesoTiempo,       // HR_EXTRA_SOBRANTE
             estado,             // ESTADO
+            estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
             fechaRef,           // FECHA
             observacion,        // OBSERVACION
             isAprobacion,       // ISAPROBACION (nuevo valor)
-            estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
             nroDocumento,       // WHERE EXISTS
             fechaRef.split(' ')[0]            // WHERE EXISTS
         ]);
