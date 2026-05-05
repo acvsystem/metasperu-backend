@@ -1550,7 +1550,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
-            console.log(1553,reg.dia, esTurnoEspecial, reg.hrOut.split(' ')[1]);
+            console.log(1553,reg.nroDocumento,reg.dia, esTurnoEspecial, reg.hrOut.split(' ')[1]);
             if (esPartTime) {
                 if (!resumenPartTimeDias[reg.dia]) {
                     resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
