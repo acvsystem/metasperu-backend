@@ -1533,7 +1533,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
-    console.log(listaRegistros);
+
     // 1. Clasificación inicial y conversión a MINUTOS
     listaRegistros.forEach(reg => {
         if (reg.dia === FECHA_HOY) return;
@@ -1550,7 +1550,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut === '23:59:59' || reg.hrIn === '00:00:00';
-            console.log(reg.dia, esTurnoEspecial);
+            console.log(1553,reg.dia, esTurnoEspecial, reg.hrOut);
             if (esPartTime) {
                 if (!resumenPartTimeDias[reg.dia]) {
                     resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
