@@ -1740,7 +1740,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             fechaRef,           // FECHA
             observacion,        // OBSERVACION
             isAprobacion,       // ISAPROBACION (nuevo valor)
-            isAprobacion,
+            estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
             nroDocumento,       // WHERE EXISTS
             fechaRef.split(' ')[0]            // WHERE EXISTS
         ]);
