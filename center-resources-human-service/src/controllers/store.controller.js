@@ -1741,7 +1741,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             observacion,        // OBSERVACION
             isAprobacion,       // ISAPROBACION (nuevo valor)
             nroDocumento,       // WHERE EXISTS
-            fechaRef            // WHERE EXISTS
+            fechaRef.split(' ')[0]            // WHERE EXISTS
         ]);
     } catch (err) {
         console.error(`Error al insertar:`, err);
