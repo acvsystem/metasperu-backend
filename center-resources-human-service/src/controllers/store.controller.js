@@ -611,7 +611,7 @@ export const storeController = {
     },
     postUpdateScheduleStore: async (req, res) => {
         // Recibimos los mismos datos que en el registro
-        const { codigoTienda, fechaCabecera, rangoDias, datos } = req.body;
+        const { codigoTienda, fechaCabecera, rangoDias, datos, rango } = req.body;
 
         const n = (val) => (val === undefined || val === null ? null : val);
 
@@ -628,7 +628,7 @@ export const storeController = {
         try {
             await connection.beginTransaction();
 
-            const rango_fecha_old = rangoDias.split(" ").map(fecha => {
+            const rango_fecha_old = rango.split(" ").map(fecha => {
                 const [anio, mes, dia] = fecha.split("-");
                 // Convertimos a número y de vuelta a string para quitar ceros a la izquierda (ej. "04" -> "4")
                 return `${Number(dia)}-${Number(mes)}-${anio}`;
@@ -642,7 +642,7 @@ export const storeController = {
             const [existentes] = await connection.execute(
                 `SELECT ID_HORARIO FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)`,
-                [codigoTienda, rangoDias, rango_fecha_old]
+                [codigoTienda, rango, rango_fecha_old]
             );
             console.log(647, existentes);
             if (existentes.length > 0) {
