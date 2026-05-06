@@ -628,12 +628,19 @@ export const storeController = {
         try {
             await connection.beginTransaction();
 
+            const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
+                const [anio, mes, dia] = fecha.split("-");
+                // Convertimos a número y de vuelta a string para quitar ceros a la izquierda (ej. "04" -> "4")
+                return `${Number(dia)}-${Number(mes)}-${anio}`;
+            }).join(" ");
+
+
             // 1. LIMPIEZA: Buscamos los IDs de horarios existentes para ese rango y tienda para borrar sus hijos
             // Esto asegura que no queden registros huérfanos antes de insertar los nuevos.
             const [existentes] = await connection.execute(
                 `SELECT ID_HORARIO FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND FECHA = ?`,
-                [codigoTienda, fechaCabecera]
+             WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)`,
+                [codigoTienda, rangoDias, rango_fecha_old]
             );
 
             if (existentes.length > 0) {
