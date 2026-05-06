@@ -637,12 +637,14 @@ export const storeController = {
 
             // 1. LIMPIEZA: Buscamos los IDs de horarios existentes para ese rango y tienda para borrar sus hijos
             // Esto asegura que no queden registros huérfanos antes de insertar los nuevos.
+
+            console.log(641, rangoDias, rango_fecha_old);
             const [existentes] = await connection.execute(
                 `SELECT ID_HORARIO FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)`,
                 [codigoTienda, rangoDias, rango_fecha_old]
             );
-
+            console.log(647, existentes);
             if (existentes.length > 0) {
                 const idsABorrar = existentes.map(h => h.ID_HORARIO);
 
