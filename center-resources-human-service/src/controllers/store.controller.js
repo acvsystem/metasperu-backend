@@ -517,7 +517,7 @@ export const storeController = {
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, CARGO, FECHA, RANGO_DIAS 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ? OR RANGO_DIAS = ?
+             WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)
              ORDER BY FECHA ASC`,
                 [codigoTienda, rango_fecha, rango_fecha_old]
             );
