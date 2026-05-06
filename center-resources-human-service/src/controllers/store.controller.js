@@ -628,7 +628,7 @@ export const storeController = {
         try {
             await connection.beginTransaction();
 
-            const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
+            const rango_fecha_old = rangoDias.split(" ").map(fecha => {
                 const [anio, mes, dia] = fecha.split("-");
                 // Convertimos a número y de vuelta a string para quitar ceros a la izquierda (ej. "04" -> "4")
                 return `${Number(dia)}-${Number(mes)}-${anio}`;
