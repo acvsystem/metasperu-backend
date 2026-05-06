@@ -664,7 +664,7 @@ export const storeController = {
                 const [resCab] = await connection.execute(
                     `INSERT INTO tb_horario_property (FECHA, RANGO_DIAS, CARGO, CODIGO_TIENDA, ESTADO, DATETIME) 
                  VALUES (?, ?, ?, ?, 1, NOW())`,
-                    [n(fechaCabecera), n(rangoDias), n(item.cargo), n(codigoTienda)]
+                    [n(fechaCabecera), n(rango), n(item.cargo), n(codigoTienda)]
                 );
 
                 const idHorario = resCab.insertId;
