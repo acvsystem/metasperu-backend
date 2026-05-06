@@ -1589,7 +1589,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
-            esAprobacion = 1;
+            esAprobacion = 0;
         } else {
             excesoMins = excesoPreliminarMins;
 
