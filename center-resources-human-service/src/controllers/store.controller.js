@@ -506,14 +506,20 @@ export const storeController = {
         }
         const connection = await pool.getConnection();
 
+        const rango_fecha_old = entrada.split(" ").map(fecha => {
+            const [anio, mes, dia] = fecha.split("-");
+            // Convertimos a número y de vuelta a string para quitar ceros a la izquierda (ej. "04" -> "4")
+            return `${Number(dia)}-${Number(mes)}-${anio}`;
+        }).join(" ");
+        
         try {
             // 1. Obtener todas las cabeceras/cargos en el rango
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, CARGO, FECHA, RANGO_DIAS 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?
+             WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ? OR RANGO_DIAS = ?
              ORDER BY FECHA ASC`,
-                [codigoTienda, rango_fecha]
+                [codigoTienda, rango_fecha, rango_fecha_old]
             );
 
             const respuestaFinal = [];
@@ -1550,7 +1556,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
             const esPartTime = reg.tpAsociado === '**';
             const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
-            console.log(1553,reg.nroDocumento,reg.dia, esTurnoEspecial, reg.hrOut.split(' ')[1]);
+            console.log(1553, reg.nroDocumento, reg.dia, esTurnoEspecial, reg.hrOut.split(' ')[1]);
             if (esPartTime) {
                 if (!resumenPartTimeDias[reg.dia]) {
                     resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
