@@ -675,7 +675,7 @@ export const storeController = {
                             // Solo insertamos si hay texto real
                             await connection.execute(
                                 `INSERT INTO tb_observacion (ID_OBS_HORARIO, ID_OBS_DIAS, CODIGO_TIENDA, NOMBRE_COMPLETO, NRO_DOCUMENTO, OBSERVACION, FECHA_REGISTRO) 
-                             VALUES (?, ?, ?, ?, ?, ?)`,
+                             VALUES (?, ?, ?, ?, ?, ?, ?)`,
                                 [idHorario, mappingDias[d.id], n(codigoTienda), n(nt.nombre_completo), n(nt.nro_documento), n(nt.observacion), n(nt.fecha_registro)]
                             );
                         }
