@@ -61,7 +61,7 @@ export const configurationController = {
           IS_FREE_PAPELETA = VALUES(IS_FREE_PAPELETA),
           IS_ALERT_TRAFFIC_COUNTER = VALUES(IS_ALERT_TRAFFIC_COUNTER)
       `;
-                await db.execute(query, [
+                await pool.execute(query, [
                     tienda.id,
                     tienda.horarioPermiso ? 1 : 0,
                     tienda.papeletaPermiso ? 1 : 0,
@@ -86,7 +86,7 @@ export const configurationController = {
       LEFT JOIN tb_configuracion_horario_pap c ON t.ID_TIENDA = c.ID_TIENDA_HP
       ORDER BY t.DESCRIPCION ASC
     `;
-            const [rows] = await db.execute(query);
+            const [rows] = await pool.execute(query);
             res.json(rows);
         } catch (err) {
             res.status(500).json({ error: err.message });
