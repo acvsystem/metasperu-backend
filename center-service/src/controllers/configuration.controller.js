@@ -48,7 +48,7 @@ export const configurationController = {
         }
     },
     permissionsStore: async (req, res) => {
-        const { permissions } = req.body; // Array de tiendas desde Angular
+        const permissions = req.body; // Array de tiendas desde Angular
 
         try {
             for (let tienda of permissions) {
