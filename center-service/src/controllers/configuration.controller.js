@@ -73,7 +73,7 @@ export const configurationController = {
             res.status(500).json({ error: err.message });
         }
     },
-    gerPermissions: async () => {
+    gerPermissions: async (req, res) => {
         try {
             const query = `
       SELECT 
