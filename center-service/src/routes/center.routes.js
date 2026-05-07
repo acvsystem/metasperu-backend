@@ -36,4 +36,8 @@ router.post('/api/parameters/store', configurationController.postParametersStore
 // ---RUTA TEMPORAL DOCUMENTOS PENDIENTES SLACK
 router.get('/api/documentos-pendientes/:token', storeController.callUrlTemporalComprabantes);
 
+// ---RUTA CONFIGURACION SISTEMA
+router.post('/api/configuration/permissions/store', verifyToken, configurationController.permissionsStore);
+router.get('/api/configuration/permissions/store', verifyToken, configurationController.gerPermissions);
+
 export default router;

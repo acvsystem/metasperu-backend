@@ -46,5 +46,50 @@ export const configurationController = {
                 error: process.env.NODE_ENV === 'development' ? error : {}
             });
         }
+    },
+    permissionsStore: async (req, res) => {
+        const { permissions } = req.body; // Array de tiendas desde Angular
+
+        try {
+            for (let tienda of permissions) {
+                const query = `
+        INSERT INTO tb_configuracion_horario_pap 
+          (ID_TIENDA_HP, IS_FREE_HORARIO, IS_FREE_PAPELETA, IS_ALERT_TRAFFIC_COUNTER)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+          IS_FREE_HORARIO = VALUES(IS_FREE_HORARIO),
+          IS_FREE_PAPELETA = VALUES(IS_FREE_PAPELETA),
+          IS_ALERT_TRAFFIC_COUNTER = VALUES(IS_ALERT_TRAFFIC_COUNTER)
+      `;
+                await db.execute(query, [
+                    tienda.id,
+                    tienda.horarioPermiso ? 1 : 0,
+                    tienda.papeletaPermiso ? 1 : 0,
+                    tienda.avisosTraffic ? 1 : 0
+                ]);
+            }
+            res.json({ message: 'Configuración guardada exitosamente' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+    gerPermissions: async () => {
+        try {
+            const query = `
+      SELECT 
+        t.ID_TIENDA as id, 
+        t.DESCRIPCION as nombre,
+        COALESCE(c.IS_FREE_HORARIO, 0) as horarioPermiso,
+        COALESCE(c.IS_FREE_PAPELETA, 0) as papeletaPermiso,
+        COALESCE(c.IS_ALERT_TRAFFIC_COUNTER, 0) as avisosTraffic
+      FROM tb_lista_tienda t
+      LEFT JOIN tb_configuracion_horario_pap c ON t.ID_TIENDA = c.ID_TIENDA_HP
+      ORDER BY t.DESCRIPCION ASC
+    `;
+            const [rows] = await db.execute(query);
+            res.json(rows);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
     }
 }
