@@ -36,8 +36,11 @@ router.post('/api/parameters/store', configurationController.postParametersStore
 // ---RUTA TEMPORAL DOCUMENTOS PENDIENTES SLACK
 router.get('/api/documentos-pendientes/:token', storeController.callUrlTemporalComprabantes);
 
-// ---RUTA CONFIGURACION SISTEMA
+// ---RUTA CONFIGURACION PERMISO ASIGNACION TIENDA
 router.post('/api/configuration/permissions/store', verifyToken, configurationController.permissionsStore);
 router.get('/api/configuration/permissions/store', verifyToken, configurationController.gerPermissions);
 
+// ---RUTA CONFIGURACION MENU PERMISO
+router.get('/api/configuration/permissions/menu/:nivel', verifyToken, configurationController.gerPermissionsMenu);
+router.get('/api/configuration/menu', verifyToken, configurationController.getMenu);
 export default router;

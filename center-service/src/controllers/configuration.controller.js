@@ -91,5 +91,38 @@ export const configurationController = {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+    },
+    gerPermissionsMenu: async (req, res) => {
+        const { nivel } = req.params;
+
+        try {
+            const query = `
+      SELECT ID_MENU_PS as id
+      FROM tb_permiso_sistema 
+      WHERE NIVEL = ?`;
+
+            const [rows] = await pool.execute(query, [nivel]);
+
+            // Devolvemos solo los IDs para facilitar la comparación en Angular
+            res.json(rows);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al obtener permisos' });
+        }
+    },
+    getMenu: async (req, res) => {
+        try {
+            const query = `
+      SELECT ID_MENU as id,NOMBRE_MENU as menu 
+      FROM tb_menu_sistema;`;
+
+            const [rows] = await pool.execute(query);
+
+            // Devolvemos solo los IDs para facilitar la comparación en Angular
+            res.json(rows);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error al obtener permisos' });
+        }
     }
 }
