@@ -43,4 +43,11 @@ router.get('/api/configuration/permissions/store', verifyToken, configurationCon
 // ---RUTA CONFIGURACION MENU PERMISO
 router.get('/api/configuration/permissions/menu/:nivel', verifyToken, configurationController.gerPermissionsMenu);
 router.get('/api/configuration/menu', verifyToken, configurationController.getMenu);
+
+// ---RUTA CONFIGURACION USUARIOS
+router.get('/api/configuration/usuarios', verifyToken, configurationController.getUsuarios);
+router.post('/api/configuration/usuario/create', verifyToken, configurationController.getUsuariosCreate);
+router.post('/api/configuration/usuario/update/:id', verifyToken, configurationController.getUsuarioUpdate);
+router.post('/api/configuration/usuario/delete/:id', verifyToken, configurationController.getUsuariosDelete);
+
 export default router;

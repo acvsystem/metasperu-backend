@@ -94,7 +94,7 @@ export const configurationController = {
     },
     gerPermissionsMenu: async (req, res) => {
         const { nivel } = req.params;
-
+        console.log(nivel);
         try {
             const query = `
       SELECT ID_MENU_PS as id
@@ -123,6 +123,68 @@ export const configurationController = {
         } catch (err) {
             console.error(err);
             res.status(500).json({ error: 'Error al obtener permisos' });
+        }
+    },
+    getUsuarios: async (req, res) => {
+        try {
+            // Excluimos las contraseñas por seguridad
+            const [rows] = await db.execute('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE FROM tb_login');
+            res.json(rows);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+    getUsuariosCreate: async (req, res) => {
+        const { USUARIO, PASSWORD, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE } = req.body;
+
+        try {
+            // Encriptar password para PASSWORD_NW
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(PASSWORD, salt);
+
+            const query = `
+        INSERT INTO tb_login (USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD_NW) 
+        VALUES (?, ?, ?, ?, ?, ?)`;
+
+            const [result] = await db.execute(query, [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, hashedPassword]);
+
+            res.status(201).json({ id: result.insertId, message: 'Usuario creado con éxito' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+    getUsuarioUpdate: async (req, res) => {
+        const { id } = req.params;
+        const { USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD } = req.body;
+
+        try {
+            let query = `UPDATE tb_login SET USUARIO=?, EMAIL=?, NIVEL=?, DEFAULT_PAGE=?, CODE_STORE=?`;
+            let params = [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE];
+
+            // Si el usuario envió una nueva contraseña, la re-encriptamos
+            if (PASSWORD) {
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(PASSWORD, salt);
+                query += `, PASSWORD_NW=?`;
+                params.push(hashedPassword);
+            }
+
+            query += ` WHERE ID_LOGIN=?`;
+            params.push(id);
+
+            await db.execute(query, params);
+            res.json({ message: 'Usuario actualizado' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    },
+    getUsuariosDelete: async (req, res) => {
+        const { id } = req.params;
+        try {
+            await db.execute('DELETE FROM tb_login WHERE ID_LOGIN = ?', [id]);
+            res.json({ message: 'Usuario eliminado correctamente' });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
     }
 }
