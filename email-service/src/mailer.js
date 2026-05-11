@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const passwordBrevo = process.env.MAIL_PASS;
 
-const transporter = {
+const configuration = {
     service: "Gmail",
     port: 465,
     secure: true,
@@ -16,9 +16,9 @@ const transporter = {
     }
 }
 
-console.log(transporter, `${passwordBrevo}`);
+console.log(configuration, `${passwordBrevo}`);
 
-const transporter = nodemailer.createTransport(transporter);
+const transporter = nodemailer.createTransport(configuration);
 
 
 
