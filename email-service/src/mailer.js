@@ -14,6 +14,16 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+console.log({
+    host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
+    port: process.env.MAIL_PORT,                // Puerto para SSL
+    secure: true,             // true para puerto 465
+    auth: {
+        user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
+        pass: process.env.MAIL_PASS
+    }
+});
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const viewPath = path.resolve(__dirname, './templates/');
