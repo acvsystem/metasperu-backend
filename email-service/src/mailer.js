@@ -6,22 +6,19 @@ import { fileURLToPath } from 'url';
 
 const passwordBrevo = process.env.MAIL_PASS;
 
-
-// --- CONFIGURACIÓN PARA ZOHO ---
-const configBevo = {
-    host: 'smtp-relay.brevo.com', // Servidor SMTP de Zoho para cuentas profesionales
-    port: 587,                // Puerto para SSL
-    secure: false,             // true para puerto 465
+const transporter = {
+    service: "Gmail",
+    port: 465,
+    secure: true,
     auth: {
-        user: 'aaf3a3001@smtp-brevo.com', // Tu nuevo correo de Zoho
+        user: `${process.env.MAIL_USER}`,
         pass: `${passwordBrevo}`
-    },
-    tls: {
-        rejectUnauthorized: false
     }
-};
-console.log(configBevo, `${passwordBrevo}`);
-const transporter = nodemailer.createTransport(configBevo);
+}
+
+console.log(transporter, `${passwordBrevo}`);
+
+const transporter = nodemailer.createTransport(transporter);
 
 
 
@@ -64,8 +61,6 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
-            const passwordBrevo = process.env.MAIL_PASS;
-            console.log(configBevo, `${passwordBrevo}`);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
