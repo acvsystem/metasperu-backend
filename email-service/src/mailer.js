@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 // --- CONFIGURACIÓN PARA ZOHO ---
 const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
-    port: process.env.MAIL_PORT,                // Puerto para SSL
+    port: parseInt(process.env.MAIL_PORT),                // Puerto para SSL
     secure: false,             // true para puerto 465
     auth: {
         user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
@@ -60,7 +60,7 @@ export const mailer = {
             console.log('CONFIGURACION', {
                 host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
                 port: process.env.MAIL_PORT,                // Puerto para SSL
-                secure: true,             // true para puerto 465
+                secure: false,             // true para puerto 465
                 auth: {
                     user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
                     pass: process.env.MAIL_PASS
