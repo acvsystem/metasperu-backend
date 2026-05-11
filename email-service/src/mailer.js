@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 
 // --- CONFIGURACIÓN PARA ZOHO ---
-const transporter = nodemailer.createTransport({
+const configBevo = {
     host: 'smtp-relay.brevo.com', // Servidor SMTP de Zoho para cuentas profesionales
     port: 587,                // Puerto para SSL
     secure: false,             // true para puerto 465
@@ -17,7 +17,10 @@ const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     }
-});
+};
+
+console.log(configBevo);
+const transporter = nodemailer.createTransport(configBevo);
 
 
 
@@ -60,18 +63,7 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
-            console.log({
-                host: 'smtp-relay.brevo.com', // Servidor SMTP de Zoho para cuentas profesionales
-                port: 587,                // Puerto para SSL
-                secure: false,             // true para puerto 465
-                auth: {
-                    user: 'aaf3a3001@smtp-brevo.com', // Tu nuevo correo de Zoho
-                    pass: `${process.env.MAIL_PASS}`
-                },
-                tls: {
-                    rejectUnauthorized: false
-                }
-            });
+            console.log(configBevo);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
