@@ -128,7 +128,7 @@ export const configurationController = {
     getUsuarios: async (req, res) => {
         try {
             // Excluimos las contraseñas por seguridad
-            const [rows] = await db.execute('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE FROM tb_login');
+            const [rows] = await pool.execute('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE FROM tb_login');
             res.json(rows);
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -146,7 +146,7 @@ export const configurationController = {
         INSERT INTO tb_login (USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD_NW) 
         VALUES (?, ?, ?, ?, ?, ?)`;
 
-            const [result] = await db.execute(query, [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, hashedPassword]);
+            const [result] = await pool.execute(query, [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, hashedPassword]);
 
             res.status(201).json({ id: result.insertId, message: 'Usuario creado con éxito' });
         } catch (err) {
@@ -172,7 +172,7 @@ export const configurationController = {
             query += ` WHERE ID_LOGIN=?`;
             params.push(id);
 
-            await db.execute(query, params);
+            await pool.execute(query, params);
             res.json({ message: 'Usuario actualizado' });
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -181,7 +181,7 @@ export const configurationController = {
     getUsuariosDelete: async (req, res) => {
         const { id } = req.params;
         try {
-            await db.execute('DELETE FROM tb_login WHERE ID_LOGIN = ?', [id]);
+            await pool.execute('DELETE FROM tb_login WHERE ID_LOGIN = ?', [id]);
             res.json({ message: 'Usuario eliminado correctamente' });
         } catch (err) {
             res.status(500).json({ error: err.message });
