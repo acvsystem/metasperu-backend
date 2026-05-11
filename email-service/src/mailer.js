@@ -3,15 +3,7 @@ import hbs from 'nodemailer-express-handlebars';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-console.log('CONFIGURACION',{
-    host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
-    port: process.env.MAIL_PORT,                // Puerto para SSL
-    secure: true,             // true para puerto 465
-    auth: {
-        user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
-        pass: process.env.MAIL_PASS
-    }
-});
+
 
 // --- CONFIGURACIÓN PARA ZOHO ---
 const transporter = nodemailer.createTransport({
@@ -65,6 +57,15 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
+            console.log('CONFIGURACION', {
+                host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
+                port: process.env.MAIL_PORT,                // Puerto para SSL
+                secure: true,             // true para puerto 465
+                auth: {
+                    user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
+                    pass: process.env.MAIL_PASS
+                }
+            });
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
