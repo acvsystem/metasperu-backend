@@ -5,17 +5,6 @@ import amqp from 'amqplib';
 async function startWorker() {
     try {
 
-        console.log('CONFIGURACION', {
-            host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
-            port: process.env.MAIL_PORT,                // Puerto para SSL
-            secure: true,             // true para puerto 465
-            auth: {
-                user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
-                pass: process.env.MAIL_PASS
-            }
-        });
-
-
         // 1. Conexión al servidor de mensajería (RabbitMQ)
         const connection = await amqp.connect('amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672');
         const channel = await connection.createChannel();
