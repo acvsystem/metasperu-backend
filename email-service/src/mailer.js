@@ -5,12 +5,12 @@ import { fileURLToPath } from 'url';
 
 // --- CONFIGURACIÓN PARA ZOHO ---
 const transporter = nodemailer.createTransport({
-    host: "smtppro.zoho.com", // Servidor SMTP de Zoho para cuentas profesionales
-    port: 465,                // Puerto para SSL
+    host: process.env.MAIL_HOST, // Servidor SMTP de Zoho para cuentas profesionales
+    port: process.env.MAIL_PORT,                // Puerto para SSL
     secure: true,             // true para puerto 465
     auth: {
-        user: 'notificacion@metasperu.net.pe', // Tu nuevo correo de Zoho
-        pass: 'nPUUjwfZg0qL'
+        user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
+        pass: process.env.MAIL_PASS
     }
 });
 
