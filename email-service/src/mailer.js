@@ -60,7 +60,7 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
-            console.log(process.env.MAIL_PASS);
+            console.log(process.env);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
