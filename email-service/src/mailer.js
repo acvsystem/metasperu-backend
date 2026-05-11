@@ -13,6 +13,9 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.MAIL_USER, // Tu nuevo correo de Zoho
         pass: process.env.MAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 
