@@ -42,7 +42,7 @@ transporter.use('compile', hbs({
 export const mailer = {
     sendMail: async (to, subject, template, context, archivo = null) => {
         let mailOptions = {
-            from: '"Metas Perú" <notificacion@metasperu.net.pe>', // DEBE coincidir con el user de auth
+            from: '"Metas Perú" <itperu@metasperu.com>', // DEBE coincidir con el user de auth
             to: to,
             subject: subject,
             template: template,
