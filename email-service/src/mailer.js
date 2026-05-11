@@ -19,7 +19,7 @@ const configBevo = {
     }
 };
 
-console.log(configBevo);
+console.log(configBevo, `${process.env.MAIL_PASS}`);
 const transporter = nodemailer.createTransport(configBevo);
 
 
@@ -63,7 +63,7 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
-            console.log(configBevo);
+            console.log(configBevo, `${process.env.MAIL_PASS}`);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
