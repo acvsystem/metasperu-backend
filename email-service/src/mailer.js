@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     secure: true,             // true para puerto 465
     auth: {
         user: 'notificacion@metasperu.net.pe', // Tu nuevo correo de Zoho
-        pass: 'J4s0nd34d$$@'  // La contraseña de aplicación generada
+        pass: 'nPUUjwfZg0qL'
     }
 });
 
