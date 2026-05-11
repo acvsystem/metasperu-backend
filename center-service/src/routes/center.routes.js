@@ -47,7 +47,7 @@ router.get('/api/configuration/menu', verifyToken, configurationController.getMe
 // ---RUTA CONFIGURACION USUARIOS
 router.get('/api/configuration/usuarios', verifyToken, configurationController.getUsuarios);
 router.post('/api/configuration/usuario/create', verifyToken, configurationController.getUsuariosCreate);
-router.post('/api/configuration/usuario/update/:id', verifyToken, configurationController.getUsuarioUpdate);
+router.post('/api/configuration/usuario/update', verifyToken, configurationController.getUsuarioUpdate);
 router.post('/api/configuration/usuario/delete', verifyToken, configurationController.delUsuariosDelete);
 
 export default router;

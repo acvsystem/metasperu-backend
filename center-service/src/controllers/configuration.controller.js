@@ -154,8 +154,7 @@ export const configurationController = {
         }
     },
     getUsuarioUpdate: async (req, res) => {
-        const { id } = req.params;
-        const { USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD } = req.body;
+        const { ID, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD } = req.body;
 
         try {
             let query = `UPDATE tb_login SET USUARIO=?, EMAIL=?, NIVEL=?, DEFAULT_PAGE=?, CODE_STORE=?`;
@@ -170,7 +169,7 @@ export const configurationController = {
             }
 
             query += ` WHERE ID_LOGIN=?`;
-            params.push(id);
+            params.push(ID);
 
             await pool.execute(query, params);
             res.json({ message: 'Usuario actualizado' });
