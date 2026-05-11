@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const passwordBrevo = process.env.MAIL_PASS;
-console.log(configBevo, `${passwordBrevo}`);
+
 
 // --- CONFIGURACIÓN PARA ZOHO ---
 const configBevo = {
@@ -19,7 +19,7 @@ const configBevo = {
         rejectUnauthorized: false
     }
 };
-
+console.log(configBevo, `${passwordBrevo}`);
 const transporter = nodemailer.createTransport(configBevo);
 
 
