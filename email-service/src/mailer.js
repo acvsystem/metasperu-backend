@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
     secure: false,             // true para puerto 465
     auth: {
         user: 'aaf3a3001@smtp-brevo.com', // Tu nuevo correo de Zoho
-        pass: process.env.MAIL_PASS
+        pass: `${process.env.MAIL_PASS}`
     },
     tls: {
         rejectUnauthorized: false
