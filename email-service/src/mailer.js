@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 // --- CONFIGURACIÓN PARA ZOHO ---
 const transporter = nodemailer.createTransport({
-    host: "smtppro.zoho.com", // Servidor SMTP de Zoho para cuentas profesionales
+    host: "smtppro.net.pe", // Servidor SMTP de Zoho para cuentas profesionales
     port: 465,                // Puerto para SSL
     secure: true,             // true para puerto 465
     auth: {
