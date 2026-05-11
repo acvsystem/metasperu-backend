@@ -178,8 +178,8 @@ export const configurationController = {
             res.status(500).json({ error: err.message });
         }
     },
-    getUsuariosDelete: async (req, res) => {
-        const { id } = req.params;
+    delUsuariosDelete: async (req, res) => {
+        const { id } = req.body;
         try {
             await pool.execute('DELETE FROM tb_login WHERE ID_LOGIN = ?', [id]);
             res.json({ message: 'Usuario eliminado correctamente' });
