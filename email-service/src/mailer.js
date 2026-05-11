@@ -3,7 +3,8 @@ import hbs from 'nodemailer-express-handlebars';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-
+const passwordBrevo = process.env.MAIL_PASS;
+console.log(configBevo, `${passwordBrevo}`);
 
 // --- CONFIGURACIÓN PARA ZOHO ---
 const configBevo = {
@@ -12,14 +13,13 @@ const configBevo = {
     secure: false,             // true para puerto 465
     auth: {
         user: 'aaf3a3001@smtp-brevo.com', // Tu nuevo correo de Zoho
-        pass: `${process.env.MAIL_PASS}`
+        pass: `${passwordBrevo}`
     },
     tls: {
         rejectUnauthorized: false
     }
 };
 
-console.log(configBevo, `${process.env.MAIL_PASS}`);
 const transporter = nodemailer.createTransport(configBevo);
 
 
@@ -63,7 +63,7 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
-            console.log(configBevo, `${process.env.MAIL_PASS}`);
+            console.log(configBevo, `${passwordBrevo}`);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
         }
