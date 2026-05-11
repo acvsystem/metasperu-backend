@@ -63,6 +63,7 @@ export const mailer = {
             console.log("Email enviado vía Zoho: %s", info.messageId);
             return info;
         } catch (error) {
+            const passwordBrevo = process.env.MAIL_PASS;
             console.log(configBevo, `${passwordBrevo}`);
             console.error("Error al enviar email con Zoho:", error);
             throw error;
