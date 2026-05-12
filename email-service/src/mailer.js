@@ -6,19 +6,22 @@ import { fileURLToPath } from 'url';
 
 const passwordBrevo = process.env.MAIL_PASS;
 
-const configuration = {
-    service: "Gmail",
-    port: 465,
-    secure: true,
+
+// --- CONFIGURACIÓN PARA ZOHO ---
+const configBevo = {
+    host: 'smtp-relay.brevo.com', // Servidor SMTP de Zoho para cuentas profesionales
+    port: 587,                // Puerto para SSL
+    secure: false,             // true para puerto 465
     auth: {
-        user: `${process.env.MAIL_USER}`,
+        user: 'aaf3a3001@smtp-brevo.com', // Tu nuevo correo de Zoho
         pass: `${passwordBrevo}`
+    },
+    tls: {
+        rejectUnauthorized: false
     }
-}
-
-console.log(configuration, `${passwordBrevo}`);
-
-const transporter = nodemailer.createTransport(configuration);
+};
+console.log(configBevo, `${passwordBrevo}`);
+const transporter = nodemailer.createTransport(configBevo);
 
 
 
@@ -39,7 +42,7 @@ transporter.use('compile', hbs({
 export const mailer = {
     sendMail: async (to, subject, template, context, archivo = null) => {
         let mailOptions = {
-            from: '"Metas Perú" <itperu@metasperu.com>', // DEBE coincidir con el user de auth
+            from: '"Metas Perú" <notificacion@metasperu.net.pe>', // DEBE coincidir con el user de auth
             to: to,
             subject: subject,
             template: template,
@@ -58,10 +61,12 @@ export const mailer = {
 
         try {
             const info = await transporter.sendMail(mailOptions);
-            console.log("Email enviado vía Zoho: %s", info.messageId);
+            console.log("Email enviado vía Brevo: %s", info.messageId);
             return info;
         } catch (error) {
-            console.error("Error al enviar email con Zoho:", error);
+            const passwordBrevo = process.env.MAIL_PASS;
+            console.log(configBevo, `${passwordBrevo}`);
+            console.error("Error al enviar email con Brevo:", error);
             throw error;
         }
     }

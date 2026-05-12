@@ -114,12 +114,20 @@ export const initSocket = (server) => {
                         );
 
                         emailService.pushToEmailQueue({
-                            email: ['andrecanalesv@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
+                            email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
                             variables: { tcSistema: `0.000`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
                         });
                     } else if (ventaRetail === ventaSunat) {
+
+                        emailService.pushToEmailQueue({
+                            email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com'],
+                            subject: `Correcta Tipo Cambio FRONT RETAIL`,
+                            template: 'alertaDiffTipoChambio',
+                            variables: { tcSistema: `${ventaRetail.toFixed(3)}`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
+                        });
+
                         await extraServices.enviarSlack(
                             `✅ *Sincronización Correcta*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n*Sunat:* S/ ${ventaSunat.toFixed(3)}`,
                             "Comparación de Tipo de Cambio"
@@ -132,7 +140,7 @@ export const initSocket = (server) => {
                         );
 
                         emailService.pushToEmailQueue({
-                            email: ['andrecanalesv@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
+                            email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
                             variables: { tcSistema: `${ventaRetail.toFixed(3)}`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
