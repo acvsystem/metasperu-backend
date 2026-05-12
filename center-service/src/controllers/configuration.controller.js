@@ -203,7 +203,7 @@ export const configurationController = {
             return res.status(400).json({ message: 'Datos incompletos' });
         }
 
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
