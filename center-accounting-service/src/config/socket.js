@@ -78,6 +78,13 @@ export const initSocket = (server) => {
                 let fechaHoy = new Date().toISOString().split('T')[0]; // Fecha actual por defecto
                 let cotizacionRetail = 0.00;
 
+                emailService.pushToEmailQueue({
+                    email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com'],
+                    subject: `Correcta Tipo Cambio FRONT RETAIL`,
+                    template: 'alertaDiffTipoChambio',
+                    variables: { tcSistema: ``, tcSunat: ``, fecha: fechaHoy }
+                });
+
                 // 1. Normalización de datos
                 if (data.exchangeRate) {
                     try {
@@ -120,13 +127,6 @@ export const initSocket = (server) => {
                             variables: { tcSistema: `0.000`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
                         });
                     } else if (ventaRetail === ventaSunat) {
-
-                        emailService.pushToEmailQueue({
-                            email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com'],
-                            subject: `Correcta Tipo Cambio FRONT RETAIL`,
-                            template: 'alertaDiffTipoChambio',
-                            variables: { tcSistema: `${ventaRetail.toFixed(3)}`, tcSunat: `${ventaSunat.toFixed(3)}`, fecha: fechaHoy }
-                        });
 
                         await extraServices.enviarSlack(
                             `✅ *Sincronización Correcta*\n*Fecha:* ${fechaHoy}\n*FrontRetail:* S/ ${ventaRetail.toFixed(3)}\n*Sunat:* S/ ${ventaSunat.toFixed(3)}`,
