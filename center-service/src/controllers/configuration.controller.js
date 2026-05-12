@@ -339,7 +339,7 @@ export const configurationController = {
                 return res.json(rows[0]);
             } else {
                 // Caso: Listar todas las tiendas para la tabla general
-                const query = `SELECT * FROM tb_parametros_tienda ORDER BY ID_PARAMETROS DESC`;
+                const query = `SELECT * FROM tb_parametros_tienda WHERE IS_PRINCIPAL_SERVER = 1 ORDER BY ID_PARAMETROS DESC`;
                 const [rows] = await pool.query(query);
 
                 return res.json(rows);
