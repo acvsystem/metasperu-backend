@@ -50,5 +50,6 @@ router.post('/api/configuration/usuario/create', verifyToken, configurationContr
 router.post('/api/configuration/usuario/update', verifyToken, configurationController.getUsuarioUpdate);
 router.post('/api/configuration/usuario/delete', verifyToken, configurationController.delUsuariosDelete);
 router.post('/api/configuration/usuarios/permissions/store', verifyToken, configurationController.gerPermissionsUserStore);
+router.post('/api/configuration/usuarios/asing/permissions/store', verifyToken, configurationController.postAsigPermissionsUserStore);
 
 export default router;
