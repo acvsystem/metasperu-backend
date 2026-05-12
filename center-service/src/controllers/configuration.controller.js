@@ -322,6 +322,88 @@ export const configurationController = {
         } finally {
             connection.release();
         }
-    }
+    },
+    obtenerParametrosStore: async (req, res) => {
+        const { id } = req.params;
 
+        try {
+            if (id) {
+                // Caso: Obtener una tienda específica por ID
+                const query = `SELECT * FROM tb_parametros_tienda WHERE ID_PARAMETROS = ?`;
+                const [rows] = await pool.query(query, [id]);
+
+                if (rows.length === 0) {
+                    return res.status(404).json({ message: 'Parámetros no encontrados' });
+                }
+
+                return res.json(rows[0]);
+            } else {
+                // Caso: Listar todas las tiendas para la tabla general
+                const query = `SELECT * FROM tb_parametros_tienda ORDER BY ID_PARAMETROS DESC`;
+                const [rows] = await pool.query(query);
+
+                return res.json(rows);
+            }
+        } catch (error) {
+            console.error("Error en GET parametros:", error);
+            res.status(500).json({
+                message: 'Error al obtener los datos de la base de datos',
+                error: error.message
+            });
+        }
+    },
+
+    // 1. INSERTAR (CREATE)
+    crearParametrosTienda: async (req, res) => {
+        const data = req.body;
+        try {
+            const query = `INSERT INTO tb_parametros_tienda SET ?`;
+            const [result] = await pool.query(query, [data]);
+
+            res.status(201).json({
+                message: 'Configuración de tienda registrada',
+                id: result.insertId
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Error al registrar parámetros', error: error.message });
+        }
+    },
+
+    // 2. ACTUALIZAR (UPDATE)
+    actualizarParametrosTienda: async (req, res) => {
+        const { id } = req.params;
+        const data = req.body;
+        try {
+            const query = `UPDATE tb_parametros_tienda SET ? WHERE ID_PARAMETROS = ?`;
+            const [result] = await pool.query(query, [data, id]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Configuración no encontrada' });
+            }
+
+            res.json({ message: 'Configuración actualizada correctamente' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Error al actualizar parámetros' });
+        }
+    },
+
+    // 3. ELIMINAR (DELETE)
+    eliminarParametrosTienda: async (req, res) => {
+        const { id } = req.params;
+        try {
+            const query = `DELETE FROM tb_parametros_tienda WHERE ID_PARAMETROS = ?`;
+            const [result] = await pool.query(query, [id]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'El registro no existe' });
+            }
+
+            res.json({ message: 'Configuración eliminada exitosamente' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Error al eliminar parámetros' });
+        }
+    }
 }

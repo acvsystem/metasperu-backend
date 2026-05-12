@@ -53,4 +53,10 @@ router.post('/api/configuration/usuarios/permissions/store', verifyToken, config
 router.post('/api/configuration/usuarios/asing/permissions/store', verifyToken, configurationController.postAsigPermissionsUserStore);
 router.post('/api/configuration/usuarios/asing/menu', verifyToken, configurationController.getAsingMenuUser);
 
+// ---RUTA PARAMETROS TIENDA
+router.get('/api/parameters/store/create', verifyToken, configurationController.crearParametrosTienda);
+router.get('/api/parameters/store/:id?', verifyToken, configurationController.obtenerParametrosStore);
+router.put('/api/parameters/store/actualizar/:id', verifyToken, configurationController.actualizarParametrosTienda);
+router.delete('/api/parameters/store/eliminar/:id', verifyToken, configurationController.eliminarParametrosTienda);
+
 export default router;
