@@ -197,39 +197,65 @@ export const configurationController = {
         }
     },
     postAsigPermissionsUserStore: async (req, res) => {
+        const { ID_USUARIO, TIENDAS } = req.body; // TIENDAS: [ {id: 1, nombre: 'Tienda A'}, ... ]
 
-        const { ID_USUARIO, TIENDAS } = req.body;
-
-        if (!ID_USUARIO || !TIENDAS || !Array.isArray(TIENDAS)) {
-            return res.status(400).json({ message: 'Datos inválidos' });
+        if (!ID_USUARIO || !TIENDAS) {
+            return res.status(400).json({ message: 'Datos incompletos' });
         }
 
-        try {
-            // Preparamos los valores: [ [user, tienda, desc], [user, tienda, desc] ]
-            const values = TIENDAS.map(t => [ID_USUARIO, t.id, t.nombre]);
+        const connection = await db.getConnection();
 
-            if (values.length === 0) {
-                return res.json({ message: 'No hay tiendas para procesar' });
+        try {
+            await connection.beginTransaction();
+
+            // 1. Obtener las tiendas que el usuario YA tiene asignadas actualmente
+            const [rowsActuales] = await connection.query(
+                'SELECT ID_TIENDA_TASG FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG = ?',
+                [ID_USUARIO]
+            );
+            const idsActuales = rowsActuales.map(row => row.ID_TIENDA_TASG);
+            const idsNuevos = TIENDAS.map(t => t.id);
+
+            // 2. Identificar qué IDs borrar (están en la DB pero no en el nuevo envío)
+            const idsAEliminar = idsActuales.filter(id => !idsNuevos.includes(id));
+
+            // 3. Identificar qué IDs insertar (están en el envío pero no en la DB)
+            const tiendasAInsertar = TIENDAS.filter(t => !idsActuales.includes(t.id));
+
+            // --- Ejecutar Cambios ---
+
+            // A. Eliminar los que ya no sobran
+            if (idsAEliminar.length > 0) {
+                await connection.query(
+                    'DELETE FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG = ? AND ID_TIENDA_TASG IN (?)',
+                    [ID_USUARIO, idsAEliminar]
+                );
             }
 
-            // INSERT IGNORE: Si el par (usuario, tienda) ya existe, no hace nada y pasa al siguiente
-            const query = `
-            INSERT IGNORE INTO tb_usuario_tiendas_asignadas 
-            (ID_USUARIO_TASG, ID_TIENDA_TASG, DESCRIPCION_TIENDA) 
-            VALUES ?
-        `;
+            // B. Insertar los nuevos
+            if (tiendasAInsertar.length > 0) {
+                const values = tiendasAInsertar.map(t => [ID_USUARIO, t.id, t.nombre]);
+                await connection.query(
+                    'INSERT INTO tb_usuario_tiendas_asignadas (ID_USUARIO_TASG, ID_TIENDA_TASG, DESCRIPCION_TIENDA) VALUES ?',
+                    [values]
+                );
+            }
 
-            const [result] = await pool.query(query, [values]);
+            await connection.commit();
 
             res.status(200).json({
-                message: 'Proceso completado',
-                insertados: result.affectedRows, // Cuántos eran realmente nuevos
-                omitidos: values.length - result.affectedRows // Cuántos ya estaban asignados
+                message: 'Sincronización exitosa',
+                eliminados: idsAEliminar.length,
+                insertados: tiendasAInsertar.length,
+                mantenidos: idsActuales.length - idsAEliminar.length
             });
 
         } catch (error) {
-            console.error("Error en asignación:", error);
-            res.status(500).json({ message: 'Error al asignar tiendas' });
+            await connection.rollback();
+            console.error("Error sincronizando tiendas:", error);
+            res.status(500).json({ message: 'Error en el servidor' });
+        } finally {
+            connection.release();
         }
     }
 
