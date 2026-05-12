@@ -114,7 +114,7 @@ export const configurationController = {
     getMenu: async (req, res) => {
         try {
             const query = `
-      SELECT ID_MENU as id,NOMBRE_MENU as menu 
+      SELECT ID_MENU as id,NOMBRE_MENU as menu,RUTA as ruta 
       FROM tb_menu_sistema;`;
 
             const [rows] = await pool.execute(query);
