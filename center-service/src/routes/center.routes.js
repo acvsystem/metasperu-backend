@@ -49,5 +49,6 @@ router.get('/api/configuration/usuarios', verifyToken, configurationController.g
 router.post('/api/configuration/usuario/create', verifyToken, configurationController.getUsuariosCreate);
 router.post('/api/configuration/usuario/update', verifyToken, configurationController.getUsuarioUpdate);
 router.post('/api/configuration/usuario/delete', verifyToken, configurationController.delUsuariosDelete);
+router.get('/api/configuration/usuarios/permissions/store', verifyToken, configurationController.gerPermissionsUserStore);
 
 export default router;

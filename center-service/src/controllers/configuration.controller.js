@@ -186,5 +186,14 @@ export const configurationController = {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+    },
+    gerPermissionsUserStore: async (req, res) => {
+        const { id } = req.body;
+        try {
+            const [rows] = await pool.execute('SELECT * FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG = ?', [id]);
+            res.json(rows);
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
     }
 }
