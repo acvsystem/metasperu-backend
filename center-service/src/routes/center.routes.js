@@ -51,6 +51,6 @@ router.post('/api/configuration/usuario/update', verifyToken, configurationContr
 router.post('/api/configuration/usuario/delete', verifyToken, configurationController.delUsuariosDelete);
 router.post('/api/configuration/usuarios/permissions/store', verifyToken, configurationController.gerPermissionsUserStore);
 router.post('/api/configuration/usuarios/asing/permissions/store', verifyToken, configurationController.postAsigPermissionsUserStore);
-router.get('/api/configuration/usuarios/asing/menu', verifyToken, configurationController.getAsingMenuUser);
+router.post('/api/configuration/usuarios/asing/menu', verifyToken, configurationController.getAsingMenuUser);
 
 export default router;
