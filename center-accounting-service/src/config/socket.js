@@ -77,14 +77,7 @@ export const initSocket = (server) => {
                 let dataExchangeRate = [];
                 let fechaHoy = new Date().toISOString().split('T')[0]; // Fecha actual por defecto
                 let cotizacionRetail = 0.00;
-
-                emailService.pushToEmailQueue({
-                    email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com'],
-                    subject: `Correcta Tipo Cambio FRONT RETAIL`,
-                    template: 'alertaDiffTipoChambio',
-                    variables: { tcSistema: ``, tcSunat: ``, fecha: fechaHoy }
-                });
-
+                
                 // 1. Normalización de datos
                 if (data.exchangeRate) {
                     try {
