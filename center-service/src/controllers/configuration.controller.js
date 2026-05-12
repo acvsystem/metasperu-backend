@@ -198,41 +198,39 @@ export const configurationController = {
     },
     postAsigPermissionsUserStore: async (req, res) => {
 
-        export const asignarTiendasSinDuplicados = async (req, res) => {
-            const { ID_USUARIO, TIENDAS } = req.body;
+        const { ID_USUARIO, TIENDAS } = req.body;
 
-            if (!ID_USUARIO || !TIENDAS || !Array.isArray(TIENDAS)) {
-                return res.status(400).json({ message: 'Datos inválidos' });
+        if (!ID_USUARIO || !TIENDAS || !Array.isArray(TIENDAS)) {
+            return res.status(400).json({ message: 'Datos inválidos' });
+        }
+
+        try {
+            // Preparamos los valores: [ [user, tienda, desc], [user, tienda, desc] ]
+            const values = TIENDAS.map(t => [ID_USUARIO, t.id, t.nombre]);
+
+            if (values.length === 0) {
+                return res.json({ message: 'No hay tiendas para procesar' });
             }
 
-            try {
-                // Preparamos los valores: [ [user, tienda, desc], [user, tienda, desc] ]
-                const values = TIENDAS.map(t => [ID_USUARIO, t.id, t.nombre]);
-
-                if (values.length === 0) {
-                    return res.json({ message: 'No hay tiendas para procesar' });
-                }
-
-                // INSERT IGNORE: Si el par (usuario, tienda) ya existe, no hace nada y pasa al siguiente
-                const query = `
+            // INSERT IGNORE: Si el par (usuario, tienda) ya existe, no hace nada y pasa al siguiente
+            const query = `
             INSERT IGNORE INTO tb_usuario_tiendas_asignadas 
             (ID_USUARIO_TASG, ID_TIENDA_TASG, DESCRIPCION_TIENDA) 
             VALUES ?
         `;
 
-                const [result] = await pool.query(query, [values]);
+            const [result] = await pool.query(query, [values]);
 
-                res.status(200).json({
-                    message: 'Proceso completado',
-                    insertados: result.affectedRows, // Cuántos eran realmente nuevos
-                    omitidos: values.length - result.affectedRows // Cuántos ya estaban asignados
-                });
+            res.status(200).json({
+                message: 'Proceso completado',
+                insertados: result.affectedRows, // Cuántos eran realmente nuevos
+                omitidos: values.length - result.affectedRows // Cuántos ya estaban asignados
+            });
 
-            } catch (error) {
-                console.error("Error en asignación:", error);
-                res.status(500).json({ message: 'Error al asignar tiendas' });
-            }
-        };
+        } catch (error) {
+            console.error("Error en asignación:", error);
+            res.status(500).json({ message: 'Error al asignar tiendas' });
+        }
     }
 
 }
