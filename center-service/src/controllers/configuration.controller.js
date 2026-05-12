@@ -265,7 +265,7 @@ export const configurationController = {
             return res.status(400).json({ message: 'Nivel o lista de menús inválida' });
         }
 
-        const connection = await db.getConnection();
+        const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
