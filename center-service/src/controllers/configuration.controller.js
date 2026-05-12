@@ -257,6 +257,71 @@ export const configurationController = {
         } finally {
             connection.release();
         }
+    },
+    getAsingMenuUser: async (req, res) => {
+        const { NIVEL, MENUS } = req.body; // MENUS: [1, 2, 3, 4, ...] (Array de IDs de menú)
+
+        if (!NIVEL || !Array.isArray(MENUS)) {
+            return res.status(400).json({ message: 'Nivel o lista de menús inválida' });
+        }
+
+        const connection = await db.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Obtener los permisos que el NIVEL ya tiene actualmente
+            const [rowsActuales] = await connection.query(
+                'SELECT ID_MENU_PS FROM tb_permiso_sistema WHERE NIVEL = ?',
+                [NIVEL]
+            );
+
+            const idsActuales = rowsActuales.map(row => row.ID_MENU_PS);
+            const idsNuevos = MENUS;
+
+            // 2. Identificar qué IDs borrar (están en DB pero no en el nuevo envío)
+            const idsAEliminar = idsActuales.filter(id => !idsNuevos.includes(id));
+
+            // 3. Identificar qué IDs insertar (están en el envío pero no en la DB)
+            const idsAInsertar = idsNuevos.filter(id => !idsActuales.includes(id));
+
+            // --- Ejecutar Cambios ---
+
+            // A. Eliminar los menús desmarcados
+            if (idsAEliminar.length > 0) {
+                await connection.query(
+                    'DELETE FROM tb_permiso_sistema WHERE NIVEL = ? AND ID_MENU_PS IN (?)',
+                    [NIVEL, idsAEliminar]
+                );
+            }
+
+            // B. Insertar los nuevos menús asignados
+            if (idsAInsertar.length > 0) {
+                const values = idsAInsertar.map(idMenu => [idMenu, NIVEL]);
+                await connection.query(
+                    'INSERT INTO tb_permiso_sistema (ID_MENU_PS, NIVEL) VALUES ?',
+                    [values]
+                );
+            }
+
+            await connection.commit();
+
+            res.status(200).json({
+                message: `Permisos para el nivel ${NIVEL} actualizados`,
+                detalles: {
+                    eliminados: idsAEliminar.length,
+                    insertados: idsAInsertar.length,
+                    mantenidos: idsActuales.length - idsAEliminar.length
+                }
+            });
+
+        } catch (error) {
+            await connection.rollback();
+            console.error("Error sincronizando permisos de menú:", error);
+            res.status(500).json({ message: 'Error interno del servidor' });
+        } finally {
+            connection.release();
+        }
     }
 
 }
