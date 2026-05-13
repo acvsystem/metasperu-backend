@@ -410,7 +410,7 @@ export const configurationController = {
         try {
             // Obtenemos el registro (asumiendo que es una configuración única)
             const query = 'SELECT LIST_CLIENTE FROM tb_clientes_clear_fornt LIMIT 1';
-            const [rows] = await db.query(query);
+            const [rows] = await pool.query(query);
 
             if (rows.length === 0) {
                 return res.json({ LIST_CLIENTE: '' });
@@ -443,11 +443,11 @@ export const configurationController = {
             LIMIT 1
         `;
 
-            const [result] = await db.query(query, [LIST_CLIENTE]);
+            const [result] = await pool.query(query, [LIST_CLIENTE]);
 
             if (result.affectedRows === 0) {
                 // Si por alguna razón la tabla está vacía, insertamos el primer registro
-                await db.query('INSERT INTO tb_clientes_clear_fornt (LIST_CLIENTE) VALUES (?)', [LIST_CLIENTE]);
+                await pool.query('INSERT INTO tb_clientes_clear_fornt (LIST_CLIENTE) VALUES (?)', [LIST_CLIENTE]);
                 return res.json({ message: 'Configuración creada exitosamente' });
             }
 
