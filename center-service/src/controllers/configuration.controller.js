@@ -456,5 +456,54 @@ export const configurationController = {
             console.error("Error al actualizar clientes clear:", error);
             res.status(500).json({ message: 'Error interno al guardar' });
         }
+    },
+    // GET: Obtener todas las tolerancias (para llenar la lista del modal)
+    getTolerancias: async (req, res) => {
+        try {
+            const [rows] = await pool.query('SELECT * FROM tb_configuracion_tolerancia_hora ORDER BY ID_TOLERANCIA DESC');
+            res.json(rows);
+        } catch (error) {
+            res.status(500).json({ message: 'Error al obtener tolerancias', error });
+        }
+    },
+
+    // POST: Insertar nueva tolerancia (cuando presionas el botón de check azul)
+    createTolerancia: async (req, res) => {
+        const { REFERENCIA, TIEMPO_TOLERANCIA } = req.body;
+        try {
+            const [result] = await pool.query(
+                'INSERT INTO tb_configuracion_tolerancia_hora (REFERENCIA, TIEMPO_TOLERANCIA) VALUES (?, ?)',
+                [REFERENCIA, TIEMPO_TOLERANCIA]
+            );
+            res.status(201).json({ id: result.insertId, message: 'Tolerancia agregada' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al insertar', error });
+        }
+    },
+
+    // PUT: Actualizar una tolerancia existente
+    updateTolerancia: async (req, res) => {
+        const { id } = req.params;
+        const { REFERENCIA, TIEMPO_TOLERANCIA } = req.body;
+        try {
+            await pool.query(
+                'UPDATE tb_configuracion_tolerancia_hora SET REFERENCIA = ?, TIEMPO_TOLERANCIA = ? WHERE ID_TOLERANCIA = ?',
+                [REFERENCIA, TIEMPO_TOLERANCIA, id]
+            );
+            res.json({ message: 'Tolerancia actualizada' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al actualizar', error });
+        }
+    },
+
+    // DELETE: Eliminar una tolerancia
+    deleteTolerancia: async (req, res) => {
+        const { id } = req.params;
+        try {
+            await pool.query('DELETE FROM tb_configuracion_tolerancia_hora WHERE ID_TOLERANCIA = ?', [id]);
+            res.json({ message: 'Tolerancia eliminada' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al eliminar', error });
+        }
     }
 }

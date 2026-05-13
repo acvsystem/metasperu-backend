@@ -1113,11 +1113,26 @@ export const storeController = {
             connection = await pool.getConnection();
 
             const query = `
-            SELECT ID_AUTH_HR_EXT, HR_EXTRA_ACOMULADO, NRO_DOCUMENTO_EMPLEADO, 
-                   NOMBRE_COMPLETO, APROBADO, RECHAZADO, FECHA, DESCRIPCION, 
-                   ID_HORA_EXTRA, COMENTARIO, USUARIO_MODF, EMAIL 
-            FROM tb_autorizar_hr_extra h
-            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA;
+              SELECT 
+                ID_AUTH_HR_EXT, 
+                HR_EXTRA_ACOMULADO, 
+                NRO_DOCUMENTO_EMPLEADO, 
+                NOMBRE_COMPLETO, 
+                APROBADO, 
+                RECHAZADO, 
+                FECHA, 
+                DESCRIPCION, 
+                ID_HORA_EXTRA, 
+                COMENTARIO, 
+                USUARIO_MODF, 
+                EMAIL 
+            FROM bd_metasperu.tb_autorizar_hr_extra h
+            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+            ORDER BY 
+                /* Esta condición devuelve 0 si es verdad y 1 si es falso, 
+                   por eso los que cumplen aparecen primero */
+                (h.APROBADO = 0 AND h.RECHAZADO = 0) DESC, 
+                h.FECHA DESC;
         `;
 
             // 2. Ejecutar consulta
