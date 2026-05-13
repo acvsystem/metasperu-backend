@@ -979,7 +979,7 @@ export const storeController = {
 
         // Validación de entrada
         if (!id_hrx) {
-            return res.status(400).json({ success: false, message: 'ID de autorización requerido.' });
+            return res.status(200).json({ success: false, message: 'ID de autorización requerido.' });
         }
 
         const connection = await pool.getConnection();

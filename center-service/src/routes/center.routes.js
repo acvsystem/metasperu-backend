@@ -62,4 +62,11 @@ router.delete('/api/parameters/store/eliminar/:id', verifyToken, configurationCo
 // ---RUTA CLIENTES EN BLANCO
 router.get('/api/parameters/clientes/blanco', verifyToken, configurationController.obtenerClientesBlanco);
 router.post('/api/parameters/clientes/blanco/update', verifyToken, configurationController.actualizarClientesClear);
+
+// ---RUTA CONFIGURACION PARAMETROS GENERALES
+router.get('/api/parameters/tiempo/tolerancia', verifyToken, configurationController.getTolerancias);
+router.post('/api/parameters/tiempo/tolerancia/create', verifyToken, configurationController.createTolerancia);
+router.put('/api/parameters/tiempo/tolerancia/update/:id', verifyToken, configurationController.updateTolerancia);
+router.delete('/api/parameters/tiempo/tolerancia/delete/:id', verifyToken, configurationController.deleteTolerancia);
+
 export default router;
