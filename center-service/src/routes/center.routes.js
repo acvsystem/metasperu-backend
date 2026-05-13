@@ -59,4 +59,7 @@ router.get('/api/parameters/store/:id?', verifyToken, configurationController.ob
 router.put('/api/parameters/store/actualizar/:id', verifyToken, configurationController.actualizarParametrosTienda);
 router.delete('/api/parameters/store/eliminar/:id', verifyToken, configurationController.eliminarParametrosTienda);
 
+// ---RUTA CLIENTES EN BLANCO
+router.get('/api/parameters/clientes/blanco', verifyToken, configurationController.obtenerClientesBlanco);
+router.post('/api/parameters/clientes/blanco/update', verifyToken, configurationController.actualizarClientesClear);
 export default router;

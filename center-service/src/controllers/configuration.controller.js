@@ -405,5 +405,56 @@ export const configurationController = {
             console.error(error);
             res.status(500).json({ message: 'Error al eliminar parámetros' });
         }
+    },
+    obtenerClientesBlanco: async (req, res) => {
+        try {
+            // Obtenemos el registro (asumiendo que es una configuración única)
+            const query = 'SELECT LIST_CLIENTE FROM tb_clientes_clear_fornt LIMIT 1';
+            const [rows] = await db.query(query);
+
+            if (rows.length === 0) {
+                return res.json({ LIST_CLIENTE: '' });
+            }
+
+            // Enviamos el string directamente
+            res.json(rows[0]);
+        } catch (error) {
+            console.error("Error al obtener clientes clear:", error);
+            res.status(500).json({
+                message: 'Error al obtener la configuración',
+                error: error.message
+            });
+        }
+    },
+    actualizarClientesClear: async (req, res) => {
+        const { LIST_CLIENTE } = req.body;
+
+        if (LIST_CLIENTE === undefined) {
+            return res.status(400).json({ message: 'El campo LIST_CLIENTE es requerido' });
+        }
+
+        try {
+            // Intentamos actualizar el registro con ID 1 (asumiendo que es el registro maestro)
+            // Si prefieres que siempre sea el único que existe, usamos LIMIT 1 sin ID
+            const query = `
+            UPDATE tb_clientes_clear_fornt 
+            SET LIST_CLIENTE = ? 
+            ORDER BY ID_CLIENTE_CLEAR ASC 
+            LIMIT 1
+        `;
+
+            const [result] = await db.query(query, [LIST_CLIENTE]);
+
+            if (result.affectedRows === 0) {
+                // Si por alguna razón la tabla está vacía, insertamos el primer registro
+                await db.query('INSERT INTO tb_clientes_clear_fornt (LIST_CLIENTE) VALUES (?)', [LIST_CLIENTE]);
+                return res.json({ message: 'Configuración creada exitosamente' });
+            }
+
+            res.json({ message: 'Lista de clientes actualizada correctamente' });
+        } catch (error) {
+            console.error("Error al actualizar clientes clear:", error);
+            res.status(500).json({ message: 'Error interno al guardar' });
+        }
     }
 }
