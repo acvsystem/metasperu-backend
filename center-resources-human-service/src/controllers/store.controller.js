@@ -1218,13 +1218,6 @@ export const storeController = {
 };
 
 
-const CONFIG = {
-    MIN_TOLERANCIA_ENTRADA: 5,
-    MIN_BREAK_PERMITIDO: 60,
-    MIN_TOLERANCIA_BREAK: 5,
-    HORAS_LABORALES_META: 8
-};
-
 // Función maestra para convertir Fecha + Hora en un objeto Date real
 const crearFecha = (fechaStr, horaStr) => {
     if (!horaStr || horaStr.includes('--')) return null;
@@ -1232,6 +1225,15 @@ const crearFecha = (fechaStr, horaStr) => {
 };
 
 const analizarMetricasMadrugada = (dia, horaOficial) => {
+
+    const CONFIG = {
+        MIN_TOLERANCIA_ENTRADA: 6,
+        MIN_BREAK_PERMITIDO: 60,
+        MIN_TOLERANCIA_BREAK: 5,
+        HORAS_LABORALES_META: 8
+    };
+
+
     // 1. Configuración de entrada oficial para tardanza
     let dEntradaPrimera = crearFecha(dia.fecha, dia.entrada);
     let dOficial = crearFecha(dia.fecha, horaOficial);
@@ -1552,93 +1554,131 @@ const generarNuevoCodigo = async (codigoTienda) => {
     return `P${codigoTienda}${correlativoFormateado}`;
 };
 
+/**
+ * Procesa y registra las horas extras considerando jornada normal (8h), 
+ * lactancia (7h) y régimen Part-Time.
+ */
 const procesarYRegistrarHoras = async (listaRegistros) => {
-    // Definimos constantes en minutos para evitar errores de coma flotante
-    const JORNADA_MAXIMA_MINS = 8.0 * 60; // 480 min
+    // 1. CONSTANTES DE TIEMPO (en minutos para precisión)
+    const JORNADA_NORMAL_MINS = 8.0 * 60;    // 480 min
+    const JORNADA_LACTANCIA_MINS = 7.0 * 60;  // 420 min
     const UMBRAL_PT_SEMANAL_MINS = 24.0 * 60; // 1440 min
-    const MINIMO_PARA_REGISTRAR = 0.5;
+    const MINIMO_PARA_REGISTRAR = 0.5;        // Horas mínimas para guardar en BD
     const MINIMO_PARA_REGISTRAR_PART_TIME = 0.25;
 
-    const FECHA_HOY = new Date().toISOString().split('T')[0];
+    // Fecha de control (evitar procesar el día actual en curso)
+    const FECHA_HOY_DATE = new Date();
+    const FECHA_HOY_STR = FECHA_HOY_DATE.toISOString().split('T')[0];
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
 
-    // 1. Clasificación inicial y conversión a MINUTOS
+    // 2. CLASIFICACIÓN INICIAL Y CÁLCULO DE MINUTOS
     listaRegistros.forEach(reg => {
-        if (reg.dia === FECHA_HOY) return;
+        // No procesar marcaciones del día de hoy
+        if (reg.dia === FECHA_HOY_STR) return;
 
         const cajasExcluidas = ['9M1', '9M2', '9M3'];
+        if (cajasExcluidas.includes(reg.caja)) return;
 
-        if (!cajasExcluidas.includes(reg.caja)) {
+        // Cálculo de minutos trabajados en el registro
+        const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
 
+        // Identificación de regímenes
+        const esPartTime = reg.tpAsociado === '**';
+        const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
 
+        // --- LÓGICA DE LACTANCIA ---
+        let jornadaAplicada = JORNADA_NORMAL_MINS;
+        let esLactanciaVigente = false;
 
-            // Convertimos hrWorking (decimal) a minutos enteros redondeados
+        if (reg.tpAsociado && reg.tpAsociado.startsWith('*')) {
+            const fechaInicioStr = reg.tpAsociado.substring(1); // Extrae YYYY-MM-DD
+            const fechaInicioLactancia = new Date(fechaInicioStr);
 
-            const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
+            if (!isNaN(fechaInicioLactancia.getTime())) {
+                // El beneficio dura exactamente 1 año
+                const fechaFinLactancia = new Date(fechaInicioLactancia);
+                fechaFinLactancia.setFullYear(fechaFinLactancia.getFullYear() + 1);
 
-            const esPartTime = reg.tpAsociado === '**';
-            const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
-            console.log(1553, reg.nroDocumento, reg.dia, esTurnoEspecial, reg.hrOut.split(' ')[1]);
-            if (esPartTime) {
-                if (!resumenPartTimeDias[reg.dia]) {
-                    resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
+                // Validar si la fecha del registro está dentro del periodo de lactancia
+                // Usamos la fecha del registro (reg.dia) para la comparación
+                const fechaRegistro = new Date(reg.dia);
+                if (fechaRegistro >= fechaInicioLactancia && fechaRegistro <= fechaFinLactancia) {
+                    jornadaAplicada = JORNADA_LACTANCIA_MINS;
+                    esLactanciaVigente = true;
                 }
-                resumenPartTimeDias[reg.dia].totalMins += minutos;
-            } else {
-                if (!resumenFullTime[reg.dia]) {
-                    resumenFullTime[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento, count: 0, especial: false };
-                }
-                resumenFullTime[reg.dia].totalMins += minutos;
-                resumenFullTime[reg.dia].count += 1;
-                if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
             }
+        }
+
+        // Agrupación por tipo de contrato
+        if (esPartTime) {
+            if (!resumenPartTimeDias[reg.dia]) {
+                resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
+            }
+            resumenPartTimeDias[reg.dia].totalMins += minutos;
+        } else {
+            if (!resumenFullTime[reg.dia]) {
+                resumenFullTime[reg.dia] = {
+                    totalMins: 0,
+                    nroDocumento: reg.nroDocumento,
+                    count: 0,
+                    especial: false,
+                    limiteJornada: jornadaAplicada, // 420 o 480
+                    lactancia: esLactanciaVigente
+                };
+            }
+            resumenFullTime[reg.dia].totalMins += minutos;
+            resumenFullTime[reg.dia].count += 1;
+            if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
     });
 
-    // 2. Procesar Full-Time (Diario)
+    // 3. PROCESAR FULL-TIME (Cálculo Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
 
-        // Obtener datos externos
+        // Consultas externas (Día libre y Papeletas)
         const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
         const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
-
-        // Suma total efectiva en minutos (Exacta)
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
-        // Validar nivel de autorización (SIN sumarle márgenes de segundos)
-        const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - JORNADA_MAXIMA_MINS);
+        // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
+        const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - data.limiteJornada);
         const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60));
 
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
-            esAprobacion = 0;
+            esAprobacion = 0; // Pasa a revisión directa
         } else {
             excesoMins = excesoPreliminarMins;
+            const tag = data.lactancia ? "[LACTANCIA] " : "";
 
+            // Lógica de validación de marcaciones
             if (data.count === 1) {
-                observacion = "Solo tiene 1 solo registro de marcacion";
+                observacion = tag + "Solo tiene 1 solo registro de marcacion";
                 esAprobacion = 1;
             } else if (data.especial) {
-                observacion = "No marco salida";
+                observacion = tag + "No marco salida";
                 esAprobacion = 1;
             } else if (data.count > 2) {
-                observacion = "Marcacion irregular, verifique marcaciones.";
+                observacion = tag + "Marcacion irregular, verifique marcaciones.";
                 esAprobacion = 1;
-            } else if (nivel.nivel == 'RECURSOS HUMANOS') {
-                observacion = "Tiene una papeleta ese dia.";
+            } else if (nivel.nivel === 'RECURSOS HUMANOS') {
+                observacion = tag + "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
+            } else if (data.lactancia) {
+                observacion = "Periodo de lactancia (Jornada reducida 7h).";
+                esAprobacion = 0;
             }
         }
 
-        // Convertir minutos de exceso a horas decimales para BD (ej. 0.5, 1.25)
+        // Conversión final a horas decimales para almacenamiento
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
@@ -1646,7 +1686,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         }
     }
 
-    // 3. Procesar Part-Time (Semanal)
+    // 4. PROCESAR PART-TIME (Cálculo Semanal)
     const resumenPorRangoSemana = {};
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
         const rango = obtenerRangoSemana(dia);
@@ -1662,13 +1702,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal);
+                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
             }
         }
     }
 
-    return resumenFullTime;
-}
+    return { success: true, processed: Object.keys(resumenFullTime).length };
+};
 
 
 /**
