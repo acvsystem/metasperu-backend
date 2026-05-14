@@ -544,11 +544,11 @@ export const storeController = {
                 message: 'Parámetros incompletos (rango_fecha, codigoTienda)'
             });
         }
+
         const connection = await pool.getConnection();
 
         const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
             const [anio, mes, dia] = fecha.split("-");
-            // Convertimos a número y de vuelta a string para quitar ceros a la izquierda (ej. "04" -> "4")
             return `${Number(dia)}-${Number(mes)}-${anio}`;
         }).join(" ");
 
@@ -574,10 +574,32 @@ export const storeController = {
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [obsDB] = await connection.execute(`SELECT * FROM tb_observacion WHERE ID_OBS_HORARIO = ?`, [idH]);
-                console.log(obsDB);
-                // Formatear dias
+
+                // --- LÓGICA DE PAPELETAS DE LACTANCIA (TIPO 7) ---
+                const documentosSet = new Set([
+                    ...trabajadoresDB.map(t => t.NUMERO_DOCUMENTO),
+                    ...libresDB.map(l => l.NUMERO_DOCUMENTO)
+                ]);
+                const documentosUnicos = Array.from(documentosSet);
+
+                let papeletasLactancia = [];
+                if (documentosUnicos.length > 0 && diasDB.length > 0) {
+                    const fechaIn = diasDB[0].FECHA_NUMBER;
+                    const fechaFin = diasDB[diasDB.length - 1].FECHA;
+
+                    const [paps] = await connection.query(
+                        `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
+                     FROM tb_head_papeleta 
+                     WHERE ID_PAP_TIPO_PAPELETA = 7 
+                     AND NRO_DOCUMENTO_EMPLEADO IN (?) 
+                     AND FECHA_DESDE = ?`,
+                        [documentosUnicos, fechaIn]
+                    );
+                    papeletasLactancia = paps;
+                }
+
+                // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
-                    // Filtramos las notas que corresponden a este día (d.ID_DIAS)
                     const notasParaEsteDia = obsDB
                         .filter(o => o.ID_OBS_DIAS === d.ID_DIAS)
                         .map(o => ({
@@ -587,16 +609,25 @@ export const storeController = {
                             fecha_registro: o.FECHA_REGISTRO
                         }));
 
+                    // Papeletas que caen en este día
+                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER);
+
                     return {
                         id: d.POSITION,
                         dia: d.DIA,
                         fecha: d.FECHA,
-                        dayBlock: false, // O tu lógica de bloqueo actual
-                        notasDia: notasParaEsteDia // Aquí insertamos el array directamente
+                        dayBlock: false,
+                        notasDia: notasParaEsteDia,
+                        papeletas: papsDelDia.map(p => ({
+                            id: p.ID_HEAD_PAPELETA,
+                            codigo: p.CODIGO_PAPELETA,
+                            documento: p.NRO_DOCUMENTO_EMPLEADO,
+                            descripcion: p.DESCRIPCION
+                        }))
                     };
                 });
 
-                // Reconstruir filasTrabajo (Agrupado por Rango Horario)
+                // Reconstruir filasTrabajo e incluir flag de lactancia por trabajador
                 const filasTrabajo = rangosDB.map(r => ({
                     rango: r.RANGO_HORA,
                     celdas: diasDB.map(d => ({
@@ -605,7 +636,10 @@ export const storeController = {
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
                                 nro_documento: t.NUMERO_DOCUMENTO,
-                                nombre_completo: t.NOMBRE_COMPLETO
+                                nombre_completo: t.NOMBRE_COMPLETO,
+                                esLactancia: papeletasLactancia.some(p =>
+                                    p.NRO_DOCUMENTO_EMPLEADO === t.NUMERO_DOCUMENTO && p.FECHA_DESDE === d.FECHA_NUMBER
+                                )
                             }))
                     }))
                 }));
@@ -617,26 +651,28 @@ export const storeController = {
                         .filter(l => l.ID_TRB_DIAS === d.ID_DIAS)
                         .map(l => ({
                             nro_documento: l.NUMERO_DOCUMENTO,
-                            nombre_completo: l.NOMBRE_COMPLETO
+                            nombre_completo: l.NOMBRE_COMPLETO,
+                            esLactancia: papeletasLactancia.some(p =>
+                                p.NRO_DOCUMENTO_EMPLEADO === l.NUMERO_DOCUMENTO && p.FECHA_DESDE === d.FECHA
+                            )
                         }))
                 }));
 
                 // Reconstruir notasDia (Objeto: { id_dia: observacion })
-                const notasDia = {};
+                const notasDiaObj = {};
                 obsDB.forEach(o => {
                     const diaCorrespondiente = diasDB.find(d => d.ID_DIAS === o.ID_OBS_DIAS);
                     if (diaCorrespondiente) {
-                        notasDia[diaCorrespondiente.POSITION] = o.OBSERVACION;
+                        notasDiaObj[diaCorrespondiente.POSITION] = o.OBSERVACION;
                     }
                 });
 
-                // Armar el objeto del cargo según tu estructura solicitada
                 respuestaFinal.push({
                     cargo: cab.CARGO,
                     dias: diasFormateados,
                     filasTrabajo: filasTrabajo,
                     filaLibres: filaLibres,
-                    notasDia: notasDia
+                    notasDia: notasDiaObj
                 });
             }
 
