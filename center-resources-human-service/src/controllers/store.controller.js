@@ -599,22 +599,14 @@ export const storeController = {
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND NRO_DOCUMENTO_EMPLEADO IN (?) 
+             AND CODIGO_TIENDA = ?
              AND (
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [documentosUnicos, fechaIn, fechaFormateada]
+                            [codigoTienda, fechaIn, fechaFormateada]
                         );
-                        console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, 
-                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
-             FROM bd_metasperu.tb_head_papeleta 
-             WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND CODIGO_TIENDA = '${codigoTienda}'
-             AND (
-                (FECHA_DESDE = ${fechaIn}) OR 
-                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ${fechaFormateada})
-             );`);
+                        
                         return paps; // Retorna el array de papeletas de este día
                     }));
 
