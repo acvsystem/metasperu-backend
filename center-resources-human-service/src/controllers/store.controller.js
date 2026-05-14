@@ -552,11 +552,6 @@ export const storeController = {
             return `${Number(dia)}-${Number(mes)}-${anio}`;
         }).join(" ");
 
-        const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
-            const [anio, mes, dia] = fecha.split("-");
-            return `${Number(dia)}-${Number(mes)}-${anio}`;
-        }).join(" ");
-
         try {
             // 1. Obtener todas las cabeceras/cargos en el rango
             const [cabeceras] = await connection.execute(
