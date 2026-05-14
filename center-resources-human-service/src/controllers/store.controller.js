@@ -569,7 +569,7 @@ export const storeController = {
 
                 // Consultas de apoyo
                 const [diasDB] = await connection.execute(
-                    `SELECT ID_DIAS, DIA, FECHA, FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
+                    `SELECT ID_DIAS, DIA, FECHA, DATE_FORMAT(FECHA_NUMBER, '%d-%m-%Y') AS FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
                 const [rangosDB] = await connection.execute(`SELECT ID_RANGO_HORA, RANGO_HORA FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`, [idH]);
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
