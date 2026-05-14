@@ -586,6 +586,10 @@ export const storeController = {
                 if (documentosUnicos.length > 0 && diasDB.length > 0) {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
                     const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
+                    const fechaFormateada = fechaIn
+                        .split('-') // Divide la cadena en ["12", "5", "2026"]
+                        .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
+                        .join('-');
 
                     const [paps] = await connection.query(
                         `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
@@ -596,7 +600,7 @@ export const storeController = {
                         (FECHA_DESDE = ?) OR 
                         (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
                      );`,
-                        [documentosUnicos, fechaIn, fechaIn]
+                        [documentosUnicos, fechaIn, fechaFormateada]
                     );
 
                     console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
@@ -605,7 +609,7 @@ export const storeController = {
                      AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
                      AND (
                         (FECHA_DESDE = '${fechaIn}') OR 
-                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaIn}')
+                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaFormateada}')
                      );`);
                     papeletasLactancia = paps;
                 }
