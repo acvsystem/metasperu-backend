@@ -583,7 +583,7 @@ export const storeController = {
                 const documentosUnicos = Array.from(documentosSet);
 
                 let papeletasLactancia = [];
-                if (documentosUnicos.length > 0) {
+                if (documentosUnicos.length > 0 && diasDB.length > 0) {
 
                     papeletasLactancia = diasDB.map(d => {
 
