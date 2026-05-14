@@ -585,29 +585,34 @@ export const storeController = {
                 let papeletasLactancia = [];
                 if (documentosUnicos.length > 0 && diasDB.length > 0) {
 
-                    papeletasLactancia = diasDB.map(d => {
+                    // Cambiamos a Promise.all para que espere a todos los queries del map
+                    const resultadosPapeletas = await Promise.all(diasDB.map(async (d) => {
 
-                        const fechaIn = d.FECHA_NUMBER;
+                        const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
                         const fechaFormateada = fechaIn
-                            .split('-') // Divide la cadena en ["12", "5", "2026"]
-                            .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
-                            .join('-');
-
+                            .split('-')
+                            .map(parte => parte.padStart(2, '0'))
+                            .join('-'); // El valor con ceros (ej: 12-05-2026)
 
                         const [paps] = await connection.query(
-                            `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
-                     FROM bd_metasperu.tb_head_papeleta 
-                     WHERE ID_PAP_TIPO_PAPELETA = 7 
-                     AND NRO_DOCUMENTO_EMPLEADO IN (?) 
-                     AND (
-                        (FECHA_DESDE = ?) OR 
-                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
-                     );`,
+                            `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, 
+                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
+             FROM bd_metasperu.tb_head_papeleta 
+             WHERE ID_PAP_TIPO_PAPELETA = 7 
+             AND NRO_DOCUMENTO_EMPLEADO IN (?) 
+             AND (
+                (FECHA_DESDE = ?) OR 
+                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
+             );`,
                             [documentosUnicos, fechaIn, fechaFormateada]
                         );
 
-                        return paps;
-                    });
+                        return paps; // Retorna el array de papeletas de este día
+                    }));
+
+                    // resultadosPapeletas es un array de arrays [[paps día 1], [paps día 2]...]
+                    // Lo aplanamos para que sea un solo array de papeletas
+                    papeletasLactancia = resultadosPapeletas.flat();
                 }
 
                 // Formatear dias e incluir papeletas del día
