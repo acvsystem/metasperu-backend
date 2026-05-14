@@ -584,18 +584,18 @@ export const storeController = {
 
                 let papeletasLactancia = [];
                 if (documentosUnicos.length > 0) {
-                    const fechaIn = diasDB[0].FECHA_NUMBER;
-                    console.log(diasDB[0]);
-                    const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
-                    const fechaFormateada = fechaIn
-                        .split('-') // Divide la cadena en ["12", "5", "2026"]
-                        .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
-                        .join('-');
+
+                    papeletasLactancia = diasDB.map(d => {
+
+                        const fechaIn = d.FECHA_NUMBER;
+                        const fechaFormateada = fechaIn
+                            .split('-') // Divide la cadena en ["12", "5", "2026"]
+                            .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
+                            .join('-');
 
 
-
-                    const [paps] = await connection.query(
-                        `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
+                        const [paps] = await connection.query(
+                            `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
                      FROM bd_metasperu.tb_head_papeleta 
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
                      AND NRO_DOCUMENTO_EMPLEADO IN (?) 
@@ -603,17 +603,17 @@ export const storeController = {
                         (FECHA_DESDE = ?) OR 
                         (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
                      );`,
-                        [documentosUnicos, fechaIn, fechaFormateada]
-                    );
+                            [documentosUnicos, fechaIn, fechaFormateada]
+                        );
 
-
-                    papeletasLactancia = paps;
+                        return paps;
+                    });
                 }
 
                 // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
 
-                    
+
                     const notasParaEsteDia = obsDB
                         .filter(o => o.ID_OBS_DIAS === d.ID_DIAS)
                         .map(o => ({
