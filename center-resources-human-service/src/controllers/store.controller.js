@@ -610,7 +610,7 @@ export const storeController = {
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
+             AND CODIGO_TIENDA = '${codigoTienda}'
              AND (
                 (FECHA_DESDE = ${fechaIn}) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ${fechaFormateada})
