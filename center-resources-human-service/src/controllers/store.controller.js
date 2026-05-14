@@ -583,7 +583,7 @@ export const storeController = {
                 const documentosUnicos = Array.from(documentosSet);
 
                 let papeletasLactancia = [];
-                if (documentosUnicos.length > 0 && diasDB.length > 0) {
+                if (documentosUnicos.length > 0) {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
                     const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
                     const fechaFormateada = fechaIn
@@ -591,7 +591,7 @@ export const storeController = {
                         .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
                         .join('-');
 
-                    console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
+                    console.log(idH, `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
                      FROM bd_metasperu.tb_head_papeleta 
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
                      AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
