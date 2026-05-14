@@ -600,9 +600,9 @@ export const storeController = {
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
                      AND NRO_DOCUMENTO_EMPLEADO IN (?) 
                      AND (
-                        FECHA_DESDE = ? OR 
-                        DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?
-                        );`,
+                        (FECHA_DESDE = ?) OR 
+                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
+                     );`,
                             [documentosUnicos, fechaIn, fechaFormateada]
                         );
 
