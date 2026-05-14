@@ -331,8 +331,8 @@ export const storeController = {
                         `SELECT * FROM tb_head_papeleta 
                      WHERE NRO_DOCUMENTO_EMPLEADO IN (?) 
                      AND ID_PAP_TIPO_PAPELETA = 7 
-                     AND (FECHA_DESDE BETWEEN ? AND ?)`,
-                        [docsTrabajadores, days[0].FECHA, days[days.length - 1].FECHA]
+                     AND FECHA_DESDE = ?`,
+                        [docsTrabajadores, days[0].FECHA]
                     );
                     papeletasLactancia = rows;
                 }
@@ -363,7 +363,6 @@ export const storeController = {
                                 id: p.ID_HEAD_PAPELETA,
                                 codigo: p.CODIGO_PAPELETA,
                                 documento: p.NRO_DOCUMENTO_EMPLEADO,
-                                tipo: 'LACTANCIA',
                                 descripcion: p.DESCRIPCION
                             }))
                         };
