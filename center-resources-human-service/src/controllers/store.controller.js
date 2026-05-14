@@ -581,24 +581,18 @@ export const storeController = {
                     ...libresDB.map(l => l.NUMERO_DOCUMENTO)
                 ]);
                 const documentosUnicos = Array.from(documentosSet);
-
+                console.log(diasDB);
                 let papeletasLactancia = [];
                 if (documentosUnicos.length > 0) {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
+
                     const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
                     const fechaFormateada = fechaIn
                         .split('-') // Divide la cadena en ["12", "5", "2026"]
                         .map(parte => parte.padStart(2, '0')) // "5" se convierte en "05", "12" se queda igual
                         .join('-');
 
-                    console.log(idH, `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
-                     FROM bd_metasperu.tb_head_papeleta 
-                     WHERE ID_PAP_TIPO_PAPELETA = 7 
-                     AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
-                     AND (
-                        (FECHA_DESDE = '${fechaIn}') OR 
-                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaFormateada}')
-                     );`);
+
 
                     const [paps] = await connection.query(
                         `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
