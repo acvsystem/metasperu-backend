@@ -584,8 +584,8 @@ export const storeController = {
 
                 let papeletasLactancia = [];
                 if (documentosUnicos.length > 0 && diasDB.length > 0) {
-                    const fechaIn = diasDB[0].FECHA;
-                    const fechaFin = diasDB[diasDB.length - 1].FECHA;
+                    const fechaIn = diasDB[0].FECHA_NUMBER;
+                    const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
 
                     console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
                      FROM tb_head_papeleta 
