@@ -596,7 +596,7 @@ export const storeController = {
                         (FECHA_DESDE = ?) OR 
                         (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
                      );`,
-                        [documentosUnicos, fechaIn]
+                        [documentosUnicos, fechaIn, fechaIn]
                     );
 
                     papeletasLactancia = paps;
