@@ -683,7 +683,7 @@ export const storeController = {
                             nro_documento: l.NUMERO_DOCUMENTO,
                             nombre_completo: l.NOMBRE_COMPLETO,
                             esLactancia: papeletasLactancia.some(p =>
-                                p.NRO_DOCUMENTO_EMPLEADO === l.NUMERO_DOCUMENTO && (p.FECHA_DESDE === d.FECHA || p.FECHA_DESDE === fechaFormateada)
+                                p.NRO_DOCUMENTO_EMPLEADO === l.NUMERO_DOCUMENTO && (p.FECHA_DESDE === d.FECHA)
                             )
                         }))
                 }));
