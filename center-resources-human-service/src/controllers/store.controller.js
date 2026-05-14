@@ -552,6 +552,11 @@ export const storeController = {
             return `${Number(dia)}-${Number(mes)}-${anio}`;
         }).join(" ");
 
+        const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
+            const [anio, mes, dia] = fecha.split("-");
+            return `${Number(dia)}-${Number(mes)}-${anio}`;
+        }).join(" ");
+
         try {
             // 1. Obtener todas las cabeceras/cargos en el rango
             const [cabeceras] = await connection.execute(
@@ -587,18 +592,15 @@ export const storeController = {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
                     const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
 
-                    console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
-                     FROM tb_head_papeleta 
-                     WHERE ID_PAP_TIPO_PAPELETA = 7 
-                     AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
-                     AND FECHA_DESDE = '${fechaIn}'`);
-
                     const [paps] = await connection.query(
-                        `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
-                     FROM tb_head_papeleta 
+                        `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
+                     FROM bd_metasperu.tb_head_papeleta 
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
                      AND NRO_DOCUMENTO_EMPLEADO IN (?) 
-                     AND FECHA_DESDE = '${fechaIn}'`,
+                     AND (
+                        (FECHA_DESDE = ?) OR 
+                        (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
+                     );`,
                         [documentosUnicos, fechaIn]
                     );
 
