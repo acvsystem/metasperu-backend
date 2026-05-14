@@ -349,7 +349,7 @@ export const storeController = {
                     })),
                     dias: days.map((d, i) => {
                         // Filtrar papeletas que coincidan con este día específico
-                        const papeletasDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA);
+                        const papeletasDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER);
 
                         return {
                             dia: d.DIA,
@@ -370,7 +370,7 @@ export const storeController = {
                     dias_trabajo: workDays.map(r => {
                         // Verificar si este trabajador específico tiene lactancia este día
                         // Buscamos el objeto día correspondiente para comparar fechas
-                        const fechaDia = days.find(d => d.ID_DIAS === r.ID_TRB_DIAS)?.FECHA;
+                        const fechaDia = days.find(d => d.ID_DIAS === r.ID_TRB_DIAS)?.FECHA_NUMBER;
                         const tieneLactancia = papeletasLactancia.some(p =>
                             p.NRO_DOCUMENTO_EMPLEADO === r.NUMERO_DOCUMENTO && p.FECHA_DESDE === fechaDia
                         );
