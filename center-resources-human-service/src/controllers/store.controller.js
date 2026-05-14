@@ -569,7 +569,7 @@ export const storeController = {
 
                 // Consultas de apoyo
                 const [diasDB] = await connection.execute(
-                    `SELECT ID_DIAS, DIA, FECHA, FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
+                    `SELECT ID_DIAS, DIA, FECHA, DATE_FORMAT(FECHA_NUMBER, '%d-%m-%Y') AS FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
                 const [rangosDB] = await connection.execute(`SELECT ID_RANGO_HORA, RANGO_HORA FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`, [idH]);
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
@@ -605,12 +605,12 @@ export const storeController = {
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaFormateada}')
              );`);
 
-                        
+
 
                         return paps; // Retorna el array de papeletas de este día
                     }));
 
-                    console.log(resultadosPapeletas);
+
 
                     // resultadosPapeletas es un array de arrays [[paps día 1], [paps día 2]...]
                     // Lo aplanamos para que sea un solo array de papeletas
@@ -632,6 +632,8 @@ export const storeController = {
 
                     // Papeletas que caen en este día
                     const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER);
+
+                    console.log(papsDelDia);
 
                     return {
                         id: d.POSITION,
