@@ -590,7 +590,7 @@ export const storeController = {
                     console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
                      FROM tb_head_papeleta 
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
-                     AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos.map(() => '?').join(',')}) 
+                     AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos}) 
                      AND FECHA_DESDE = '${fechaIn}'`);
 
                     const [paps] = await connection.query(
