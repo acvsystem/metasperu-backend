@@ -569,7 +569,7 @@ export const storeController = {
 
                 // Consultas de apoyo
                 const [diasDB] = await connection.execute(
-                    `SELECT ID_DIAS, DIA, FECHA, DATE_FORMAT(FECHA_NUMBER, '%d-%m-%Y') AS FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
+                    `SELECT ID_DIAS, DIA, FECHA, FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
                 const [rangosDB] = await connection.execute(`SELECT ID_RANGO_HORA, RANGO_HORA FROM tb_rango_hora WHERE ID_RG_HORARIO = ?`, [idH]);
                 const [trabajadoresDB] = await connection.execute(`SELECT * FROM tb_dias_trabajo WHERE ID_TRB_HORARIO = ?`, [idH]);
                 const [libresDB] = await connection.execute(`SELECT * FROM tb_dias_libre WHERE ID_TRB_HORARIO = ?`, [idH]);
@@ -631,7 +631,14 @@ export const storeController = {
                         }));
 
                     // Papeletas que caen en este día
-                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER);
+
+                    const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
+                    const fechaFormateada = fechaIn
+                        .split('-')
+                        .map(parte => parte.padStart(2, '0'))
+                        .join('-');
+
+                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
                     console.log(papsDelDia);
 
@@ -676,7 +683,7 @@ export const storeController = {
                             nro_documento: l.NUMERO_DOCUMENTO,
                             nombre_completo: l.NOMBRE_COMPLETO,
                             esLactancia: papeletasLactancia.some(p =>
-                                p.NRO_DOCUMENTO_EMPLEADO === l.NUMERO_DOCUMENTO && p.FECHA_DESDE === d.FECHA
+                                p.NRO_DOCUMENTO_EMPLEADO === l.NUMERO_DOCUMENTO && (p.FECHA_DESDE === d.FECHA || p.FECHA_DESDE === fechaFormateada)
                             )
                         }))
                 }));
