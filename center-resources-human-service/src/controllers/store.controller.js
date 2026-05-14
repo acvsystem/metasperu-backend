@@ -332,7 +332,7 @@ export const storeController = {
                      WHERE NRO_DOCUMENTO_EMPLEADO IN (?) 
                      AND ID_PAP_TIPO_PAPELETA = 7 
                      AND FECHA_DESDE = ?`,
-                        [docsTrabajadores, days[0].FECHA]
+                        [docsTrabajadores, days[0].FECHA_NUMBER]
                     );
                     papeletasLactancia = rows;
                 }
