@@ -581,11 +581,11 @@ export const storeController = {
                     ...libresDB.map(l => l.NUMERO_DOCUMENTO)
                 ]);
                 const documentosUnicos = Array.from(documentosSet);
-                console.log(diasDB);
+
                 let papeletasLactancia = [];
                 if (documentosUnicos.length > 0) {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
-
+                    console.log(diasDB[0]);
                     const fechaFin = diasDB[diasDB.length - 1].FECHA_NUMBER;
                     const fechaFormateada = fechaIn
                         .split('-') // Divide la cadena en ["12", "5", "2026"]
@@ -612,6 +612,8 @@ export const storeController = {
 
                 // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
+
+                    
                     const notasParaEsteDia = obsDB
                         .filter(o => o.ID_OBS_DIAS === d.ID_DIAS)
                         .map(o => ({
