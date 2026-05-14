@@ -291,7 +291,7 @@ export const storeController = {
                 }));
             }
 
-            // 1. Consulta principal parametrizada (Seguridad)
+            // 1. Consulta principal parametrizada
             const [schedules] = await pool.query(
                 'SELECT * FROM TB_HORARIO_PROPERTY WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?',
                 [code_store, range_days]
@@ -303,11 +303,10 @@ export const storeController = {
                 }));
             }
 
-            // 2. Mapeamos cada horario para traer su detalle en paralelo
+            // 2. Mapeamos cada horario para traer su detalle
             const responseSchedule = await Promise.all(schedules.map(async (sql) => {
                 const id = sql.ID_HORARIO;
 
-                // Ejecutamos todas las consultas de detalle al mismo tiempo para este cargo
                 const [
                     [ranges],
                     [days],
@@ -322,6 +321,22 @@ export const storeController = {
                     pool.query('SELECT * FROM TB_OBSERVACION WHERE ID_OBS_HORARIO = ?', [id])
                 ]);
 
+                // --- LÓGICA DE PAPELETAS DE LACTANCIA PARA TRABAJADORES ---
+                // Buscamos papeletas tipo 7 para todos los trabajadores involucrados en este horario y este rango de fechas
+                const docsTrabajadores = [...new Set(workDays.map(w => w.NUMERO_DOCUMENTO))];
+                let papeletasLactancia = [];
+
+                if (docsTrabajadores.length > 0) {
+                    const [rows] = await pool.query(
+                        `SELECT * FROM tb_head_papeleta 
+                     WHERE NRO_DOCUMENTO_EMPLEADO IN (?) 
+                     AND ID_PAP_TIPO_PAPELETA = 7 
+                     AND (FECHA_DESDE BETWEEN ? AND ?)`,
+                        [docsTrabajadores, days[0].FECHA, days[days.length - 1].FECHA]
+                    );
+                    papeletasLactancia = rows;
+                }
+
                 return {
                     id: id,
                     cargo: sql.CARGO,
@@ -332,23 +347,46 @@ export const storeController = {
                         rg: r.RANGO_HORA,
                         codigo_tienda: code_store
                     })),
-                    dias: days.map((d, i) => ({
-                        dia: d.DIA,
-                        fecha: d.FECHA,
-                        fecha_number: d.FECHA_NUMBER,
-                        id: d.ID_DIAS,
-                        position: i + 1,
-                        notasDia: observations.map((nt) => nt.ID_OBS_DIAS == d.ID_DIAS)
-                    })),
-                    dias_trabajo: workDays.map(r => ({
-                        id: r.ID_DIA_TRB,
-                        id_cargo: r.ID_TRB_HORARIO,
-                        id_dia: r.ID_TRB_DIAS,
-                        nombre_completo: r.NOMBRE_COMPLETO,
-                        numero_documento: r.NUMERO_DOCUMENTO,
-                        rg: r.ID_TRB_RANGO_HORA,
-                        codigo_tienda: r.CODIGO_TIENDA
-                    })),
+                    dias: days.map((d, i) => {
+                        // Filtrar papeletas que coincidan con este día específico
+                        const papeletasDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA);
+
+                        return {
+                            dia: d.DIA,
+                            fecha: d.FECHA,
+                            fecha_number: d.FECHA_NUMBER,
+                            id: d.ID_DIAS,
+                            position: i + 1,
+                            notasDia: observations.filter((nt) => nt.ID_OBS_DIAS == d.ID_DIAS),
+                            // Agregamos la propiedad papeletas al día
+                            papeletas: papeletasDia.map(p => ({
+                                id: p.ID_HEAD_PAPELETA,
+                                codigo: p.CODIGO_PAPELETA,
+                                documento: p.NRO_DOCUMENTO_EMPLEADO,
+                                tipo: 'LACTANCIA',
+                                descripcion: p.DESCRIPCION
+                            }))
+                        };
+                    }),
+                    dias_trabajo: workDays.map(r => {
+                        // Verificar si este trabajador específico tiene lactancia este día
+                        // Buscamos el objeto día correspondiente para comparar fechas
+                        const fechaDia = days.find(d => d.ID_DIAS === r.ID_TRB_DIAS)?.FECHA;
+                        const tieneLactancia = papeletasLactancia.some(p =>
+                            p.NRO_DOCUMENTO_EMPLEADO === r.NUMERO_DOCUMENTO && p.FECHA_DESDE === fechaDia
+                        );
+
+                        return {
+                            id: r.ID_DIA_TRB,
+                            id_cargo: r.ID_TRB_HORARIO,
+                            id_dia: r.ID_TRB_DIAS,
+                            nombre_completo: r.NOMBRE_COMPLETO,
+                            numero_documento: r.NUMERO_DOCUMENTO,
+                            rg: r.ID_TRB_RANGO_HORA,
+                            codigo_tienda: r.CODIGO_TIENDA,
+                            lactancia: tieneLactancia // Flag útil para el Frontend
+                        };
+                    }),
                     dias_libres: freeDays.map(r => ({
                         id: r.ID_DIA_LBR,
                         id_cargo: r.ID_TRB_HORARIO,
@@ -367,7 +405,6 @@ export const storeController = {
                 };
             }));
 
-            // 3. Respuesta inmediata sin setTimeouts
             res.status(200).json({ data: responseSchedule });
 
         } catch (error) {
