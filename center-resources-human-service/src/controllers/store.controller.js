@@ -325,7 +325,7 @@ export const storeController = {
                 // Buscamos papeletas tipo 7 para todos los trabajadores involucrados en este horario y este rango de fechas
                 const docsTrabajadores = [...new Set(workDays.map(w => w.NUMERO_DOCUMENTO))];
                 let papeletasLactancia = [];
-
+                console.log(docsTrabajadores);
                 if (docsTrabajadores.length > 0) {
                     const [rows] = await pool.query(
                         `SELECT * FROM tb_head_papeleta 
