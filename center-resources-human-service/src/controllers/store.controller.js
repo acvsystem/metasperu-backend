@@ -587,14 +587,21 @@ export const storeController = {
                     const fechaIn = diasDB[0].FECHA_NUMBER;
                     const fechaFin = diasDB[diasDB.length - 1].FECHA;
 
+                    console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
+                     FROM tb_head_papeleta 
+                     WHERE ID_PAP_TIPO_PAPELETA = 7 
+                     AND NRO_DOCUMENTO_EMPLEADO IN (${documentosUnicos.map(() => '?').join(',')}) 
+                     AND FECHA_DESDE = '${fechaIn}'`);
+                     
                     const [paps] = await connection.query(
                         `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, DESCRIPCION 
                      FROM tb_head_papeleta 
                      WHERE ID_PAP_TIPO_PAPELETA = 7 
                      AND NRO_DOCUMENTO_EMPLEADO IN (?) 
-                     AND FECHA_DESDE = ?`,
+                     AND FECHA_DESDE = '${fechaIn}'`,
                         [documentosUnicos, fechaIn]
                     );
+
                     papeletasLactancia = paps;
                 }
 
