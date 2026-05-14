@@ -602,7 +602,7 @@ export const storeController = {
                      AND (
                         (FECHA_DESDE = ?) OR 
                         (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
-                     );`,
+                        );`,
                             [documentosUnicos, fechaIn, fechaFormateada]
                         );
 
