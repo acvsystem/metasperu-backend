@@ -595,8 +595,8 @@ export const storeController = {
                             .join('-'); // El valor con ceros (ej: 12-05-2026)
 
                         const [paps] = await connection.query(
-                            `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO, 
-                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE, DESCRIPCION 
+                            `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
+                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
              AND CODIGO_TIENDA = '${codigoTienda}'
@@ -652,7 +652,9 @@ export const storeController = {
                             id: p.ID_HEAD_PAPELETA,
                             codigo: p.CODIGO_PAPELETA,
                             documento: p.NRO_DOCUMENTO_EMPLEADO,
-                            descripcion: p.DESCRIPCION
+                            descripcion: p.DESCRIPCION,
+                            nombre_completo: p.NOMBRE_COMPLETO,
+                            fecha_compensacion: p.FECHA_DESDE
                         }))
                     };
                 });
