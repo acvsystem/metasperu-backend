@@ -68,8 +68,11 @@ export const loginCenter = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const [rows] = await poolCenter.query(`SELECT ID_LOGIN,PASSWORD_NW,USUARIO,DEFAULT_PAGE,TB_LOGIN.NIVEL,NOMBRE_MENU,RUTA,EMAIL,CODE_STORE FROM TB_PERMISO_SISTEMA INNER JOIN TB_MENU_SISTEMA ON TB_MENU_SISTEMA.ID_MENU = TB_PERMISO_SISTEMA.ID_MENU_PS
-                    INNER JOIN TB_LOGIN ON TB_LOGIN.NIVEL = TB_PERMISO_SISTEMA.NIVEL WHERE usuario = ?`, [username]);
+        const [rows] = await poolCenter.query(`SELECT ID_LOGIN,PASSWORD_NW,USUARIO,DEFAULT_PAGE,TB_LOGIN.NIVEL,NOMBRE_MENU,RUTA,TB_LOGIN.EMAIL,CODE_STORE,TB_LISTA_TIENDA.UNID_SERVICIO 
+                FROM bd_metasperu.TB_PERMISO_SISTEMA 
+                INNER JOIN bd_metasperu.TB_MENU_SISTEMA ON bd_metasperu.TB_MENU_SISTEMA.ID_MENU = TB_PERMISO_SISTEMA.ID_MENU_PS
+                INNER JOIN bd_metasperu.TB_LOGIN ON bd_metasperu.TB_LOGIN.NIVEL = TB_PERMISO_SISTEMA.NIVEL
+                INNER JOIN bd_metasperu.TB_LISTA_TIENDA ON  bd_metasperu.TB_LISTA_TIENDA.SERIE_TIENDA = TB_LOGIN.CODE_STORE WHERE usuario = ?`, [username]);
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
@@ -96,7 +99,7 @@ export const loginCenter = async (req, res) => {
         // ENVIAR EL TOKEN EN EL JSON
         res.json({
             token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
-            user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL,code_store:user.CODE_STORE },
+            user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL,code_store:user.CODE_STORE, unid_servicio: user.UNID_SERVICIO },
             menu: rows.map(r => ({ nombre: r.NOMBRE_MENU, ruta: r.RUTA }))
         });
 
