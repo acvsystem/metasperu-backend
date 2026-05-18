@@ -341,16 +341,16 @@ export const storeController = {
             const io = getIO();
 
             // 1. Obtenemos la sala desde el adapter
-            const sala = io.sockets.adapter.rooms.get('VS');
+            const sala = io.sockets.adapter.rooms.get(marca);
 
             // 2. Verificamos si existe y si tiene miembros
             if (sala && sala.size > 0) {
-                console.log(`La sala 'VS' existe y tiene ${sala.size} usuario(s) conectado(s).`);
+                console.log(`La sala '${marca}' existe y tiene ${sala.size} usuario(s) conectado(s).`);
             } else {
-                console.log("La sala 'VS' no existe o está vacía.");
+                console.log(`La sala '${marca}' no existe o está vacía.`);
             }
 
-            getIO().to('VS').emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: [{ 'codigo_barra': codigo_barra, 'cantidad_solicitada': '1' }] });
+            getIO().to(marca).emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: [{ 'codigo_barra': codigo_barra, 'cantidad_solicitada': '1' }] });
 
             res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
         } catch (error) {
