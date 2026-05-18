@@ -42,7 +42,7 @@ export const initSocket = (server) => {
         socket.on('py_response_one_store_inventory', (data) => {
             const datac = JSON.parse(data.dataCode);
             const socketId = data.pedido_por;
-
+            console.log('Respuesta de inventario de una tienda:', datac);
             io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac });
         });
 
