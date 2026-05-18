@@ -9,7 +9,7 @@ const inventariosPorMarca = new Map();
 
 export const storeController = {
     postReqInventory: async (req, res) => {
-        const { stockData, marca } = req.body; // Asegúrate que Python envíe la marca
+        const { stockData, marca, socketId } = req.body; // Asegúrate que Python envíe la marca
 
         if (!stockData || !marca) {
             return res.status(400).json({ message: 'Data y Marca son requeridos' });
@@ -22,7 +22,7 @@ export const storeController = {
             }
 
             setImmediate(() => {
-                actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData);
+                actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData, socketId);
             });
 
             res.status(200).json({ message: 'Procesando...' });
@@ -78,10 +78,10 @@ export const storeController = {
         }
     },
     callInventoryStore: async (req, res) => { // Cuando el Dashboard de Angular pide actualizar
-        const { marca } = req.params;
+        const { marca, socketId } = req.params;
         try {
             console.log(`📢 Pidiendo inventario a todas las tiendas de: ${marca}`);
-            getIO().to(marca).emit('py_request_inventory', { email: "", isEmail: false }); // El email es opcional aquí, solo queremos que respondan con su stock actual
+            getIO().to(marca).emit('py_request_inventory', { email: "", isEmail: false, socketId: socketId }); // El email es opcional aquí, solo queremos que respondan con su stock actual
             res.json({ message: 'Se emitio señal de comprobacion.', online: await getActiveStoresByBrand(marca) });
         } catch (error) {
             res.status(500).json({ message: 'Error en envio de señal', error });
@@ -372,7 +372,7 @@ async function getActiveStoresByBrand(marca) {
     return onlineStores;
 }
 
-function actualizarMapaPorMarca(marca, serieStore, data) {
+function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
     const mapaMarca = inventariosPorMarca.get(marca);
 
     data.forEach(item => {
@@ -399,7 +399,7 @@ function actualizarMapaPorMarca(marca, serieStore, data) {
     });
 
     console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
-    getIO().emit('update_inventory', { serieStore, marca });
+    getIO().to(socketId).emit('update_inventory', { serieStore, marca });
 }
 
 
