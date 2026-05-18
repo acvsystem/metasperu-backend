@@ -338,6 +338,17 @@ export const storeController = {
                 return res.json({ message: 'Código de barra ,marca y  ID de socket son requeridos' });
             }
 
+            const io = getIO();
+
+            // 1. Obtenemos la sala desde el adapter
+            const sala = io.sockets.adapter.rooms.get('VS');
+
+            // 2. Verificamos si existe y si tiene miembros
+            if (sala && sala.size > 0) {
+                console.log(`La sala 'VS' existe y tiene ${sala.size} usuario(s) conectado(s).`);
+            } else {
+                console.log("La sala 'VS' no existe o está vacía.");
+            }
 
             getIO().to('VS').emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: [{ 'codigo_barra': codigo_barra, 'cantidad_solicitada': '1' }] });
 
