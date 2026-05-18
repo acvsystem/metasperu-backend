@@ -13,6 +13,7 @@ router.post('/api/inventory/application/inventary/email', storeController.callSe
 router.get('/api/inventory/store/:marca', storeController.callInventoryStore);
 router.get('/api/inventory/consolidated/:marca/:serieStore', storeController.getConsolidatedInventory);
 router.post('/api/inventory/one/search', storeController.callInventoryOneStore);
+router.post('/api/inventory/search/barcode', storeController.callInventorySearchCodebar);
 
 // --- RUTAS PARA TRASPASOS
 router.post('/api/inventory/traspasos', uploadTraspasos.single('file'), storeController.callTraspasosFTP);

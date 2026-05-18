@@ -329,6 +329,21 @@ export const storeController = {
                 }
             });
         }
+    },
+    callInventorySearchCodebar: async (req, res) => {
+        const { codigo_barra, marca, socketId } = req.body;
+        try {
+
+            if (!marca.length || !socketId.length || !codigo_barra.length) {
+                return res.json({ message: 'Código de barra ,marca y  ID de socket son requeridos' });
+            }
+
+            getIO().to(marca).emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: [{ 'codigo_barra': codigo_barra, 'cantidad_solicitada': '1' }] });
+
+            res.status(200).json({ message: 'Solicitud de inventario enviada correctamente' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error', error });
+        }
     }
 };
 
@@ -374,6 +389,7 @@ function actualizarMapaPorMarca(marca, serieStore, data) {
     console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
     getIO().emit('update_inventory', { serieStore, marca });
 }
+
 
 function generarCodigoSerie(numero, prefijo = 'T', longitud = 6) {
     const numeroFormateado = numero.toString().padStart(longitud, '0');
