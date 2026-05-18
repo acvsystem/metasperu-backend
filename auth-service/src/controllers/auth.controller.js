@@ -72,7 +72,7 @@ export const loginCenter = async (req, res) => {
                 FROM bd_metasperu.TB_PERMISO_SISTEMA 
                 INNER JOIN bd_metasperu.TB_MENU_SISTEMA ON bd_metasperu.TB_MENU_SISTEMA.ID_MENU = TB_PERMISO_SISTEMA.ID_MENU_PS
                 INNER JOIN bd_metasperu.TB_LOGIN ON bd_metasperu.TB_LOGIN.NIVEL = TB_PERMISO_SISTEMA.NIVEL
-                INNER JOIN bd_metasperu.TB_LISTA_TIENDA ON  bd_metasperu.TB_LISTA_TIENDA.SERIE_TIENDA = TB_LOGIN.CODE_STORE WHERE usuario = ?`, [username]);
+                LEFT JOIN bd_metasperu.TB_LISTA_TIENDA ON  bd_metasperu.TB_LISTA_TIENDA.SERIE_TIENDA = TB_LOGIN.CODE_STORE WHERE usuario = ?`, [username]);
         if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
         const user = rows[0];
