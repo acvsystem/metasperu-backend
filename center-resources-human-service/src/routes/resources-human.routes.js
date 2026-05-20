@@ -10,7 +10,7 @@ router.post('/api/asistence/employes/store/response', storeController.postAsiste
 router.post('/api/asistence/employes/store/refresh', storeController.postRefresAsistenciaEmpleados);
 
 // --- RUTAS REGISTRO EMPLEADOS EJB ---
-router.get('/api/asistence/ejb/register/employes', storeController.callRegisterEmployesStore);
+router.get('/api/asistence/ejb/register/employes/:socketId', storeController.callRegisterEmployesStore);
 router.post('/api/asistence/ejb/register/employes/response', storeController.postEjbRegisterEmployes);
 
 // --- PAPELETAS EMPLEADOS ---

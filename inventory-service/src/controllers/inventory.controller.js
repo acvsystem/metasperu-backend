@@ -1,5 +1,14 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
+import Redis from 'ioredis';
+import crypto from 'crypto'; // Módulo nativo de Node.js para generar el Hash
+
+// Inicializamos la conexión a tu Redis local
+const redis = new Redis({
+    host: '127.0.0.1',
+    port: 6379,
+    // Si tu Redis tuviera contraseña, agregarías: password: 'tu_password'
+});
 
 export const createSession = async (req, res) => {
     const { tienda_id, assigned_section } = req.body;
@@ -43,57 +52,96 @@ export const createSession = async (req, res) => {
 
 export const registerScan = async (req, res) => {
     const { session_code, sku, quantity = 1 } = req.body;
-    const scannedBy = req.user.id; // ID del usuario del Pocket (desde el token)
+    const scannedBy = req.user.id;
+
+    const lockKey = `lock:scan:${session_code}:${sku}:${quantity}:${scannedBy}`;
 
     try {
-        // 1. Buscamos el ID de la sesión usando el código único
+        // Ponemos un bloqueo de respaldo muy corto (500 milisegundos)
+        // PX indica milisegundos en lugar de segundos (EX)
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'PX', 500);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Clon de ráfaga bloqueado para SKU: ${sku}`);
+            return res.status(429).json({ message: 'Evitando duplicidad por ráfaga.' });
+        }
+
+        // 1. Validar Sesión
         const [session] = await pool.execute(
             'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
             [session_code]
         );
 
         if (session.length === 0) {
-            return res.status(404).json({ message: 'Sesión no encontrada o ya está cerrada' });
+            await redis.del(lockKey); // Liberar si falla
+            return res.status(404).json({ message: 'Sesión no encontrada' });
         }
 
         const sessionId = session[0].id;
 
-        // 2. Insertamos el escaneo en la base de datos
+        // 2. Insertar en MySQL
         await pool.execute(
             'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por) VALUES (?, ?, ?, ?)',
             [sessionId, sku, quantity, scannedBy]
         );
 
-        // 3. ¡MAGIA! Notificamos al Dashboard en tiempo real a través de Socket.io
-        // Enviamos el aviso solo a la "sala" (room) que tiene el nombre del código de sesión
-        req.io.to(session_code).emit('new-scan-received', {
-            sku,
-            quantity,
-            scanned_at: new Date(),
-            user: req.user.nombre // Para saber quién lo escaneó en el dashboard
-        });
+        // --- ¡EL TRUCO AQUÍ! ---
+        // Como MySQL ya terminó de guardar, borramos el candado de inmediato.
+        // El espacio queda libre para el siguiente pistoleo en el próximo milisegundo.
+        await redis.del(lockKey);
+
+        // 3. Socket.io
+        req.io.to(session_code).emit('new-scan-received', { sku, quantity, scanned_at: new Date() });
 
         res.status(200).json({ message: 'Producto registrado correctamente' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al registrar escaneo', error: error.message });
+        await redis.del(lockKey); // Liberar siempre en caso de error
+        res.status(500).json({ message: 'Error', error: error.message });
     }
-
-
-
 };
 
 export const syncBulkScans = async (req, res) => {
-
     const { session_code, scans } = req.body; // 'scans' es un array de objetos
     const userId = req.user.id;
+
+    if (!scans || scans.length === 0) {
+        return res.status(400).json({ error: 'No se proporcionaron datos para escanear.' });
+    }
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (REDIS LOCK) ---
+    // 1. Convertimos el array de escaneos a un string único y generamos su Hash MD5
+    const scansString = JSON.stringify(scans);
+    const scansHash = crypto.createHash('md5').update(scansString).digest('hex');
+
+    // 2. Creamos la clave de bloqueo única para esta ráfaga
+    const lockKey = `lock:sync:${session_code}:${scansHash}`;
+
     try {
+        // 3. Intentamos adquirir el bloqueo atómico en Redis.
+        // 'NX' = Solo si no existe. 'EX' 5 = Expira automáticamente en 5 segundos.
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 5);
+
+        if (!lockAcquired) {
+            // Si otra petición idéntica ya tomó el candado en este mismo milisegundo, la descartamos.
+            console.warn(`[DEDUPLICACIÓN] Petición duplicada bloqueada para la sesión: ${session_code}`);
+            return res.status(429).json({
+                error: 'Esta solicitud ya está siendo procesada. Evitando registros duplicados.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
         const [session] = await pool.execute(
             'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
             [session_code]
         );
 
-        if (session.length === 0) return res.status(500).json({ error: 'Sesión no válida o finalizada' });
+        if (session.length === 0) {
+            // Si la sesión no es válida, liberamos el candado inmediatamente para no bloquear futuros envíos buenos
+            await redis.del(lockKey);
+            return res.status(500).json({ error: 'Sesión no válida o finalizada' });
+        }
+
         const sessionId = session[0].id;
 
         // Preparamos los datos para una sola inserción masiva (optimización SQL)
@@ -109,9 +157,15 @@ export const syncBulkScans = async (req, res) => {
             count: scans.length,
             last_scans: scans.slice(-5) // enviamos los últimos 5 para previsualización
         });
-        console.log(values);
+
+        console.log(`[EXITO] Guardados ${scans.length} escaneos para la sesión ${session_code}`);
         res.status(200).json({ message: 'Sincronización exitosa' });
+
     } catch (error) {
+        // Si el proceso truena a mitad de camino por culpa de la base de datos o socket, 
+        // borramos el candado de Redis para que la app móvil/malla pueda reintentar de inmediato.
+        await redis.del(lockKey);
+        console.error('Error crítico en syncBulkScans:', error);
         res.status(500).json({ error: error.message });
     }
 };

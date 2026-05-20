@@ -41,7 +41,7 @@ export const storeController = {
 
     },
     callAsistenceEmployesStore: async (req, res) => {
-        const { fecha, tipoConsulta } = req.body; // Asegúrate que Python envíe la marca
+        const { fecha, tipoConsulta, socketId } = req.body; // Asegúrate que Python envíe la marca
 
         if (!fecha || !tipoConsulta) {
             return res.status(400).json({ message: 'Fecha y Tipo de Consulta son requeridos' });
@@ -50,7 +50,7 @@ export const storeController = {
         try {
             const propertyUnique = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-            getIO().to('servidor_backup').emit('py_asistencia_empleados', { fecha, tipoConsulta, propertyUnique });
+            getIO().to('servidor_backup').emit('py_asistencia_empleados', { fecha, tipoConsulta, propertyUnique, socketId });
             res.status(200).json({ property: propertyUnique, message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
@@ -58,15 +58,15 @@ export const storeController = {
     },
     callRegisterEmployesStore: async (req, res) => {
         try {
-
-            getIO().to('servidor_ejb').emit('py_registro_empleados');
+            const { socketId } = req.params;
+            getIO().to('servidor_ejb').emit('py_registro_empleados', { socketId });
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
         }
     },
     postAsistenciaEmployesStore: async (req, res) => {
-        const { propertyUnique, data } = req.body;
+        const { propertyUnique, data, socketId } = req.body;
 
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
@@ -76,7 +76,7 @@ export const storeController = {
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
-                getIO().emit('dashboard_refresh_empleados');
+                getIO().to(socketId).emit('dashboard_refresh_empleados');
             });
 
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
@@ -86,7 +86,7 @@ export const storeController = {
 
     },
     postEjbRegisterEmployes: async (req, res) => {
-        const { data } = req.body;
+        const { data, socketId } = req.body;
 
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
@@ -125,7 +125,7 @@ export const storeController = {
             }
 
             // 4. Emitir al dashboard en tiempo real
-            getIO().emit('dashboard_empleados_horario', datosFormateados);
+            getIO().to(socketId).emit('dashboard_empleados_horario', datosFormateados);
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
@@ -1836,14 +1836,6 @@ const verificarDiaLibre = async (documento, fecha) => {
             AND FECHA_NUMBER = ? OR FECHA = ?;
         `;
 
-
-        console.log(`
-            SELECT TB_DIAS_HORARIO.ID_DIAS 
-            FROM TB_DIAS_LIBRE 
-            INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
-            WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = '${documento}'
-            AND FECHA_NUMBER = '${fechaLimpia}' OR FECHA = '${fecha}';
-        `);
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
         const [rows] = await pool.execute(query, [documento, fechaLimpia, fecha]);
 
@@ -1988,10 +1980,10 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
-        console.log(totalDecimal);
+
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
-        console.log(totalDecimal, totalTiempo);
+
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
         return {
             success: true,
