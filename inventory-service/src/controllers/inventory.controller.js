@@ -55,7 +55,7 @@ export const registerScan = async (req, res) => {
     const scannedBy = req.user.id;
 
     const lockKey = `lock:scan:${session_code}:${sku}:${quantity}:${scannedBy}`;
-
+    console.log(lockKey);
     try {
         // Ponemos un bloqueo de respaldo muy corto (500 milisegundos)
         // PX indica milisegundos en lugar de segundos (EX)
