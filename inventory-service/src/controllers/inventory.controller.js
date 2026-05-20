@@ -116,12 +116,13 @@ export const syncBulkScans = async (req, res) => {
 
     // 2. Creamos la clave de bloqueo única para esta ráfaga
     const lockKey = `lock:sync:${session_code}:${scansHash}`;
-    console.log(lockKey);
+ 
+
     try {
         // 3. Intentamos adquirir el bloqueo atómico en Redis.
         // 'NX' = Solo si no existe. 'EX' 5 = Expira automáticamente en 5 segundos.
         const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 5);
-
+        console.log(lockAcquired);
         if (!lockAcquired) {
             // Si otra petición idéntica ya tomó el candado en este mismo milisegundo, la descartamos.
             console.warn(`[DEDUPLICACIÓN] Petición duplicada bloqueada para la sesión: ${session_code}`);
