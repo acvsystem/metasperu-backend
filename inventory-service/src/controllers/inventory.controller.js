@@ -330,24 +330,44 @@ export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie_store } = req.query;
     let objResponse = { success: true };
 
-    if (session_code && serie_store) {
+    if (!session_code || !serie_store) {
+        return res.status(400).json({ error: "Faltan parámetros requeridos: session_code y serie_store" });
+    }
 
-        const [sesion] = await pool.execute(`SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?`, [session_code]);
-        const invExist = ((sesion || [])[0] || {}).inventario_registrado || 0;
-        console.log('getInventoryReqStore', invExist);
-        if (sesion.length && invExist) {
-            const [inventario_store] = await pool.execute(`SELECT * FROM inventario_store WHERE cSessionCode = ?`, [session_code]);
+    try {
+        // OPTIMIZACIÓN 1: Traemos SOLO la columna necesaria en lugar de SELECT *
+        const [sesionRows] = await pool.execute(
+            `SELECT inventario_registrado FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        // Una forma mucho más limpia y segura de validar si el registro existe en JS
+        const sesion = sesionRows[0];
+        const invExist = sesion?.inventario_registrado || 0;
+
+        console.log('getInventoryReqStore - Existencia:', invExist);
+
+        if (sesionRows.length > 0 && invExist) {
+            // OPTIMIZACIÓN 2: Esta query ahora volará gracias al índice 'idx_inv_store_session'
+            const [inventario_store] = await pool.execute(
+                `SELECT * FROM inventario_store WHERE cSessionCode = ?`,
+                [session_code]
+            );
+
             objResponse['codigo_sesion'] = session_code;
             objResponse['inventario'] = inventario_store;
         } else {
+            // Si no existe, disparamos el Socket de la Pocket/Tienda de forma normal
             getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
         }
 
-        res.status(200).json(objResponse);
-    } else {
-        res.status(500).json({ error: "Error envio a socket" });
+        return res.status(200).json(objResponse);
+
+    } catch (error) {
+        console.error("Error en getInventoryReqStore:", error);
+        return res.status(500).json({ error: "Error interno del servidor", details: error.message });
     }
-}
+};
 
 export const postInventoryResStore = async (req, res) => {
     const dataBody = req.body;
