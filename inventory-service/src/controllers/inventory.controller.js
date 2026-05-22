@@ -211,57 +211,42 @@ export const getAssignedSection = async (req, res) => {
 }
 
 export const getSessionSummary = async (req, res) => {
+   
     const { session_code } = req.params;
 
-    if (!session_code) {
-        return res.status(400).json({ message: 'El código de sesión es requerido.' });
-    }
-
     try {
-        // --- PASO 1: TRAER INFO DE LA SESIÓN EN UNA MINI-QUERY RÁPIDA ---
-        const [sessionInfo] = await pool.execute(
-            `SELECT sess.id, sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, u.username 
-             FROM inventario_sesiones sess
-             INNER JOIN tiendas t ON t.id = sess.tienda_id
-             INNER JOIN usuarios u ON u.id = sess.creado_por
-             WHERE sess.codigo_sesion = ?`,
-            [session_code]
-        );
-
-        if (sessionInfo.length === 0) {
-            return res.status(404).json({ message: 'Sesión no encontrada.' });
-        }
-
-        const sessionData = sessionInfo[0];
-
-        // --- PASO 2: QUERY DE RESUMEN DE PRODUCTOS OPTIMIZADA ---
-        // Usamos MAX(s.id) renombrado como 'ultimo_escaneo_id'. 
-        // Al ser autoincremental, el ID más alto siempre representa lo último que ingresó.
-        const summaryQuery = `
-            SELECT 
-                s.sku, 
+        const query = `
+            SELECT    s.id, s.sku, 
                 SUM(s.cantidad) as total_cantidad,
-                MAX(s.id) as ultimo_escaneo_id, 
-                COUNT(*) as veces_escaneado,
+                MAX(s.escaneado_por) as ultimo_escaneo,
+                COUNT(s.id) as veces_escaneado,
                 s.seccion_id as seccion_id,
                 u.username as usuario
             FROM inventario_escaneos s
-            INNER JOIN usuarios u ON s.escaneado_por = u.id
-            WHERE s.sesion_id = ?
-            GROUP BY s.sku, s.seccion_id, u.username
-            ORDER BY ultimo_escaneo_id DESC
+            JOIN inventario_sesiones sess ON s.sesion_id = sess.id
+            JOIN usuarios u ON s.escaneado_por = u.id
+            WHERE sess.codigo_sesion = ?
+            GROUP BY s.id, s.sku, seccion_id, u.username
+            ORDER BY ultimo_escaneo DESC
         `;
 
-        const [summary] = await pool.execute(summaryQuery, [sessionData.id]);
+        const [summary] = await pool.execute(query, [session_code]);
 
-        // Retornamos la respuesta con la estructura exacta que espera tu Frontend
+        // También obtenemos info general de la sesión
+        const [sessionInfo] = await pool.execute(
+            `SELECT sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, u.username FROM inventario_sesiones sess
+             INNER JOIN tiendas t ON t.id = sess.tienda_id
+             INNER JOIN usuarios u ON u.id = sess.creado_por
+             WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
         res.status(200).json({
-            session: sessionData,
+            session: sessionInfo[0],
             products: summary
         });
 
     } catch (error) {
-        console.error("Error en getSessionSummary:", error);
         res.status(500).json({ message: 'Error al obtener el resumen', error: error.message });
     }
 };
