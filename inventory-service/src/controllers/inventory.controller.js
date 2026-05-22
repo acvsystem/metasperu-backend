@@ -219,7 +219,6 @@ export const getSessionSummary = async (req, res) => {
 
     try {
         // --- PASO 1: TRAER INFO DE LA SESIÓN EN UNA MINI-QUERY RÁPIDA ---
-        // Al separar esto, obtenemos el 'id' numérico interno de la sesión.
         const [sessionInfo] = await pool.execute(
             `SELECT sess.id, sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, u.username 
              FROM inventario_sesiones sess
@@ -236,14 +235,13 @@ export const getSessionSummary = async (req, res) => {
         const sessionData = sessionInfo[0];
 
         // --- PASO 2: QUERY DE RESUMEN DE PRODUCTOS OPTIMIZADA ---
-        // 1. Quitamos s.id del SELECT y del GROUP BY para colapsar los duplicados reales.
-        // 2. Filtramos directamente por s.sesion_id utilizando el ID numérico que ya encontramos.
-        //    Buscar por números (INT) es infinitamente más rápido en MySQL que buscar por texto (VARCHAR).
+        // Usamos MAX(s.id) renombrado como 'ultimo_escaneo_id'. 
+        // Al ser autoincremental, el ID más alto siempre representa lo último que ingresó.
         const summaryQuery = `
             SELECT 
                 s.sku, 
                 SUM(s.cantidad) as total_cantidad,
-                MAX(s.created_at) as ultimo_escaneo, -- Cambia 'created_at' por tu columna de fecha si se llama distinto
+                MAX(s.id) as ultimo_escaneo_id, 
                 COUNT(*) as veces_escaneado,
                 s.seccion_id as seccion_id,
                 u.username as usuario
@@ -251,7 +249,7 @@ export const getSessionSummary = async (req, res) => {
             INNER JOIN usuarios u ON s.escaneado_por = u.id
             WHERE s.sesion_id = ?
             GROUP BY s.sku, s.seccion_id, u.username
-            ORDER BY ultimo_escaneo DESC
+            ORDER BY ultimo_escaneo_id DESC
         `;
 
         const [summary] = await pool.execute(summaryQuery, [sessionData.id]);
