@@ -197,18 +197,31 @@ export const syncBulkScans = async (req, res) => {
 
 
 export const getAssignedSection = async (req, res) => {
+    const { session_code } = req.params;
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
     try {
-        const { session_code } = req.params;
+        // OPTIMIZACIÓN: Especificamos las columnas exactas en lugar de usar "*"
+        // Cambia estos nombres por las columnas reales de tu tabla (ej: id, nombre_seccion, usuario_asignado, etc.)
         const query = `
-            SELECT  * FROM  secciones_asginados WHERE codigo_sesion = ?;
+            SELECT id, nombre_seccion, usuario_id, estado 
+            FROM secciones_asginados 
+            WHERE codigo_sesion = ?;
         `;
+
         const [sections] = await pool.execute(query, [session_code]);
 
-        res.json(sections);
+        // Si no hay secciones, devolvemos un array vacío de forma limpia con un estado 200
+        res.status(200).json(sections);
+
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error en getAssignedSection:", error);
+        res.status(500).json({ error: 'Error al obtener las secciones asignadas', details: error.message });
     }
-}
+};
 
 export const getSessionSummary = async (req, res) => {
     const { session_code } = req.params;
