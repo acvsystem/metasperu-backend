@@ -14,9 +14,24 @@ export const createSession = async (req, res) => {
     const { tienda_id, assigned_section } = req.body;
     const userId = req.user.id;
 
-    const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (CREATE SESSION LOCK) ---
+    // Bloqueamos por la combinación de Tienda y Usuario creador.
+    // Evita que el mismo usuario abra múltiples sesiones en la misma tienda en el mismo instante.
+    const lockKey = `lock:session:create:${tienda_id}:${userId}`;
 
     try {
+        // Ponemos un bloqueo de 4 segundos. Tiempo suficiente para resolver múltiples inserts
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 4);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento de creación de sesión duplicada bloqueado para usuario ${userId} en tienda ${tienda_id}`);
+            return res.status(429).json({
+                message: 'Ya se está procesando una solicitud de creación de sesión. Por favor, espere.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
         const [result] = await pool.execute(
             'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id, estado, creado_por) VALUES (?, ?, ?, ?)',
@@ -24,12 +39,14 @@ export const createSession = async (req, res) => {
         );
 
         if (assigned_section && assigned_section.length > 0) {
+            // Nota de optimización: Podrías cambiar esto luego a un solo INSERT masivo, 
+            // pero mantenemos tus promesas actuales ejecutándose de forma segura.
             const insertPromises = assigned_section.map((section) => {
                 return pool.execute(
                     'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
                     [
                         sessionCode,
-                        section.seccion_id || null, // Si no hay ID, mandamos null, no undefined
+                        section.seccion_id || null,
                         section.nombre_seccion || 'Sin Nombre'
                     ]
                 );
@@ -38,6 +55,10 @@ export const createSession = async (req, res) => {
             await Promise.all(insertPromises);
         }
 
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // Como todo salió bien y las inserciones terminaron, borramos el bloqueo.
+        await redis.del(lockKey);
+
         res.status(201).json({
             id: result.insertId,
             session_code: sessionCode,
@@ -45,6 +66,9 @@ export const createSession = async (req, res) => {
         });
 
     } catch (error) {
+        // Si la base de datos falla (por ejemplo, timeout en Promise.all), 
+        // limpiamos Redis para permitir que el usuario lo intente de nuevo de forma manual.
+        await redis.del(lockKey);
         console.error("Error en createSession:", error);
         res.status(500).json({ message: 'Error al crear sesión', error: error.message });
     }
@@ -116,7 +140,7 @@ export const syncBulkScans = async (req, res) => {
 
     // 2. Creamos la clave de bloqueo única para esta ráfaga
     const lockKey = `lock:sync:${session_code}:${scansHash}`;
- 
+
 
     try {
         // 3. Intentamos adquirir el bloqueo atómico en Redis.
@@ -393,55 +417,188 @@ export const getPocketScan = async (req, res) => {
 export const updateEndedSession = async (req, res) => {
     const { codeSession } = req.body;
 
+    if (!codeSession) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (CLOSE SESSION LOCK) ---
+    // Bloqueamos usando el código de la sesión para que nadie más intente alterarla en este milisegundo
+    const lockKey = `lock:session:close:${codeSession}`;
+
     try {
-        await pool.execute(
+        // Ponemos un bloqueo de 3 segundos
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 3);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento duplicado de finalizar la sesión bloqueado: ${codeSession}`);
+            return res.status(429).json({
+                message: 'La sesión ya está siendo finalizada por otra solicitud en curso.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        const [result] = await pool.execute(
             'UPDATE inventario_sesiones SET estado = ? WHERE codigo_sesion = ?',
             ['FINALIZADO', codeSession]
         );
+
+        // Opcional: Si el UPDATE no afectó a ninguna fila (ej. el código no existía)
+        if (result.affectedRows === 0) {
+            await redis.del(lockKey);
+            return res.status(404).json({ message: 'No se encontró la sesión especificada.' });
+        }
+
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // Como el estado cambió correctamente en MySQL, liberamos el candado inmediatamente
+        await redis.del(lockKey);
+
         res.json({ message: 'Sesion Finalizada' });
+
     } catch (error) {
+        // Si el motor de base de datos falla, limpiamos Redis para no dejar la sesión "congelada"
+        await redis.del(lockKey);
         res.status(500).json({ message: error.message });
     }
-}
+};
 
 export const updateStartSession = async (req, res) => {
     const { codeSession } = req.body;
 
+    if (!codeSession) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (START SESSION LOCK) ---
+    // Bloqueamos usando el código de la sesión para evitar que múltiples hilos alteren el estado en paralelo
+    const lockKey = `lock:session:start:${codeSession}`;
+
     try {
-        await pool.execute(
+        // Ponemos un bloqueo rápido de 3 segundos
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 3);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento duplicado de activar la sesión bloqueado: ${codeSession}`);
+            return res.status(429).json({
+                message: 'La sesión ya está siendo activada por otra solicitud en curso.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        const [result] = await pool.execute(
             'UPDATE inventario_sesiones SET estado = ? WHERE codigo_sesion = ?',
             ['ACTIVO', codeSession]
         );
+
+        // Validación preventiva: Si el código de sesión enviado no existía en la BD
+        if (result.affectedRows === 0) {
+            await redis.del(lockKey);
+            return res.status(404).json({ message: 'No se encontró la sesión especificada.' });
+        }
+
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // El estado en MySQL cambió a 'ACTIVO' correctamente, liberamos el candado de inmediato
+        await redis.del(lockKey);
+
         res.json({ message: 'Sesion Activada' });
+
     } catch (error) {
+        // En caso de un fallo en el motor de base de datos, limpiamos el lock para permitir reintentos manuales
+        await redis.del(lockKey);
         res.status(500).json({ message: error.message });
     }
 }
+
 
 export const updateConteoPocket = async (req, res) => {
     const { id, cantidad } = req.body;
 
+    if (!id || cantidad === undefined) {
+        return res.status(400).json({ message: 'El ID del escaneo y la cantidad son requeridos.' });
+    }
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (UPDATE COUNT LOCK) ---
+    // Bloqueamos por el ID del registro de escaneo específico para evitar colisiones en el mismo segundo
+    const lockKey = `lock:scan:update:${id}`;
+
     try {
-        await pool.execute(
+        // Ponemos un bloqueo ultracorto de 3 segundos
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 3);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento duplicado de actualizar conteo bloqueado para el ID: ${id}`);
+            return res.status(429).json({
+                message: 'Ya se está procesando una actualización para este registro. Por favor, espere.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        const [result] = await pool.execute(
             'UPDATE inventario_escaneos SET cantidad = ? WHERE id = ?',
             [cantidad, id]
         );
+
+        // Validación preventiva: Si el ID enviado no existía en la BD
+        if (result.affectedRows === 0) {
+            await redis.del(lockKey);
+            return res.status(404).json({ message: 'No se encontró el registro de escaneo especificado.' });
+        }
+
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // Como MySQL aplicó el cambio con éxito, borramos el candado de inmediato
+        await redis.del(lockKey);
+
         res.json({ message: 'Conteo actualizado correctamente' });
+
     } catch (error) {
+        // En caso de que falle la base de datos, limpiamos el lock para permitir reintentos legítimos
+        await redis.del(lockKey);
         res.status(500).json({ message: error.message });
     }
-}
+};
 
 export const updateCheckedRow = async (req, res) => {
     const { id, checked } = req.body;
 
+    if (id === undefined || checked === undefined) {
+        return res.status(400).json({ message: 'El ID y el estado checked son requeridos.' });
+    }
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (ROW CHECK LOCK) ---
+    // Bloqueamos por el ID de la fila específica para evitar actualizaciones paralelas en la misma celda
+    const lockKey = `lock:store:check:${id}`;
+
     try {
-        await pool.execute(
+        // Ponemos un bloqueo ultracorto de 2 segundos (tiempo más que suficiente para un UPDATE simple)
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 2);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento duplicado de cambiar check bloqueado para el ID: ${id}`);
+            return res.status(429).json({
+                message: 'Se está procesando un cambio para esta fila. Por favor, espere.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        const [result] = await pool.execute(
             'UPDATE inventario_store SET checking = ? WHERE id = ?',
             [checked, id]
         );
+
+        // Validación preventiva: Si el ID enviado no existía en la tabla
+        if (result.affectedRows === 0) {
+            await redis.del(lockKey);
+            return res.status(404).json({ message: 'No se encontró el registro especificado.' });
+        }
+
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // El cambio se aplicó correctamente en MySQL, removemos el candado de inmediato
+        await redis.del(lockKey);
+
         res.json({ message: 'Check Registrado' });
+
     } catch (error) {
+        // En caso de error en la base de datos, limpiamos Redis para permitir reintentos normales
+        await redis.del(lockKey);
         res.status(500).json({ message: error.message });
     }
-}
+};
