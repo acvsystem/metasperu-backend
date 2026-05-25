@@ -427,7 +427,7 @@ export const storeController = {
                     rango: r.RANGO_HORA,
                     celdas: diasDB.map(d => ({
                         id_dia: d.POSITION,
-                        dayBlock: processDiaBLock(d.FECHA_NUMBER),
+                        dayBlock: processDiaBLock(d.FECHA_NUMBER) || false,
                         trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
@@ -748,6 +748,7 @@ export const storeController = {
                     rango: r.RANGO_HORA,
                     celdas: diasDB.map(d => ({
                         id_dia: d.POSITION,
+                        dayBlock: processDiaBLock(d.FECHA_NUMBER) || false,
                         trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
