@@ -123,7 +123,7 @@ export const storeController = {
             if (arDataAsistenciaEmpleados.length > 0) {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
-            console.log(datosFormateados);
+            console.log(126,socketId, datosFormateados.length);
             // 4. Emitir al dashboard en tiempo real
             getIO().to(socketId).emit('dashboard_empleados_horario', datosFormateados);
 
