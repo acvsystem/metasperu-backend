@@ -631,7 +631,7 @@ export const storeController = {
 
             for (const cab of cabeceras) {
                 const idH = cab.ID_HORARIO;
-
+                console.log('ID HORARIO:', idH);
                 // Consultas de apoyo
                 const [diasDB] = await connection.execute(
                     `SELECT ID_DIAS, DIA, FECHA, FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
