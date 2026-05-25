@@ -76,7 +76,7 @@ export const storeController = {
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
-                getIO().to(socketId).emit('dashboard_refresh_empleados');
+                getIO().emit('dashboard_refresh_empleados');
             });
 
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
@@ -125,7 +125,7 @@ export const storeController = {
             }
             console.log(126,socketId, datosFormateados.length);
             // 4. Emitir al dashboard en tiempo real
-            getIO().to(socketId).emit('dashboard_empleados_horario', datosFormateados);
+            getIO().emit('dashboard_empleados_horario', datosFormateados);
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
