@@ -45,8 +45,8 @@ export const initSocket = (server) => {
         socket.on('py_response_kardex_store', (data) => {
             const dataKardex = JSON.parse(data.kardex);
             const socketId = data.pedido_por;
-
-            io.emit('dashboard_kardex_store', dataKardex);
+            
+            io.to(socketId).emit('dashboard_kardex_store', dataKardex);
         });
 
         socket.on('py_response_kardex_campos_libres', (data) => {
