@@ -427,6 +427,7 @@ export const storeController = {
                     rango: r.RANGO_HORA,
                     celdas: diasDB.map(d => ({
                         id_dia: d.POSITION,
+                        dayBlock: processDiaBLock(d.FECHA_NUMBER),
                         trabajadores: trabajadoresDB
                             .filter(t => t.ID_TRB_RANGO_HORA === r.ID_RANGO_HORA && t.ID_TRB_DIAS === d.ID_DIAS)
                             .map(t => ({
@@ -2191,6 +2192,26 @@ const hrPapeleta = async (fecha, documento) => {
         // Es mejor devolver null o un estado de error manejable
         return { nivel: "ERROR" };
     }
+};
+
+const processDiaBLock = (fecha) => {
+    const fechaVariable = fecha;
+
+    // 1. Separar el texto por los guiones
+    const [dia, mes, anio] = fechaVariable.split('-');
+
+    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
+    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+
+    // 3. Obtener la fecha de hoy
+    const hoy = new Date();
+
+    // 4. Comparar año, mes y día
+    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
+        fechaAComparar.getMonth() === hoy.getMonth() &&
+        fechaAComparar.getDate() === hoy.getDate();
+
+    return sonIguales;
 };
 
 const formatearFechaDinamica = (textoEntrada) => {
