@@ -1371,13 +1371,58 @@ export const storeController = {
         }
     },
     putUpdateDateScheduleStore: async (req, res) => {
-        const { id_papeleta, nueva_fecha } = req.body;
+        const { codeBallot, id_papeleta, nueva_fecha } = req.body;
         let connection;
         try {
             connection = await pool.getConnection();
             let query = `UPDATE tb_head_papeleta SET FECHA_DESDE = ?, FECHA_HASTA = ?, ISUPDATE = 1 WHERE ID_HEAD_PAPELETA = ?`;
             await connection.execute(query, [nueva_fecha, nueva_fecha, id_papeleta]);
-            res.status(200).json({ success: true, message: 'Fecha actualizada correctamente.' });
+
+            // 2. Consulta de Cabecera
+            const headQuery = `SELECT 
+                            h.CARGO_EMPLEADO,
+                            h.CODIGO_PAPELETA,
+                            h.CODIGO_TIENDA,
+                            h.DESCRIPCION,
+                            h.ESTADO_PAPELETA,
+                            h.FECHA_CREACION,
+                            h.FECHA_DESDE,
+                            h.FECHA_HASTA,
+                            h.HORA_ACUMULADA,
+                            h.HORA_LLEGADA,
+                            h.HORA_SALIDA,
+                            h.HORA_SOLICITADA,
+                            h.ID_HEAD_PAPELETA,
+                            h.ID_PAP_TIPO_PAPELETA,
+                            h.ISUPDATE,
+                            h.ISBLOCKED,
+                            h.NOMBRE_COMPLETO,
+                            h.NRO_DOCUMENTO_EMPLEADO,
+                            t.DESCRIPCION AS TIENDA,
+                            p.DESCRIPCION AS TIPO_PAPELETA
+                            FROM tb_head_papeleta h 
+                            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+                            INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
+            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
+
+            // 3. Verificación de existencia
+            if (rowsHead.length === 0) {
+                return res.status(404).json({ message: 'Papeleta no encontrada' });
+            }
+
+            const headData = rowsHead[0];
+            const idHead = headData.ID_HEAD_PAPELETA;
+
+            // 4. Consulta de Detalle
+            const detailQuery = `SELECT * FROM tb_detalle_papeleta WHERE DET_ID_HEAD_PAPELETA = ?`;
+            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
+
+            res.status(200).json({
+                success: true,
+                message: 'Fecha actualizada correctamente.',
+                head_ballot: headData, // Enviamos el objeto directo, no el array de 1 posición
+                detail_ballot: rowsDetail
+            });
         } catch (error) {
             console.error("Error en putUpdateDateScheduleStore:", error);
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
