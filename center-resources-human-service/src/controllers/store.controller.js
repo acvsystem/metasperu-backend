@@ -864,9 +864,9 @@ export const storeController = {
                 const mappingDias = {};
                 for (const d of item.dias) {
                     const [resDia] = await connection.execute(
-                        `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION) 
+                        `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION, FECHA_NUMBER) 
                      VALUES (?, ?, ?, ?)`,
-                        [idHorario, n(d.dia), n(d.fecha), n(d.id)]
+                        [idHorario, n(d.dia), n(d.fecha), n(d.id), n(formatearFechaDinamica(d.fecha))]
                     );
                     mappingDias[d.id] = resDia.insertId;
 
@@ -2192,3 +2192,25 @@ const hrPapeleta = async (fecha, documento) => {
         return { nivel: "ERROR" };
     }
 };
+
+const formatearFechaDinamica = (textoEntrada) => {
+    const meses = {
+        'ene': '01', 'feb': '02', 'mar': '03', 'abr': '04', 'may': '05', 'jun': '06',
+        'jul': '07', 'ago': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dic': '12'
+    };
+
+    // 1. Separar y limpiar espacios/minúsculas
+    const partes = textoEntrada.split('-').map(p => p.trim().toLowerCase());
+
+    const dia = partes[0].padStart(2, '0');
+    const mesTexto = partes[1];
+
+    // 2. OBTENER EL AÑO ACTUAL DE FORMA DINÁMICA 
+    const anioActual = new Date().getFullYear(); // Esto devolverá 2026, 2027, etc.
+
+    // 3. Obtener el número del mes
+    const mesNumero = meses[mesTexto];
+
+    // 4. Armar el resultado final
+    return `${dia}-${mesNumero}-${anioActual}`;
+}
