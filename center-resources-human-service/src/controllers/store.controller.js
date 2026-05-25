@@ -764,6 +764,7 @@ export const storeController = {
                 // Reconstruir filaLibres
                 const filaLibres = diasDB.map(d => ({
                     id_dia: d.POSITION,
+                    dayBlock: processDiaBLock(d.FECHA_NUMBER) || false,
                     trabajadores: libresDB
                         .filter(l => l.ID_TRB_DIAS === d.ID_DIAS)
                         .map(l => ({
