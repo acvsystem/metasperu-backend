@@ -388,11 +388,28 @@ export const storeController = {
 
                     console.log(papsDelDia);
 
+                    // Tu variable con la fecha en formato "DD-MM-YYYY"
+                    const dayBlock = p.FECHA_NUMBER;
+
+                    // 1. Separar el texto por los guiones
+                    const [dia, mes, anio] = fechaVariable.split('-');
+
+                    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
+                    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+
+                    // 3. Obtener la fecha de hoy
+                    const hoy = new Date();
+
+                    // 4. Comparar año, mes y día
+                    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
+                        fechaAComparar.getMonth() === hoy.getMonth() &&
+                        fechaAComparar.getDate() === hoy.getDate();
+
                     return {
                         id: d.POSITION,
                         dia: d.DIA,
                         fecha: d.FECHA,
-                        dayBlock: false,
+                        dayBlock: sonIguales,
                         notasDia: notasParaEsteDia,
                         papeletas: papsDelDia.map(p => ({
                             id: p.ID_HEAD_PAPELETA,
@@ -690,11 +707,28 @@ export const storeController = {
 
                     console.log(papsDelDia);
 
+                    // Tu variable con la fecha en formato "DD-MM-YYYY"
+                    const dayBlock = p.FECHA_NUMBER;
+
+                    // 1. Separar el texto por los guiones
+                    const [dia, mes, anio] = fechaVariable.split('-');
+
+                    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
+                    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+
+                    // 3. Obtener la fecha de hoy
+                    const hoy = new Date();
+
+                    // 4. Comparar año, mes y día
+                    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
+                        fechaAComparar.getMonth() === hoy.getMonth() &&
+                        fechaAComparar.getDate() === hoy.getDate();
+
                     return {
                         id: d.POSITION,
                         dia: d.DIA,
                         fecha: d.FECHA,
-                        dayBlock: false,
+                        dayBlock: sonIguales,
                         notasDia: notasParaEsteDia,
                         papeletas: papsDelDia.map(p => ({
                             id: p.ID_HEAD_PAPELETA,
