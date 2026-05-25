@@ -389,7 +389,7 @@ export const storeController = {
                     console.log(papsDelDia);
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
-                    const dayBlock = d.FECHA_NUMBER;
+                    const fechaVariable = d.FECHA_NUMBER;
 
                     // 1. Separar el texto por los guiones
                     const [dia, mes, anio] = fechaVariable.split('-');
@@ -708,7 +708,7 @@ export const storeController = {
                     console.log(papsDelDia);
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
-                    const dayBlock = d.FECHA_NUMBER;
+                    const fechaVariable = d.FECHA_NUMBER;
 
                     // 1. Separar el texto por los guiones
                     const [dia, mes, anio] = fechaVariable.split('-');
