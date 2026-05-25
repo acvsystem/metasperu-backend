@@ -123,7 +123,7 @@ export const storeController = {
             if (arDataAsistenciaEmpleados.length > 0) {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
-            console.log(126,socketId, datosFormateados.length);
+            console.log(126, socketId, datosFormateados.length);
             // 4. Emitir al dashboard en tiempo real
             getIO().emit('dashboard_empleados_horario', datosFormateados);
 
@@ -1102,7 +1102,7 @@ export const storeController = {
             const [rows] = await pool.execute(query_update_hora_extra);
 
             const results = emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
+                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                 subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
                 template: 'solicitudHorasExtras',
                 variables: {
@@ -1157,7 +1157,7 @@ export const storeController = {
 
             if (aprobado) {
                 const results = emailService.pushToEmailQueue({
-                    email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
+                    email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'aprobacionHoraExtra',
                     variables: {
@@ -1169,7 +1169,7 @@ export const storeController = {
                 });
             } else {
                 const results = emailService.pushToEmailQueue({
-                    email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
+                    email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
                     variables: {
@@ -1365,6 +1365,21 @@ export const storeController = {
 
         } catch (error) {
             console.error("Error en getAllBallotEmployesStore:", error);
+            res.status(500).json({ success: false, message: 'Error interno del servidor.' });
+        } finally {
+            if (connection) connection.release();
+        }
+    },
+    putUpdateDateScheduleStore: async (req, res) => {
+        const { id_papeleta, nueva_fecha } = req.body;
+        let connection;
+        try {
+            connection = await pool.getConnection();
+            let query = `UPDATE tb_head_papeleta SET FECHA_DESDE = ?, FECHA_HASTA = ?, ISUPDATE = 1 WHERE ID_HEAD_PAPELETA = ?`;
+            await connection.execute(query, [nueva_fecha, nueva_fecha, id_papeleta]);
+            res.status(200).json({ success: true, message: 'Fecha actualizada correctamente.' });
+        } catch (error) {
+            console.error("Error en putUpdateDateScheduleStore:", error);
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         } finally {
             if (connection) connection.release();

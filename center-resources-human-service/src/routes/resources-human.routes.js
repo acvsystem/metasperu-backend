@@ -25,6 +25,7 @@ router.post('/api/search/schedule/store', storeController.getSearchScheduleStore
 router.post('/api/register/schedule/store', storeController.getRegisterScheduleStore);
 router.post('/api/update/schedule/store', storeController.postUpdateScheduleStore);
 router.post('/api/one/search/schedule/store', storeController.getOneSearchScheduleStore);
+router.put('/api/update/date/schedule/store', storeController.putUpdateDateScheduleStore);
 
 // --- RUTA CONSULTA HORAS
 router.post('/api/hours/works/employes', storeController.postHorusWorksEmployes);
