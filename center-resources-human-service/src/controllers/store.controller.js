@@ -1102,7 +1102,7 @@ export const storeController = {
             const [rows] = await pool.execute(query_update_hora_extra);
 
             const results = emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com'],
+                email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
                 subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
                 template: 'solicitudHorasExtras',
                 variables: {
@@ -1157,7 +1157,7 @@ export const storeController = {
 
             if (aprobado) {
                 const results = emailService.pushToEmailQueue({
-                    email: ['itperu@metasperu.com'],
+                    email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'aprobacionHoraExtra',
                     variables: {
@@ -1169,7 +1169,7 @@ export const storeController = {
                 });
             } else {
                 const results = emailService.pushToEmailQueue({
-                    email: ['itperu@metasperu.com'],
+                    email: ['itperu@metasperu.com','johnnygermano@metasperu.com','paulodosreis@metasperu.com','carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
                     variables: {
