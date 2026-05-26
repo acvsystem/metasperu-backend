@@ -98,32 +98,35 @@ export const storeController = {
         }
 
         try {
+
+            const empleadosUnicos = Array.from(
+                new Map(
+                    data.map(ejb => [
+                        (ejb.NUMDOC || "").trim(),
+                        ejb
+                    ])
+                ).values()
+            );
+
+            // 2. Formatear la data con la estructura solicitada
+            const datosFormateados = empleadosUnicos.map(ejb => {
+                return {
+                    codigoEJB: ((ejb || {}).CODEJB || "").trim(),
+                    nombre_completo: `${(ejb || {}).APEPAT || ""} ${(ejb || {}).APEMAT || ""} ${(ejb || {}).NOMBRE || ""}`.trim(),
+                    nro_documento: ((ejb || {}).NUMDOC || "").trim(),
+                    telefono: ((ejb || {}).TELEFO || "").trim(),
+                    email: ((ejb || {}).EMAIL || "").trim(),
+                    fec_nacimiento: ((ejb || {}).FECNAC || "").trim(),
+                    fec_ingreso: ((ejb || {}).FECING || "").trim(),
+                    status: ((ejb || {}).STATUS || "").trim(),
+                    unid_servicio: ((ejb || {}).UNDSERVICIO || "").trim(),
+                    code_unid_servicio: ((ejb || {}).CODUNDSERVICIO || "").trim()
+                };
+            });
+
             if (source != 'oficina') {
                 // 1. Filtrar duplicados por NUMDOC para no procesar de más
-                const empleadosUnicos = Array.from(
-                    new Map(
-                        data.map(ejb => [
-                            (ejb.NUMDOC || "").trim(),
-                            ejb
-                        ])
-                    ).values()
-                );
 
-                // 2. Formatear la data con la estructura solicitada
-                const datosFormateados = empleadosUnicos.map(ejb => {
-                    return {
-                        codigoEJB: ((ejb || {}).CODEJB || "").trim(),
-                        nombre_completo: `${(ejb || {}).APEPAT || ""} ${(ejb || {}).APEMAT || ""} ${(ejb || {}).NOMBRE || ""}`.trim(),
-                        nro_documento: ((ejb || {}).NUMDOC || "").trim(),
-                        telefono: ((ejb || {}).TELEFO || "").trim(),
-                        email: ((ejb || {}).EMAIL || "").trim(),
-                        fec_nacimiento: ((ejb || {}).FECNAC || "").trim(),
-                        fec_ingreso: ((ejb || {}).FECING || "").trim(),
-                        status: ((ejb || {}).STATUS || "").trim(),
-                        unid_servicio: ((ejb || {}).UNDSERVICIO || "").trim(),
-                        code_unid_servicio: ((ejb || {}).CODUNDSERVICIO || "").trim()
-                    };
-                });
 
                 // 3. Guardar en el almacenamiento temporal de asistencia
                 if (arDataAsistenciaEmpleados.length > 0) {
@@ -142,7 +145,7 @@ export const storeController = {
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
-                cantidad: empleadosUnicos.length
+                cantidad: (empleadosUnicos).length
             });
 
         } catch (error) {
