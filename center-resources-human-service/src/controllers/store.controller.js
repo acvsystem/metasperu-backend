@@ -22,7 +22,7 @@ export const storeController = {
         };
 
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-        console.log({ data: data.length ? respuesta : responseVacio });
+      
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
@@ -127,7 +127,7 @@ export const storeController = {
             if (arDataAsistenciaEmpleados.length > 0) {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
-            console.log(126, socketId, datosFormateados.length);
+     
 
             // 4. Emitir al dashboard en tiempo real
             getIO().emit('dashboard_empleados_horario', datosFormateados);
@@ -391,8 +391,6 @@ export const storeController = {
 
                     const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
-                    console.log(papsDelDia);
-
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
 
@@ -637,7 +635,6 @@ export const storeController = {
 
             for (const cab of cabeceras) {
                 const idH = cab.ID_HORARIO;
-                console.log('ID HORARIO:', idH);
                 // Consultas de apoyo
                 const [diasDB] = await connection.execute(
                     `SELECT ID_DIAS, DIA, FECHA, FECHA_NUMBER, POSITION FROM tb_dias_horario WHERE ID_DIA_HORARIO = ? ORDER BY POSITION ASC`, [idH]);
@@ -660,7 +657,6 @@ export const storeController = {
                     const resultadosPapeletas = await Promise.all(diasDB.map(async (d) => {
 
                         const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                        console.log(fechaIn);
                         const fechaFormateada = fechaIn
                             .split('-')
                             .map(parte => parte.padStart(2, '0'))
@@ -712,7 +708,6 @@ export const storeController = {
 
                     const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
-                    console.log(papsDelDia);
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
@@ -837,13 +832,11 @@ export const storeController = {
             // 1. LIMPIEZA: Buscamos los IDs de horarios existentes para ese rango y tienda para borrar sus hijos
             // Esto asegura que no queden registros huérfanos antes de insertar los nuevos.
 
-            console.log(641, rangoDias, rango_fecha_old);
             const [existentes] = await connection.execute(
                 `SELECT ID_HORARIO FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)`,
                 [codigoTienda, rango, rango_fecha_old]
             );
-            console.log(647, existentes);
             if (existentes.length > 0) {
                 const idsABorrar = existentes.map(h => h.ID_HORARIO);
 
