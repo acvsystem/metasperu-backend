@@ -59,10 +59,10 @@ export const storeController = {
             console.log('Respuesta procesada para horas trabajadas:', data.length, documento);
         }
 
-        //const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
+        const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
 
 
-        getIO().to(socket).emit('py_works_hours_employes_response', { data: responseVacio   });
+        getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
         const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
@@ -2198,7 +2198,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     let registros = [];
     try {
-        registros = await procesarYRegistrarHoras(listaRegistros || []);
+       // registros = await procesarYRegistrarHoras(listaRegistros || []);
     } catch (error) {
         console.error("Error al procesar y registrar horas:", error);
         registros = { success: false, error: error.message };
