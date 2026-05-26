@@ -22,7 +22,7 @@ export const storeController = {
         };
 
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-
+        console.log({ data: data.length ? respuesta : responseVacio });
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
