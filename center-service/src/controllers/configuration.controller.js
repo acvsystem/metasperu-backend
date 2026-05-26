@@ -79,6 +79,7 @@ export const configurationController = {
             const query = `
       SELECT 
         t.ID_TIENDA as id, 
+        t.SERIE_TIENDA as serie,
         t.DESCRIPCION as nombre,
         COALESCE(c.IS_FREE_HORARIO, 0) as horarioPermiso,
         COALESCE(c.IS_FREE_PAPELETA, 0) as papeletaPermiso,
