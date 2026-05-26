@@ -48,6 +48,8 @@ const fechaKey = (value) => {
     return normalizarFechaReferencia(value);
 };
 
+const normalizarDocumento = (value) => String(value || '').trim();
+
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
@@ -1967,7 +1969,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
-                resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
+            resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
         } else {
@@ -1975,7 +1977,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             if (!resumenFullTime[reg.dia]) {
                 resumenFullTime[reg.dia] = {
                     totalMins: 0,
-                    nroDocumento: reg.nroDocumento,
+                    nroDocumento: normalizarDocumento(reg.nroDocumento),
                     count: 0,
                     especial: false,
                     limiteJornada: jornadaAplicada, // 420 o 480
@@ -2131,7 +2133,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         for (const row of rows) {
             const fechaNormalizada = fechaKey(row.FECHA) || fechaKey(row.FECHA_NUMBER);
             if (fechaNormalizada) {
-                result.add(`${row.NUMERO_DOCUMENTO}|${fechaNormalizada}`);
+                result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
         }
 
@@ -2159,7 +2161,7 @@ const obtenerPapeletasPorDocumentoYFecha = async (documentos, fechas) => {
         for (const row of rows) {
             const fechaNormalizada = fechaKey(row.FECHA_DESDE);
             if (fechaNormalizada) {
-                result.set(`${row.NRO_DOCUMENTO_EMPLEADO}|${fechaNormalizada}`, {
+                result.set(`${normalizarDocumento(row.NRO_DOCUMENTO_EMPLEADO)}|${fechaNormalizada}`, {
                     horas: row.HORA_SOLICITADA || '00:00'
                 });
             }
@@ -2315,8 +2317,13 @@ const getNumeroSemana = (fecha) => {
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
     let registros = [];
+    const documentoNormalizado = normalizarDocumento(nroDocumento);
+    const registrosDelDocumento = (listaRegistros || []).filter((reg) => {
+        return normalizarDocumento(reg.nroDocumento) === documentoNormalizado;
+    });
+
     try {
-        registros = await procesarYRegistrarHoras(listaRegistros || []);
+        registros = await procesarYRegistrarHoras(registrosDelDocumento);
     } catch (error) {
         console.error("Error al procesar y registrar horas:", error);
         registros = { success: false, error: error.message };
@@ -2330,7 +2337,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
             ORDER BY FECHA ASC
-        `, [nroDocumento, fechaInicio, fechaFin]);
+        `, [documentoNormalizado, fechaInicio, fechaFin]);
 
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
@@ -2340,7 +2347,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             WHERE NRO_DOCUMENTO_EMPLEADO = ? 
             AND FECHA BETWEEN ? AND ?
             AND ESTADO = 'correcto' 
-        `, [nroDocumento, fechaInicio, fechaFin]);
+        `, [documentoNormalizado, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const totalDecimal = listaCorrectos.reduce((acc, row) => {
@@ -2355,7 +2362,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         return {
             success: true,
             message: "Proceso completado correctamente",
-            documento: nroDocumento,
+            documento: documentoNormalizado,
             horasExtras: listaCompleta,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
