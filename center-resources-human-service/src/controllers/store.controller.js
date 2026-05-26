@@ -12,7 +12,7 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
-         console.log('DOCUMENTO:', documento);
+        console.log('DOCUMENTO:', documento);
         const responseVacio = {
             success: true,
             message: "Proceso completado correctamente",
@@ -21,9 +21,9 @@ export const storeController = {
             totalHorasFormato: "00:00", // Ejemplo: "12:30"
             totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
         };
-      
+
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-  console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
+        console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
@@ -2098,7 +2098,7 @@ const getNumeroSemana = (fecha) => {
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
     const registros = await procesarYRegistrarHoras(listaRegistros);
-
+    console.log("procesarYResponder",registros);
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
@@ -2109,7 +2109,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             AND FECHA BETWEEN ? AND ?
             ORDER BY FECHA ASC
         `, [nroDocumento, fechaInicio, fechaFin]);
-        console.log(listaCompleta);
+
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
         const [listaCorrectos] = await pool.query(`
