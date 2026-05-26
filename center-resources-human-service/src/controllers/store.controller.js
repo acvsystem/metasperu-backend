@@ -37,6 +37,24 @@ const normalizarFechaReferencia = (fechaRef) => {
     return raw;
 };
 
+const procesarHorasEnSegundoPlano = (listaRegistros) => {
+    setImmediate(async () => {
+        const inicio = Date.now();
+        try {
+            const result = await procesarYRegistrarHoras(listaRegistros || []);
+            console.log('procesarYRegistrarHoras finalizado:', {
+                ...result,
+                tiempoMs: Date.now() - inicio
+            });
+        } catch (error) {
+            console.error('procesarYRegistrarHoras fallo:', {
+                message: error.message,
+                stack: error.stack
+            });
+        }
+    });
+};
+
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
@@ -1859,6 +1877,7 @@ const generarNuevoCodigo = async (codigoTienda) => {
  * lactancia (7h) y régimen Part-Time.
  */
 const procesarYRegistrarHoras = async (listaRegistros) => {
+    const inicio = Date.now();
     // 1. CONSTANTES DE TIEMPO (en minutos para precisión)
     const JORNADA_NORMAL_MINS = 8.0 * 60;    // 480 min
     const JORNADA_LACTANCIA_MINS = 7.0 * 60;  // 420 min
@@ -1872,14 +1891,34 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
+    const stats = {
+        recibidos: Array.isArray(listaRegistros) ? listaRegistros.length : 0,
+        validos: 0,
+        omitidos: 0,
+        fullTime: 0,
+        partTime: 0,
+        insertados: 0,
+        existentes: 0,
+        errores: 0
+    };
+
+    if (!Array.isArray(listaRegistros) || listaRegistros.length === 0) {
+        return { success: true, processed: 0, ...stats, tiempoMs: Date.now() - inicio };
+    }
 
     // 2. CLASIFICACIÓN INICIAL Y CÁLCULO DE MINUTOS
     listaRegistros.forEach(reg => {
         // No procesar marcaciones del día de hoy
-        if (reg.dia === FECHA_HOY_STR) return;
+        if (reg.dia === FECHA_HOY_STR) {
+            stats.omitidos += 1;
+            return;
+        }
 
         const cajasExcluidas = ['9M1', '9M2', '9M3'];
-        if (cajasExcluidas.includes(reg.caja)) return;
+        if (cajasExcluidas.includes(reg.caja)) {
+            stats.omitidos += 1;
+            return;
+        }
 
         // Cálculo de minutos trabajados en el registro
         const horaEntrada = getHoraMarcacion(reg.hrIn);
@@ -1892,10 +1931,17 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
                 hrIn: reg.hrIn,
                 hrOut: reg.hrOut
             });
+            stats.omitidos += 1;
             return;
         }
 
         const minutos = calcularDiferenciaMinutos(horaEntrada, horaSalida);
+        if (!Number.isFinite(minutos) || minutos <= 0) {
+            stats.omitidos += 1;
+            return;
+        }
+
+        stats.validos += 1;
 
         // Identificación de regímenes
         const esPartTime = reg.tpAsociado === '**';
@@ -1926,11 +1972,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Agrupación por tipo de contrato
         if (esPartTime) {
+            stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
                 resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: reg.nroDocumento };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
         } else {
+            stats.fullTime += 1;
             if (!resumenFullTime[reg.dia]) {
                 resumenFullTime[reg.dia] = {
                     totalMins: 0,
@@ -1997,7 +2045,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-             await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+            const result = await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+            if (result.inserted) stats.insertados += 1;
+            else if (result.reason === 'exists') stats.existentes += 1;
+            else if (result.error) stats.errores += 1;
         }
     }
 
@@ -2017,12 +2068,20 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                const result = await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                if (result.inserted) stats.insertados += 1;
+                else if (result.reason === 'exists') stats.existentes += 1;
+                else if (result.error) stats.errores += 1;
             }
         }
     }
 
-    return { success: true, processed: Object.keys(resumenFullTime).length };
+    return {
+        success: true,
+        processed: Object.keys(resumenFullTime).length,
+        ...stats,
+        tiempoMs: Date.now() - inicio
+    };
 };
 
 
@@ -2040,7 +2099,7 @@ const verificarDiaLibre = async (documento, fecha) => {
             FROM TB_DIAS_LIBRE 
             INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
             WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = ?
-            AND FECHA_NUMBER = ? OR FECHA = ?;
+            AND (FECHA_NUMBER = ? OR FECHA = ?);
         `;
 
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
@@ -2196,12 +2255,13 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
-    let registros = [];
-    try {
-       // registros = await procesarYRegistrarHoras(listaRegistros || []);
-    } catch (error) {
-        console.error("Error al procesar y registrar horas:", error);
-        registros = { success: false, error: error.message };
+    const registros = {
+        success: true,
+        queued: Array.isArray(listaRegistros) && listaRegistros.length > 0
+    };
+
+    if (registros.queued) {
+        procesarHorasEnSegundoPlano(listaRegistros);
     }
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
