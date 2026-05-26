@@ -58,12 +58,8 @@ export const storeController = {
     },
     callRegisterEmployesStore: async (req, res) => {
         try {
-            const { socketId, source } = req.params;
-            if (source == 'oficina') {
-                getIO().to('servidor_ejb').emit('py_registro_empleados_oficina', { socketId });
-            } else {
-                getIO().to('servidor_ejb').emit('py_registro_empleados', { socketId });
-            }
+            const { socketId } = req.params;
+            getIO().to('servidor_ejb').emit('py_registro_empleados', { socketId });
 
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
@@ -91,7 +87,7 @@ export const storeController = {
 
     },
     postEjbRegisterEmployes: async (req, res) => {
-        const { data, socketId, source } = req.body;
+        const { data, socketId } = req.body;
 
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
@@ -124,25 +120,18 @@ export const storeController = {
                 };
             });
 
-            if (source != 'oficina') {
-                // 1. Filtrar duplicados por NUMDOC para no procesar de más
+            // 1. Filtrar duplicados por NUMDOC para no procesar de más
 
 
-                // 3. Guardar en el almacenamiento temporal de asistencia
-                if (arDataAsistenciaEmpleados.length > 0) {
-                    arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
-                }
-                console.log(126, socketId, datosFormateados.length);
-
-                // 4. Emitir al dashboard en tiempo real
-                getIO().emit('dashboard_empleados_horario', datosFormateados);
-            } else {
-                console.log(137, socketId, data.length);
-                getIO().to(socketId).emit('dashboard_empleados_horario', data);
+            // 3. Guardar en el almacenamiento temporal de asistencia
+            if (arDataAsistenciaEmpleados.length > 0) {
+                arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
+            console.log(126, socketId, datosFormateados.length);
 
-
-
+            // 4. Emitir al dashboard en tiempo real
+            getIO().emit('dashboard_empleados_horario', datosFormateados);
+            
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
                 cantidad: (empleadosUnicos).length
