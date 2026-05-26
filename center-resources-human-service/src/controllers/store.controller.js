@@ -26,10 +26,12 @@ export const storeController = {
             totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
         };
 
-        const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
         if (documento == '71311853') {
-            console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
+            console.log('Respuesta procesada para horas trabajadas:', data.length, documento);
         }
+
+        const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
+
 
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
@@ -2103,7 +2105,6 @@ const getNumeroSemana = (fecha) => {
 }
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
-
 
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
     //  const registros = await procesarYRegistrarHoras(listaRegistros);
