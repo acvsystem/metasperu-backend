@@ -58,8 +58,13 @@ export const storeController = {
     },
     callRegisterEmployesStore: async (req, res) => {
         try {
-            const { socketId } = req.params;
-            getIO().to('servidor_ejb').emit('py_registro_empleados', { socketId });
+            const { socketId, source } = req.params;
+            if (source == 'oficina') {
+                getIO().to('servidor_ejb').emit('py_registro_empleados_oficina', { socketId });
+            } else {
+                getIO().to('servidor_ejb').emit('py_registro_empleados', { socketId });
+            }
+
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
@@ -86,46 +91,54 @@ export const storeController = {
 
     },
     postEjbRegisterEmployes: async (req, res) => {
-        const { data, socketId } = req.body;
+        const { data, socketId, source } = req.body;
 
         if (!data) {
             return res.status(400).json({ message: 'Data es requerido' });
         }
 
         try {
-            // 1. Filtrar duplicados por NUMDOC para no procesar de más
-            const empleadosUnicos = Array.from(
-                new Map(
-                    data.map(ejb => [
-                        (ejb.NUMDOC || "").trim(),
-                        ejb
-                    ])
-                ).values()
-            );
+            if (source != 'oficina') {
+                // 1. Filtrar duplicados por NUMDOC para no procesar de más
+                const empleadosUnicos = Array.from(
+                    new Map(
+                        data.map(ejb => [
+                            (ejb.NUMDOC || "").trim(),
+                            ejb
+                        ])
+                    ).values()
+                );
 
-            // 2. Formatear la data con la estructura solicitada
-            const datosFormateados = empleadosUnicos.map(ejb => {
-                return {
-                    codigoEJB: ((ejb || {}).CODEJB || "").trim(),
-                    nombre_completo: `${(ejb || {}).APEPAT || ""} ${(ejb || {}).APEMAT || ""} ${(ejb || {}).NOMBRE || ""}`.trim(),
-                    nro_documento: ((ejb || {}).NUMDOC || "").trim(),
-                    telefono: ((ejb || {}).TELEFO || "").trim(),
-                    email: ((ejb || {}).EMAIL || "").trim(),
-                    fec_nacimiento: ((ejb || {}).FECNAC || "").trim(),
-                    fec_ingreso: ((ejb || {}).FECING || "").trim(),
-                    status: ((ejb || {}).STATUS || "").trim(),
-                    unid_servicio: ((ejb || {}).UNDSERVICIO || "").trim(),
-                    code_unid_servicio: ((ejb || {}).CODUNDSERVICIO || "").trim()
-                };
-            });
+                // 2. Formatear la data con la estructura solicitada
+                const datosFormateados = empleadosUnicos.map(ejb => {
+                    return {
+                        codigoEJB: ((ejb || {}).CODEJB || "").trim(),
+                        nombre_completo: `${(ejb || {}).APEPAT || ""} ${(ejb || {}).APEMAT || ""} ${(ejb || {}).NOMBRE || ""}`.trim(),
+                        nro_documento: ((ejb || {}).NUMDOC || "").trim(),
+                        telefono: ((ejb || {}).TELEFO || "").trim(),
+                        email: ((ejb || {}).EMAIL || "").trim(),
+                        fec_nacimiento: ((ejb || {}).FECNAC || "").trim(),
+                        fec_ingreso: ((ejb || {}).FECING || "").trim(),
+                        status: ((ejb || {}).STATUS || "").trim(),
+                        unid_servicio: ((ejb || {}).UNDSERVICIO || "").trim(),
+                        code_unid_servicio: ((ejb || {}).CODUNDSERVICIO || "").trim()
+                    };
+                });
 
-            // 3. Guardar en el almacenamiento temporal de asistencia
-            if (arDataAsistenciaEmpleados.length > 0) {
-                arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
+                // 3. Guardar en el almacenamiento temporal de asistencia
+                if (arDataAsistenciaEmpleados.length > 0) {
+                    arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
+                }
+                console.log(126, socketId, datosFormateados.length);
+
+                // 4. Emitir al dashboard en tiempo real
+                getIO().emit('dashboard_empleados_horario', datosFormateados);
+            } else {
+                console.log(137, socketId, data.length);
+                getIO().to(socketId).emit('dashboard_empleados_horario', data);
             }
-            console.log(126, socketId, datosFormateados.length);
-            // 4. Emitir al dashboard en tiempo real
-            getIO().emit('dashboard_empleados_horario', datosFormateados);
+
+
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
