@@ -2106,9 +2106,9 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
-    //  registros = await procesarYRegistrarHoras(listaRegistros);
-    registros = [];
+    //  const registros = await procesarYRegistrarHoras(listaRegistros);
 
+    const registros = [];
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
