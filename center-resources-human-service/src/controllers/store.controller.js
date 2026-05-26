@@ -14,6 +14,29 @@ const pushEmailQueue = (data) => {
     });
 };
 
+const getHoraMarcacion = (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const parts = value.trim().split(' ');
+    return parts.length > 1 ? parts[1] : parts[0];
+};
+
+const normalizarFechaReferencia = (fechaRef) => {
+    const raw = String(fechaRef || '').split(' al ')[0].split(' ')[0].trim();
+    if (!raw) return null;
+
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(raw)) {
+        const [anio, mes, dia] = raw.split('-');
+        return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    }
+
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(raw)) {
+        const [dia, mes, anio] = raw.split('-');
+        return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    }
+
+    return raw;
+};
+
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
@@ -1859,11 +1882,24 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (cajasExcluidas.includes(reg.caja)) return;
 
         // Cálculo de minutos trabajados en el registro
-        const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
+        const horaEntrada = getHoraMarcacion(reg.hrIn);
+        const horaSalida = getHoraMarcacion(reg.hrOut);
+
+        if (!horaEntrada || !horaSalida || !reg.nroDocumento || !reg.dia) {
+            console.warn('Registro omitido por datos incompletos:', {
+                dia: reg.dia,
+                nroDocumento: reg.nroDocumento,
+                hrIn: reg.hrIn,
+                hrOut: reg.hrOut
+            });
+            return;
+        }
+
+        const minutos = calcularDiferenciaMinutos(horaEntrada, horaSalida);
 
         // Identificación de regímenes
         const esPartTime = reg.tpAsociado === '**';
-        const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
+        const esTurnoEspecial = horaSalida === '23:59:59' || horaEntrada === '00:00:00';
 
         // --- LÓGICA DE LACTANCIA ---
         let jornadaAplicada = JORNADA_NORMAL_MINS;
@@ -1918,8 +1954,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let esAprobacion = 0;
 
         // Consultas externas (Día libre y Papeletas)
-        const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-        const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
+        const [esDiaLibre, papeletaRaw] = await Promise.all([
+            verificarDiaLibre(data.nroDocumento, fecha),
+            hrPapeleta(fecha, data.nroDocumento)
+        ]);
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
@@ -2057,7 +2095,18 @@ const obtenerRangoSemana = (fechaStr) => {
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
     const excesoTiempo = decimalATiempo(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
-    const fechaBase = String(fechaRef || '').split(' ')[0];
+    const fechaBase = normalizarFechaReferencia(fechaRef);
+
+    if (!nroDocumento || !fechaBase || !excesoTiempo) {
+        console.warn('guardarEnBD omitido por parametros incompletos:', {
+            nroDocumento,
+            fechaRef,
+            fechaBase,
+            excesoDecimal,
+            excesoTiempo
+        });
+        return { inserted: false, reason: 'invalid_params' };
+    }
 
     try {
         const [existe] = await pool.query(`
@@ -2069,7 +2118,10 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             LIMIT 1;
         `, [nroDocumento, fechaBase, fechaBase]);
 
-        if (existe.length > 0) return { inserted: false, reason: 'exists' };
+        if (existe.length > 0) {
+            console.log('guardarEnBD omitido porque ya existe:', { nroDocumento, fechaBase });
+            return { inserted: false, reason: 'exists' };
+        }
 
         const [result] = await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
@@ -2083,14 +2135,30 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             excesoTiempo,       // HR_EXTRA_SOBRANTE
             estado,             // ESTADO
             estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
-            fechaRef,           // FECHA
+            fechaBase,          // FECHA
             observacion,        // OBSERVACION
             isAprobacion        // ISAPROBACION (nuevo valor)
         ]);
 
+        console.log('guardarEnBD insertado:', {
+            id: result.insertId,
+            nroDocumento,
+            fecha: fechaBase,
+            excesoTiempo,
+            estado
+        });
+
         return { inserted: result.affectedRows > 0, id: result.insertId };
     } catch (err) {
-        console.error(`Error al insertar:`, err);
+        console.error(`Error al insertar en guardarEnBD:`, {
+            message: err.message,
+            code: err.code,
+            sqlMessage: err.sqlMessage,
+            nroDocumento,
+            fechaRef,
+            fechaBase,
+            excesoTiempo
+        });
         return { inserted: false, error: err.message };
     }
 }
