@@ -12,7 +12,10 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
-        console.log('DOCUMENTO:', documento);
+        if (documento == '71311853') {
+            console.log('DOCUMENTO:', documento);
+        }
+
         const responseVacio = {
             success: true,
             message: "Proceso completado correctamente",
@@ -23,7 +26,10 @@ export const storeController = {
         };
 
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-        console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
+        if (documento == '71311853') {
+            console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
+        }
+
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
@@ -2096,9 +2102,15 @@ const getNumeroSemana = (fecha) => {
 }
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
+
+    if (nroDocumento == '71311853') {
+        console.log("procesarYResponder", nroDocumento, listaRegistros);
+    }
+
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
     const registros = await procesarYRegistrarHoras(listaRegistros);
-    console.log("procesarYResponder", nroDocumento, registros);
+
+
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
