@@ -20,9 +20,9 @@ export const storeController = {
             totalHorasFormato: "00:00", // Ejemplo: "12:30"
             totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
         };
-
+      
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-        console.log('Respuesta procesada para horas trabajadas:', data.length,documento ,respuesta.length);
+  console.log('Respuesta procesada para horas trabajadas:', data.length, documento, respuesta.length);
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
     postHorusWorksEmployes: async (req, res) => {
@@ -127,11 +127,11 @@ export const storeController = {
             if (arDataAsistenciaEmpleados.length > 0) {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
-     
+
 
             // 4. Emitir al dashboard en tiempo real
             getIO().emit('dashboard_empleados_horario', datosFormateados);
-            
+
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
                 cantidad: (empleadosUnicos).length
@@ -2108,7 +2108,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             AND FECHA BETWEEN ? AND ?
             ORDER BY FECHA ASC
         `, [nroDocumento, fechaInicio, fechaFin]);
-
+        console.log(listaCompleta);
         // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
         // Ajusta 'APROBADO' por el valor real en tu BD
         const [listaCorrectos] = await pool.query(`
