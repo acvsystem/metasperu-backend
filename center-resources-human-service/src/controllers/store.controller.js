@@ -37,22 +37,15 @@ const normalizarFechaReferencia = (fechaRef) => {
     return raw;
 };
 
-const procesarHorasEnSegundoPlano = (listaRegistros) => {
-    setImmediate(async () => {
-        const inicio = Date.now();
-        try {
-            const result = await procesarYRegistrarHoras(listaRegistros || []);
-            console.log('procesarYRegistrarHoras finalizado:', {
-                ...result,
-                tiempoMs: Date.now() - inicio
-            });
-        } catch (error) {
-            console.error('procesarYRegistrarHoras fallo:', {
-                message: error.message,
-                stack: error.stack
-            });
-        }
-    });
+const fechaKey = (value) => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const y = value.getFullYear();
+        const m = String(value.getMonth() + 1).padStart(2, '0');
+        const d = String(value.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return normalizarFechaReferencia(value);
 };
 
 export const storeController = {
@@ -1996,16 +1989,22 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     });
 
     // 3. PROCESAR FULL-TIME (Cálculo Diario)
+    const fechasFullTime = Object.keys(resumenFullTime);
+    const documentosFullTime = [...new Set(fechasFullTime.map(fecha => resumenFullTime[fecha].nroDocumento).filter(Boolean))];
+    const [diasLibresSet, papeletasMap] = await Promise.all([
+        obtenerDiasLibresPorDocumentoYFecha(documentosFullTime, fechasFullTime),
+        obtenerPapeletasPorDocumentoYFecha(documentosFullTime, fechasFullTime)
+    ]);
+
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
 
         // Consultas externas (Día libre y Papeletas)
-        const [esDiaLibre, papeletaRaw] = await Promise.all([
-            verificarDiaLibre(data.nroDocumento, fecha),
-            hrPapeleta(fecha, data.nroDocumento)
-        ]);
+        const key = `${data.nroDocumento}|${fecha}`;
+        const esDiaLibre = diasLibresSet.has(key);
+        const papeletaRaw = papeletasMap.get(key) || { horas: '00:00' };
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
@@ -2110,6 +2109,66 @@ const verificarDiaLibre = async (documento, fecha) => {
     } catch (error) {
         console.error("Error al verificar día libre:", error);
         return false; // Por seguridad, si falla, asumimos que no es libre
+    }
+};
+
+const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
+    if (!documentos.length || !fechas.length) return new Set();
+
+    const fechasLimpias = fechas.map(normalizarFechaReferencia).filter(Boolean);
+    const fechasFormatoBd = fechasLimpias.map(normalizarFechaParaBD);
+
+    try {
+        const [rows] = await pool.query(`
+            SELECT DL.NUMERO_DOCUMENTO, DH.FECHA_NUMBER, DH.FECHA
+            FROM TB_DIAS_LIBRE DL
+            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DL.ID_TRB_DIAS
+            WHERE DL.NUMERO_DOCUMENTO IN (?)
+            AND (DH.FECHA_NUMBER IN (?) OR DH.FECHA IN (?));
+        `, [documentos, fechasFormatoBd, fechasLimpias]);
+
+        const result = new Set();
+        for (const row of rows) {
+            const fechaNormalizada = fechaKey(row.FECHA) || fechaKey(row.FECHA_NUMBER);
+            if (fechaNormalizada) {
+                result.add(`${row.NUMERO_DOCUMENTO}|${fechaNormalizada}`);
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Error al precargar dias libres:", error);
+        return new Set();
+    }
+};
+
+const obtenerPapeletasPorDocumentoYFecha = async (documentos, fechas) => {
+    if (!documentos.length || !fechas.length) return new Map();
+
+    const fechasLimpias = fechas.map(normalizarFechaReferencia).filter(Boolean);
+
+    try {
+        const [rows] = await pool.query(`
+            SELECT NRO_DOCUMENTO_EMPLEADO, FECHA_DESDE, HORA_SOLICITADA
+            FROM tb_head_papeleta
+            WHERE NRO_DOCUMENTO_EMPLEADO IN (?)
+            AND FECHA_DESDE IN (?);
+        `, [documentos, fechasLimpias]);
+
+        const result = new Map();
+        for (const row of rows) {
+            const fechaNormalizada = fechaKey(row.FECHA_DESDE);
+            if (fechaNormalizada) {
+                result.set(`${row.NRO_DOCUMENTO_EMPLEADO}|${fechaNormalizada}`, {
+                    horas: row.HORA_SOLICITADA || '00:00'
+                });
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Error al precargar papeletas:", error);
+        return new Map();
     }
 };
 
@@ -2255,13 +2314,12 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
-    const registros = {
-        success: true,
-        queued: Array.isArray(listaRegistros) && listaRegistros.length > 0
-    };
-
-    if (registros.queued) {
-        procesarHorasEnSegundoPlano(listaRegistros);
+    let registros = [];
+    try {
+        registros = await procesarYRegistrarHoras(listaRegistros || []);
+    } catch (error) {
+        console.error("Error al procesar y registrar horas:", error);
+        registros = { success: false, error: error.message };
     }
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
