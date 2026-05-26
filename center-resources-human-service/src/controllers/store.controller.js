@@ -12,6 +12,7 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
+
         if (documento == '71311853') {
             console.log('DOCUMENTO:', documento);
         }
@@ -1941,7 +1942,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-            await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+           // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
@@ -2103,9 +2104,6 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
-    if (nroDocumento == '71311853') {
-        console.log("procesarYResponder", nroDocumento, listaRegistros);
-    }
 
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
     const registros = await procesarYRegistrarHoras(listaRegistros);
