@@ -12,6 +12,7 @@ export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
+         console.log('DOCUMENTO:', documento);
         const responseVacio = {
             success: true,
             message: "Proceso completado correctamente",
