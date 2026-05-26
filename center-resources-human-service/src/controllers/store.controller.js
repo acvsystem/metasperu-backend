@@ -1959,7 +1959,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-            await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+           // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
@@ -1979,7 +1979,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+               // await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
             }
         }
     }
