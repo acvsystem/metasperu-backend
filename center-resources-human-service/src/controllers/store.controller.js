@@ -2128,10 +2128,13 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
-    // 1. Ejecutamos el proceso de guardado (el que definimos antes)
-    //  const registros = await procesarYRegistrarHoras(listaRegistros);
-
-    const registros = [];
+    let registros = [];
+    try {
+        registros = await procesarYRegistrarHoras(listaRegistros || []);
+    } catch (error) {
+        console.error("Error al procesar y registrar horas:", error);
+        registros = { success: false, error: error.message };
+    }
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
