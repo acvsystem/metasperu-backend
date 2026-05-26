@@ -1942,7 +1942,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-           // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+            // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
@@ -1962,7 +1962,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                // await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
             }
         }
     }
@@ -2106,8 +2106,8 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
-    const registros = await procesarYRegistrarHoras(listaRegistros);
-
+    //  registros = await procesarYRegistrarHoras(listaRegistros);
+    registros = [];
 
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
@@ -2147,7 +2147,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             horasExtras: listaCompleta,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
-            registros: registros
+            registros: registros || []
         };
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
