@@ -8,6 +8,12 @@ const arDataAsistenciaEmpleados = [{
     ejb: []
 }];
 
+const pushEmailQueue = (data) => {
+    emailService.pushToEmailQueue(data).catch((error) => {
+        console.error('Error enviando correo a RabbitMQ:', error.message);
+    });
+};
+
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
@@ -360,11 +366,12 @@ export const storeController = {
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND CODIGO_TIENDA = '${code_store}'
+             AND CODIGO_TIENDA = ?
              AND (
-                (FECHA_DESDE = '${fechaIn}') OR 
-                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaFormateada}')
-             );`);
+                (FECHA_DESDE = ?) OR 
+                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
+             );`,
+                            [code_store, fechaIn, fechaFormateada]);
 
 
 
@@ -677,11 +684,12 @@ export const storeController = {
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND CODIGO_TIENDA = '${codigoTienda}'
+             AND CODIGO_TIENDA = ?
              AND (
-                (FECHA_DESDE = '${fechaIn}') OR 
-                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaFormateada}')
-             );`);
+                (FECHA_DESDE = ?) OR 
+                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
+             );`,
+                            [codigoTienda, fechaIn, fechaFormateada]);
 
 
 
@@ -1099,15 +1107,20 @@ export const storeController = {
             [id_hora_extra]
         );
 
-        if (existe.length > 0) throw new Error("Ya existe una solicitud para esta hora extra.");
+        if (existe.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Ya existe una solicitud para esta hora extra."
+            });
+        }
 
         const query = `
                     SELECT DESCRIPCION
                     FROM bd_metasperu.tb_lista_tienda t
-                    WHERE t.SERIE_TIENDA = '${codigoTienda}'
+                    WHERE t.SERIE_TIENDA = ?
                 `;
 
-        const [rows] = await pool.execute(query);
+        const [rows] = await pool.execute(query, [codigoTienda]);
 
         const storeDescription = rows.find(t => {
             return t;
@@ -1143,11 +1156,11 @@ export const storeController = {
 
             const query_update_hora_extra = `
                     UPDATE tb_hora_extra_empleado SET ESTADO = 'espera aprobacion' 
-                    WHERE ID_HR_EXTRA = ${id_hora_extra};`;
+                    WHERE ID_HR_EXTRA = ?;`;
 
-            const [rows] = await pool.execute(query_update_hora_extra);
+            await pool.execute(query_update_hora_extra, [id_hora_extra]);
 
-            const results = emailService.pushToEmailQueue({
+            pushEmailQueue({
                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                 subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
                 template: 'solicitudHorasExtras',
@@ -1202,7 +1215,7 @@ export const storeController = {
             const [result] = await connection.execute(query, values);
 
             if (aprobado) {
-                const results = emailService.pushToEmailQueue({
+                pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'aprobacionHoraExtra',
@@ -1214,7 +1227,7 @@ export const storeController = {
                     }
                 });
             } else {
-                const results = emailService.pushToEmailQueue({
+                pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
@@ -1306,6 +1319,8 @@ export const storeController = {
                 success: false,
                 message: 'Error interno del servidor.'
             });
+        } finally {
+            if (connection) connection.release();
         }
     },
     getAllApprovalHoursWorksEmployes: async (req, res) => {

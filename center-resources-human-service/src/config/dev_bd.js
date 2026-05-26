@@ -1,25 +1,32 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import { getIO } from './socket.js';
 
 dotenv.config();
 
-// Creamos el pool de conexiones
+const toNumber = (value, fallback) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 export const dev_pool = mysql.createPool({
     host: process.env.DB_HOST || '192.168.0.9',
     user: process.env.DB_USER || 'dbserver',
     password: process.env.DB_PASSWORD || 'J4s0nd34d$$',
-    database: process.env.DB_NAME || 'dev_bd_metasperu',
+    database: process.env.DEV_DB_NAME || process.env.DB_NAME || 'dev_bd_metasperu',
     waitForConnections: true,
-    connectionLimit: 10, // Máximo de conexiones simultáneas
-    queueLimit: 0
+    connectionLimit: toNumber(process.env.DB_CONNECTION_LIMIT, 30),
+    maxIdle: toNumber(process.env.DB_MAX_IDLE, 15),
+    idleTimeout: toNumber(process.env.DB_IDLE_TIMEOUT, 60000),
+    queueLimit: toNumber(process.env.DB_QUEUE_LIMIT, 0),
+    connectTimeout: toNumber(process.env.DB_CONNECT_TIMEOUT, 10000),
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
-// Verificación inicial de conexión
 try {
     const connection = await dev_pool.getConnection();
-    console.log('✅ Conectado a la base de datos MySQL');
+    console.log('Conectado a la base de datos MySQL DEV');
     connection.release();
 } catch (error) {
-    console.error('❌ Error de conexión a la base de datos:', error.message);
+    console.error('Error de conexion a la base de datos DEV:', error.message);
 }
