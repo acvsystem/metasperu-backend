@@ -1711,8 +1711,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const fechaSQL = formatearFechaParaDB(fecha);
 
             // Consultas a DB en paralelo
-            const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
-                searchHorarioEmpleado(fechaSQL, dni),
+            const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([ // These are still individual queries
                 searchPapeletaEmpleado(fecha, dni),
                 searchDescansoEmpleado(fechaSQL, dni)
             ]);
@@ -1816,6 +1815,10 @@ const generarNuevoCodigo = async (codigoTienda) => {
     return `P${codigoTienda}${correlativoFormateado}`;
 };
 
+// New helper function to batch insert/update hours
+const batchGuardarEnBD = async (recordsToSave) => {
+    if (recordsToSave.length === 0) return;
+
 /**
  * Procesa y registra las horas extras considerando jornada normal (8h), 
  * lactancia (7h) y régimen Part-Time.
@@ -1834,6 +1837,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
+    const recordsToSave = []; // Array para acumular registros a guardar
 
     // 2. CLASIFICACIÓN INICIAL Y CÁLCULO DE MINUTOS
     listaRegistros.forEach(reg => {
@@ -1896,17 +1900,28 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         }
     });
 
+    // Collect all unique employee-date pairs for batch queries
+    const employeeDatePairs = [];
+    for (const [fecha, data] of Object.entries(resumenFullTime)) {
+        employeeDatePairs.push({ nroDocumento: data.nroDocumento, fecha: fecha });
+    }
+
+    // Batch fetch free days and papeletas
+    const freeDaysMap = await batchVerificarDiaLibre(employeeDatePairs);
+    const papeletasMap = await batchHrPapeleta(employeeDatePairs);
+
     // 3. PROCESAR FULL-TIME (Cálculo Diario)
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
 
-        // Consultas externas (Día libre y Papeletas)
-        const esDiaLibre = await verificarDiaLibre(data.nroDocumento, fecha);
-        const papeletaRaw = await hrPapeleta(fecha, data.nroDocumento);
+        // Replaced individual queries with map lookups
+        const esDiaLibre = freeDaysMap.has(`${data.nroDocumento}-${fecha}`);
+        const papeletasForDay = papeletasMap.get(`${data.nroDocumento}-${fecha}`) || [];
+        const papeletaRaw = papeletasForDay.length > 0 ? papeletasForDay[0] : { horas: '00:00' }; // Assuming one relevant papeleta for hrPapeleta
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
-
+        
         const totalMinsEfectivos = data.totalMins + minsPapeleta;
 
         // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
@@ -1931,7 +1946,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             } else if (data.count > 2) {
                 observacion = tag + "Marcacion irregular, verifique marcaciones.";
                 esAprobacion = 1;
-            } else if (nivel.nivel === 'RECURSOS HUMANOS') {
+            } else if (nivel.nivel === 'RECURSOS HUMANOS') { // This still calls DB, needs to be in-memory
                 observacion = tag + "Tiene una papeleta ese dia.";
                 esAprobacion = 1;
             } else if (data.lactancia) {
@@ -1944,7 +1959,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-            // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+            recordsToSave.push({
+                nroDocumento: data.nroDocumento,
+                fechaRef: fecha, // YYYY-MM-DD
+                excesoDecimal: excesoHorasFinal,
+                observacion: observacion,
+                isAprobacion: esAprobacion
+            });
         }
     }
 
@@ -1964,10 +1985,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                // await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                recordsToSave.push({ nroDocumento: data.nroDocumento, fechaRef: rangoSemana, excesoDecimal: excesoHorasSemanal, observacion: "Exceso Part-Time Semanal", isAprobacion: 0 });
             }
         }
     }
+
+    // 5. Guardar todos los registros en lote
+    await batchGuardarEnBD(recordsToSave);
 
     return { success: true, processed: Object.keys(resumenFullTime).length };
 };
@@ -2039,40 +2063,6 @@ const obtenerRangoSemana = (fechaStr) => {
     return `${formatear(lunes)} al ${formatear(domingo)}`;
 }
 
-const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
-    const excesoTiempo = decimalATiempo(excesoDecimal);
-    const estado = isAprobacion ? 'aprobar' : 'correcto';
-
-    try {
-        await pool.query(`
-            INSERT INTO tb_hora_extra_empleado 
-            (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
-             HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
-            SELECT ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM tb_hora_extra_empleado 
-                WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-                -- Comparamos que la fecha guardada EMPIECE con la fecha que estamos procesando
-                AND FECHA LIKE CONCAT(?, '%')
-            );
-        `, [
-            nroDocumento,
-            excesoTiempo,       // HR_EXTRA_ACUMULADO
-            '00:00',            // HR_EXTRA_SOLICITADO
-            excesoTiempo,       // HR_EXTRA_SOBRANTE
-            estado,             // ESTADO
-            estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
-            fechaRef,           // FECHA
-            observacion,        // OBSERVACION
-            isAprobacion,       // ISAPROBACION (nuevo valor)
-            nroDocumento,       // WHERE EXISTS
-            fechaRef.split(' ')[0]            // WHERE EXISTS
-        ]);
-    } catch (err) {
-        console.error(`Error al insertar:`, err);
-    }
-}
-
 /**
  * Convierte un número decimal (ej. 1.5) a formato de tiempo "01:30"
  */
@@ -2104,58 +2094,6 @@ const getNumeroSemana = (fecha) => {
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
 
-const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
-
-    // 1. Ejecutamos el proceso de guardado (el que definimos antes)
-    //  const registros = await procesarYRegistrarHoras(listaRegistros);
-
-    const registros = [];
-    // 2. Consultamos el saldo total en el rango solicitado por el frontend
-    try {
-        // 1. Obtener listado TOTAL (independientemente del estado)
-        const [listaCompleta] = await pool.query(`
-            SELECT *
-            FROM tb_hora_extra_empleado 
-            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-            AND FECHA BETWEEN ? AND ?
-            ORDER BY FECHA ASC
-        `, [nroDocumento, fechaInicio, fechaFin]);
-
-        // 2. Obtener solo los registros "Correctos" (ej. APROBADO o el estado que definas)
-        // Ajusta 'APROBADO' por el valor real en tu BD
-        const [listaCorrectos] = await pool.query(`
-            SELECT HR_EXTRA_SOBRANTE 
-            FROM tb_hora_extra_empleado 
-            WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-            AND FECHA BETWEEN ? AND ?
-            AND ESTADO = 'correcto' 
-        `, [nroDocumento, fechaInicio, fechaFin]);
-
-        // 3. Sumar solo los correctos usando la utilidad que creamos
-        const totalDecimal = listaCorrectos.reduce((acc, row) => {
-
-            return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
-        }, 0);
-
-        // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
-        const totalTiempo = decimalATiempo(totalDecimal);
-
-        // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
-        return {
-            success: true,
-            message: "Proceso completado correctamente",
-            documento: nroDocumento,
-            horasExtras: listaCompleta,
-            totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
-            totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
-            registros: registros || []
-        };
-    } catch (error) {
-        console.error("Error al obtener el saldo final:", error);
-        throw error;
-    }
-}
-
 const validarNivelAutorizar = async (fecha, horaExtra) => {
     try {
         // Combinamos ambas tablas en un solo JOIN
@@ -2172,30 +2110,6 @@ const validarNivelAutorizar = async (fecha, horaExtra) => {
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
             nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL",
-            horas: ((rows || [])[0] || {}).HORA_SOLICITADA || '00:00'
-        };
-
-    } catch (error) {
-        console.error("Error al validar nivel de autorización:", error);
-        // Es mejor devolver null o un estado de error manejable
-        return { nivel: "ERROR" };
-    }
-};
-
-const hrPapeleta = async (fecha, documento) => {
-    try {
-        // Combinamos ambas tablas en un solo JOIN
-        const query = `
-            SELECT * 
-            FROM tb_head_papeleta h
-            WHERE h.FECHA_DESDE = ? AND NRO_DOCUMENTO_EMPLEADO = ?
-            LIMIT 1;
-        `;
-
-        const [rows] = await pool.query(query, [fecha, documento]);
-
-        // Si encontramos al menos un registro, el nivel es RRHH
-        return {
             horas: ((rows || [])[0] || {}).HORA_SOLICITADA || '00:00'
         };
 
