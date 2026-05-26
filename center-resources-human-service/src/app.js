@@ -11,7 +11,8 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 app.use(cors({
-  origin: '*'
+  origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
