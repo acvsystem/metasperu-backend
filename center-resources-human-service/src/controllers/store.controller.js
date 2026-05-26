@@ -1959,7 +1959,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-            // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+             await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
@@ -1979,7 +1979,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                // await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                 await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
             }
         }
     }
@@ -2057,19 +2057,25 @@ const obtenerRangoSemana = (fechaStr) => {
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
     const excesoTiempo = decimalATiempo(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
+    const fechaBase = String(fechaRef || '').split(' ')[0];
 
     try {
-        await pool.query(`
+        const [existe] = await pool.query(`
+            SELECT ID_HR_EXTRA
+            FROM tb_hora_extra_empleado
+            WHERE NRO_DOCUMENTO_EMPLEADO = ?
+            AND FECHA >= ?
+            AND FECHA < DATE_ADD(?, INTERVAL 1 DAY)
+            LIMIT 1;
+        `, [nroDocumento, fechaBase, fechaBase]);
+
+        if (existe.length > 0) return { inserted: false, reason: 'exists' };
+
+        const [result] = await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
              HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
-            SELECT ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM tb_hora_extra_empleado 
-                WHERE NRO_DOCUMENTO_EMPLEADO = ? 
-                -- Comparamos que la fecha guardada EMPIECE con la fecha que estamos procesando
-                AND FECHA LIKE CONCAT(?, '%')
-            );
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, ?);
         `, [
             nroDocumento,
             excesoTiempo,       // HR_EXTRA_ACUMULADO
@@ -2079,12 +2085,13 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
             fechaRef,           // FECHA
             observacion,        // OBSERVACION
-            isAprobacion,       // ISAPROBACION (nuevo valor)
-            nroDocumento,       // WHERE EXISTS
-            fechaRef.split(' ')[0]            // WHERE EXISTS
+            isAprobacion        // ISAPROBACION (nuevo valor)
         ]);
+
+        return { inserted: result.affectedRows > 0, id: result.insertId };
     } catch (err) {
         console.error(`Error al insertar:`, err);
+        return { inserted: false, error: err.message };
     }
 }
 
