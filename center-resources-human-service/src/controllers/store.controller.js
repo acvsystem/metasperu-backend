@@ -2098,7 +2098,7 @@ const getNumeroSemana = (fecha) => {
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
     // 1. Ejecutamos el proceso de guardado (el que definimos antes)
     const registros = await procesarYRegistrarHoras(listaRegistros);
-    console.log("procesarYResponder",registros);
+    console.log("procesarYResponder", nroDocumento, registros);
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
