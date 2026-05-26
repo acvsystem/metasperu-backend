@@ -14,12 +14,6 @@ const pushEmailQueue = (data) => {
     });
 };
 
-const getHoraMarcacion = (value) => {
-    if (!value || typeof value !== 'string') return null;
-    const parts = value.trim().split(' ');
-    return parts.length > 1 ? parts[1] : parts[0];
-};
-
 export const storeController = {
 
     postHorusWorksEmployesResponse: async (req, res) => {
@@ -1865,16 +1859,11 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (cajasExcluidas.includes(reg.caja)) return;
 
         // Cálculo de minutos trabajados en el registro
-        const horaEntrada = getHoraMarcacion(reg.hrIn);
-        const horaSalida = getHoraMarcacion(reg.hrOut);
-
-        if (!horaEntrada || !horaSalida || !reg.nroDocumento || !reg.dia) return;
-
-        const minutos = calcularDiferenciaMinutos(horaEntrada, horaSalida);
+        const minutos = calcularDiferenciaMinutos(reg.hrIn.split(' ')[1], reg.hrOut.split(' ')[1]);
 
         // Identificación de regímenes
         const esPartTime = reg.tpAsociado === '**';
-        const esTurnoEspecial = horaSalida === '23:59:59' || horaEntrada === '00:00:00';
+        const esTurnoEspecial = reg.hrOut.split(' ')[1] === '23:59:59' || reg.hrIn.split(' ')[1] === '00:00:00';
 
         // --- LÓGICA DE LACTANCIA ---
         let jornadaAplicada = JORNADA_NORMAL_MINS;
@@ -1970,7 +1959,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
-            await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
+            // await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
         }
     }
 
@@ -1990,7 +1979,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
 
             if (excesoHorasSemanal >= MINIMO_PARA_REGISTRAR_PART_TIME) {
-                await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
+                // await guardarEnBD(data.nroDocumento, rangoSemana, excesoHorasSemanal, "Exceso Part-Time Semanal", 0);
             }
         }
     }
@@ -2013,7 +2002,7 @@ const verificarDiaLibre = async (documento, fecha) => {
             FROM TB_DIAS_LIBRE 
             INNER JOIN TB_DIAS_HORARIO ON TB_DIAS_HORARIO.ID_DIAS = TB_DIAS_LIBRE.ID_TRB_DIAS
             WHERE TB_DIAS_LIBRE.NUMERO_DOCUMENTO = ?
-            AND (FECHA_NUMBER = ? OR FECHA = ?);
+            AND FECHA_NUMBER = ? OR FECHA = ?;
         `;
 
         // Ejecución (asumiendo que usas mysql2 o similar con 'pool')
@@ -2132,14 +2121,10 @@ const getNumeroSemana = (fecha) => {
 
 const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fechaFin) => {
 
-    // 1. Ejecutamos el proceso de guardado sin romper la respuesta al frontend si algo falla.
-    let registros = [];
-    try {
-        registros = await procesarYRegistrarHoras(listaRegistros || []);
-    } catch (error) {
-        console.error("Error al procesar y registrar horas:", error);
-        registros = { success: false, error: error.message };
-    }
+    // 1. Ejecutamos el proceso de guardado (el que definimos antes)
+    //  const registros = await procesarYRegistrarHoras(listaRegistros);
+
+    const registros = [];
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
     try {
         // 1. Obtener listado TOTAL (independientemente del estado)
