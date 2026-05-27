@@ -574,6 +574,7 @@ export const storeController = {
                     // 2. Insertar Días
                     const mappingDias = {};
                     for (const d of item.dias) {
+                        console.log('Insertando día:', d.dia, d.fecha, d.id);
                         const [resDia] = await connection.execute(
                             `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION, FECHA_NUMBER) 
                      VALUES (?, ?, ?, ?, ?)`,
