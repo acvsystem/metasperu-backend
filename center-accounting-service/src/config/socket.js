@@ -36,6 +36,13 @@ export const initSocket = (server) => {
 
         // Registro de tienda
         socket.on('py_register_store', (info) => {
+            socket.data.id_tienda = info.id;
+            socket.data.nombre = info.nombre;
+            socket.data.serie = info.id;
+            socket.data.lastSeen = new Date();
+
+            // 2. Lo unimos a la sala
+            await socket.join('grupo_tiendas');
             socket.join(info.id); // Unimos la tienda a una "sala" por su ID única
             socket.join(info.marca); // Unimos la tienda a una "sala" por marca
             socket.tiendaId = info.id;
@@ -45,7 +52,7 @@ export const initSocket = (server) => {
         socket.on('py_response_kardex_store', (data) => {
             const dataKardex = JSON.parse(data.kardex);
             const socketId = data.pedido_por;
-            
+
             io.to(socketId).emit('dashboard_kardex_store', dataKardex);
         });
 
@@ -77,7 +84,7 @@ export const initSocket = (server) => {
                 let dataExchangeRate = [];
                 let fechaHoy = new Date().toISOString().split('T')[0]; // Fecha actual por defecto
                 let cotizacionRetail = 0.00;
-                
+
                 // 1. Normalización de datos
                 if (data.exchangeRate) {
                     try {

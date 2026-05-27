@@ -16,4 +16,7 @@ router.post('/api/cuo/insert', storeController.postCuoInsert);
 router.post('/api/exchange-rate/store', storeController.getExchangeRateStore);
 router.post('/api/exchange-rate/sunat', storeController.postExchangeRateSunat);
 
+// --- RUTA TIENDAS ONLINE
+router.get('/api/stores/online', storeController.verificationStoreConection);
+
 export default router;

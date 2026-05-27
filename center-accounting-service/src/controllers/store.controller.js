@@ -127,5 +127,21 @@ export const storeController = {
             console.error('❌ Error:', error.message);
             res.status(500).json({ success: false, error: error.message });
         }
+    },
+    verificationStoreConection: async (req, res) => {
+        const { serieStore } = req.params;
+        // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
+        const sockets = await getIO().in('grupo_tiendas').fetchSockets();
+
+        const listaTiendas = sockets.map(s => ({
+            socketId: s.id,
+            id_tienda: s.data.id_tienda,
+            nombre: s.data.nombre,
+            serie: s.data.serie,
+            lastSeen: s.data.lastSeen,
+            online: true // Si está en la lista, es porque está online
+        }));
+
+        res.json({ success: true, tiendasOnline: listaTiendas });
     }
 };
