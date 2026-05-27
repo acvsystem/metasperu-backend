@@ -453,19 +453,18 @@ export const storeController = {
                     // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
                     const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
 
-                    // 3. Obtener la fecha de hoy
+                    // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
                     const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
 
-                    // 4. Comparar año, mes y día
-                    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
-                        fechaAComparar.getMonth() === hoy.getMonth() &&
-                        fechaAComparar.getDate() === hoy.getDate();
+                    // 3. Comparas directamente usando operadores relacionales
+                    const esIgualOMenor = fechaAComparar <= hoy;
 
                     return {
                         id: d.POSITION,
                         dia: d.DIA,
                         fecha: d.FECHA,
-                        dayBlock: sonIguales,
+                        dayBlock: esIgualOMenor,
                         notasDia: notasParaEsteDia,
                         papeletas: papsDelDia.map(p => ({
                             id: p.ID_HEAD_PAPELETA,
@@ -770,22 +769,20 @@ export const storeController = {
                     // 1. Separar el texto por los guiones
                     const [dia, mes, anio] = fechaVariable.split('-');
 
-                    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
                     const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
 
-                    // 3. Obtener la fecha de hoy
+                    // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
                     const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
 
-                    // 4. Comparar año, mes y día
-                    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
-                        fechaAComparar.getMonth() === hoy.getMonth() &&
-                        fechaAComparar.getDate() === hoy.getDate();
+                    // 3. Comparas directamente usando operadores relacionales
+                    const esIgualOMenor = fechaAComparar <= hoy;
 
                     return {
                         id: d.POSITION,
                         dia: d.DIA,
                         fecha: d.FECHA,
-                        dayBlock: sonIguales,
+                        dayBlock: esIgualOMenor,
                         notasDia: notasParaEsteDia,
                         papeletas: papsDelDia.map(p => ({
                             id: p.ID_HEAD_PAPELETA,
@@ -2431,18 +2428,16 @@ const processDiaBLock = (fecha) => {
     // 1. Separar el texto por los guiones
     const [dia, mes, anio] = fechaVariable.split('-');
 
-    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
     const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
 
-    // 3. Obtener la fecha de hoy
+    // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
     const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
 
-    // 4. Comparar año, mes y día
-    const sonIguales = fechaAComparar.getFullYear() === hoy.getFullYear() &&
-        fechaAComparar.getMonth() === hoy.getMonth() &&
-        fechaAComparar.getDate() === hoy.getDate();
+    // 3. Comparas directamente usando operadores relacionales
+    const esIgualOMenor = fechaAComparar <= hoy;
 
-    return sonIguales;
+    return esIgualOMenor;
 };
 
 const formatearFechaDinamica = (textoEntrada) => {
