@@ -407,7 +407,7 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [code_store, fechaIn]);
+                            [code_store, fechaIn, fechaIn]);
 
 
 
@@ -1969,7 +1969,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
-            resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
+                resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
         } else {
