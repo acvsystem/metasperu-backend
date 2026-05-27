@@ -437,12 +437,12 @@ export const storeController = {
                     // Papeletas que caen en este día
 
                     const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                    const fechaFormateada = fechaIn
+                   /* const fechaFormateada = fechaIn
                         .split('-')
                         .map(parte => parte.padStart(2, '0'))
-                        .join('-');
+                        .join('-');*/
 
-                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
+                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === FECHA_NUMBER);
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
