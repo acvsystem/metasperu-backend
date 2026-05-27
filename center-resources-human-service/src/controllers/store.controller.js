@@ -392,10 +392,10 @@ export const storeController = {
                     const resultadosPapeletas = await Promise.all(diasDB.map(async (d) => {
 
                         const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                        /*const fechaFormateada = fechaIn
+                        const fechaFormateada = fechaIn
                             .split('-')
                             .map(parte => parte.padStart(2, '0'))
-                            .join('-'); // El valor con ceros (ej: 12-05-2026)*/
+                            .join('-'); // El valor con ceros (ej: 12-05-2026)
 
                         const [paps] = await connection.query(
                             `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
@@ -407,7 +407,7 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [code_store, fechaIn, fechaIn]);
+                            [code_store, fechaIn, fechaFormateada]);
 
 
 
@@ -437,12 +437,12 @@ export const storeController = {
                     // Papeletas que caen en este día
 
                     const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                   /* const fechaFormateada = fechaIn
+                    const fechaFormateada = fechaIn
                         .split('-')
                         .map(parte => parte.padStart(2, '0'))
-                        .join('-');*/
+                        .join('-');
 
-                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === FECHA_NUMBER);
+                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
@@ -710,10 +710,10 @@ export const storeController = {
                     const resultadosPapeletas = await Promise.all(diasDB.map(async (d) => {
 
                         const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                       /* const fechaFormateada = fechaIn
+                        const fechaFormateada = fechaIn
                             .split('-')
                             .map(parte => parte.padStart(2, '0'))
-                            .join('-'); // El valor con ceros (ej: 12-05-2026)*/
+                            .join('-'); // El valor con ceros (ej: 12-05-2026)
 
                         const [paps] = await connection.query(
                             `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
@@ -725,7 +725,7 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [codigoTienda, fechaIn, fechaIn]);
+                            [codigoTienda, fechaIn, fechaFormateada]);
 
 
 
@@ -755,12 +755,12 @@ export const storeController = {
                     // Papeletas que caen en este día
 
                     const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                    /*const fechaFormateada = fechaIn
+                    const fechaFormateada = fechaIn
                         .split('-')
                         .map(parte => parte.padStart(2, '0'))
-                        .join('-');*/
+                        .join('-');
 
-                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === FECHA_NUMBER);
+                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
@@ -1969,7 +1969,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
-                resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
+            resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
         } else {
