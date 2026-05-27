@@ -578,7 +578,7 @@ export const storeController = {
                         const [resDia] = await connection.execute(
                             `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION, FECHA_NUMBER) 
                      VALUES (?, ?, ?, ?, ?)`,
-                            [idHorario, n(d.dia), n(d.fecha), n(d.id), n(formatearFechaDinamica(d.fecha))]
+                            [idHorario, n(d.dia), n(d.fecha), n(d.id), n(d.fecha)]
                         );
                         mappingDias[d.id] = resDia.insertId;
 
@@ -922,7 +922,7 @@ export const storeController = {
                     const [resDia] = await connection.execute(
                         `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION, FECHA_NUMBER) 
                      VALUES (?, ?, ?, ?, ?)`,
-                        [idHorario, n(d.dia), n(d.fecha), n(d.id), n(formatearFechaDinamica(d.fecha))]
+                        [idHorario, n(d.dia), n(d.fecha), n(d.id), n(d.fecha)]
                     );
                     mappingDias[d.id] = resDia.insertId;
 
