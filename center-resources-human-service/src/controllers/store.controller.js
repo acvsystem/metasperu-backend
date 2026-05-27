@@ -392,10 +392,10 @@ export const storeController = {
                     const resultadosPapeletas = await Promise.all(diasDB.map(async (d) => {
 
                         const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                        const fechaFormateada = fechaIn
+                        /*const fechaFormateada = fechaIn
                             .split('-')
                             .map(parte => parte.padStart(2, '0'))
-                            .join('-'); // El valor con ceros (ej: 12-05-2026)
+                            .join('-'); // El valor con ceros (ej: 12-05-2026)*/
 
                         const [paps] = await connection.query(
                             `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
