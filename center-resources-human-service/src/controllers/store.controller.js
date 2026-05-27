@@ -407,7 +407,7 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [code_store, fechaIn, fechaFormateada]);
+                            [code_store, fechaIn]);
 
 
 
