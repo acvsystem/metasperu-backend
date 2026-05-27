@@ -444,14 +444,29 @@ export const storeController = {
 
                     const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
-                    // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
 
-                    // 1. Separar el texto por los guiones
-                    const [dia, mes, anio] = fechaVariable.split('-');
+                    let dia = "";
+                    let mes = "";
+                    let anio = "";
 
-                    // 2. Crear el objeto Date (restando 1 al mes porque en JS van de 0 a 11)
-                    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+                    const partes = fechaVariable.split('-');
+
+                    // Detectar formato automáticamente
+                    if (partes[0].length === 4) {
+                        // YYYY-MM-DD
+                        [anio, mes, dia] = partes;
+                    } else {
+                        // DD-MM-YYYY
+                        [dia, mes, anio] = partes;
+                    }
+
+                    // Crear fecha
+                    const fechaAComparar = new Date(
+                        parseInt(anio),
+                        parseInt(mes) - 1,
+                        parseInt(dia)
+                    );
 
                     // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
                     const hoy = new Date();
@@ -766,10 +781,27 @@ export const storeController = {
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
                     const fechaVariable = d.FECHA_NUMBER;
 
-                    // 1. Separar el texto por los guiones
-                    const [dia, mes, anio] = fechaVariable.split('-');
+                    let dia = "";
+                    let mes = "";
+                    let anio = "";
 
-                    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+                    const partes = fechaVariable.split('-');
+
+                    // Detectar formato automáticamente
+                    if (partes[0].length === 4) {
+                        // YYYY-MM-DD
+                        [anio, mes, dia] = partes;
+                    } else {
+                        // DD-MM-YYYY
+                        [dia, mes, anio] = partes;
+                    }
+
+                    // Crear fecha
+                    const fechaAComparar = new Date(
+                        parseInt(anio),
+                        parseInt(mes) - 1,
+                        parseInt(dia)
+                    );
 
                     // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
                     const hoy = new Date();
@@ -2425,14 +2457,27 @@ const hrPapeleta = async (fecha, documento) => {
 const processDiaBLock = (fecha) => {
     const fechaVariable = fecha;
 
-    // 1. Separar el texto por los guiones
-    const [dia, mes, anio] = fechaVariable.split('-');
+    let dia = "";
+    let mes = "";
+    let anio = "";
 
-    const fechaAComparar = new Date(parseInt(anio), parseInt(mes) - 1, parseInt(dia));
+    const partes = fechaVariable.split('-');
 
-    // 2. Obtienes la fecha actual y le limpias las horas para que la comparación sea justa
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    // Detectar formato automáticamente
+    if (partes[0].length === 4) {
+        // YYYY-MM-DD
+        [anio, mes, dia] = partes;
+    } else {
+        // DD-MM-YYYY
+        [dia, mes, anio] = partes;
+    }
+
+    // Crear fecha
+    const fechaAComparar = new Date(
+        parseInt(anio),
+        parseInt(mes) - 1,
+        parseInt(dia)
+    );
 
     // 3. Comparas directamente usando operadores relacionales
     const esIgualOMenor = fechaAComparar <= hoy;
