@@ -2479,6 +2479,9 @@ const processDiaBLock = (fecha) => {
         parseInt(dia)
     );
 
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
     // 3. Comparas directamente usando operadores relacionales
     const esIgualOMenor = fechaAComparar <= hoy;
 
