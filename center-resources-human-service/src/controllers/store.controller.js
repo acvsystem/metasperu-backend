@@ -659,18 +659,18 @@ export const storeController = {
         }
     },
     getOneSearchScheduleStore: async (req, res) => {
-        const { codigoTienda, rango_fecha } = req.body;
+        const { code_store, range_days } = req.body;
 
-        if (!rango_fecha || !codigoTienda) {
+        if (!range_days || !code_store) {
             return res.status(400).json({
                 success: false,
-                message: 'Parámetros incompletos (rango_fecha, codigoTienda)'
+                message: 'Parámetros incompletos (range_days, code_store)'
             });
         }
 
         const connection = await pool.getConnection();
 
-        const rango_fecha_old = rango_fecha.split(" ").map(fecha => {
+        const rango_fecha_old = range_days.split(" ").map(fecha => {
             const [anio, mes, dia] = fecha.split("-");
             return `${Number(dia)}-${Number(mes)}-${anio}`;
         }).join(" ");
@@ -682,7 +682,7 @@ export const storeController = {
              FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)
              ORDER BY FECHA ASC`,
-                [codigoTienda, rango_fecha, rango_fecha_old]
+                [code_store, range_days, rango_fecha_old]
             );
 
             const respuestaFinal = [];
@@ -726,7 +726,7 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [codigoTienda, fechaIn, fechaFormateada]);
+                            [code_store, fechaIn, fechaFormateada]);
 
 
 
@@ -1970,7 +1970,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
-            resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
+                resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
         } else {
