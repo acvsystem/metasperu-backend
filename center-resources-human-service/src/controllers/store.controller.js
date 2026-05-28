@@ -2026,7 +2026,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
        
         // Consultas externas (Día libre y Papeletas)
         const key = `${data.nroDocumento}|${fechaKey(fecha)}`;
-         console.log(diasLibresSet,key);
+       
         const esDiaLibre = diasLibresSet.has(key);
 
         const papeletaRaw = papeletasMap.get(key) || { horas: '00:00' };
@@ -2182,7 +2182,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         for (const row of rows) {
 
             const fechaNormalizada = fechaKey(row.FECHA_NUMBER);
-            console.log(fechaKey(row.FECHA_NUMBER),row.FECHA_NUMBER);
+           
             if (fechaNormalizada) {
                 result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
