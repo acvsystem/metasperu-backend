@@ -2139,7 +2139,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
     if (!documentos.length || !fechas.length) return new Set();
 
     const fechasLimpias = fechas.map(normalizarFechaReferencia).filter(Boolean);
-    const fechasFormatoBd = fechasLimpias.map(normalizarFechaParaBD);
+    const fechasFormatoBd = fechasLimpias.map(`${normalizarFechaParaBD}`);
 
     try {
         const [rows] = await pool.query(`
@@ -2216,7 +2216,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
                 result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
         }
-
+  
         return result;
     } catch (error) {
         console.error("Error al precargar dias libres:", error);
@@ -2258,7 +2258,7 @@ const normalizarFechaParaBD = (fechaSistema) => {
     // fechaSistema suele ser "YYYY-MM-DD"
     const [anio, mes, dia] = fechaSistema.split('-');
     // parseInt elimina los ceros a la izquierda (04 -> 4)
-    return `${parseInt(dia)}-${parseInt(mes)}-${anio}`;
+    return `${dia}-${mes}-${anio}`;
 };
 
 const obtenerRangoSemana = (fechaStr) => {
