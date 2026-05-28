@@ -1993,9 +1993,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
-                if (reg.nroDocumento == '60796298') {
-                    console.log(reg.dia);
-                }
+
 
                 resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
@@ -2088,6 +2086,9 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
 
         const rango = obtenerRangoSemana(dia);
+        if (reg.nroDocumento == '60796298') {
+            console.log(dia,'//',rango);
+        }
         if (!resumenPorRangoSemana[rango]) {
             resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
         }
