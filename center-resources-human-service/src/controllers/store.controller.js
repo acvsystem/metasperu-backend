@@ -2082,6 +2082,9 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 4. PROCESAR PART-TIME (Cálculo Semanal)
     const resumenPorRangoSemana = {};
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
+        if (data.nroDocumento == '60796298') {
+            console.log(resumenPartTimeDias);
+        }
         const rango = obtenerRangoSemana(dia);
         if (!resumenPorRangoSemana[rango]) {
             resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
@@ -2090,9 +2093,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     }
 
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
-        if (data.nroDocumento == '60796298') {
-            console.log(data);
-        }
+
         if (data.totalMins > UMBRAL_PT_SEMANAL_MINS) {
             const excesoMinsSemanal = data.totalMins - UMBRAL_PT_SEMANAL_MINS;
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
