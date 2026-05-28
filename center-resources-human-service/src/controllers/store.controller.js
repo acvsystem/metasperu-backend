@@ -120,6 +120,7 @@ export const storeController = {
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
+                console.log("postAsistenciaEmployesStore",socketId);
                 getIO().emit('dashboard_refresh_empleados');
             });
 
