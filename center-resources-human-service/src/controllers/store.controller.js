@@ -2025,7 +2025,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let esAprobacion = 0;
        
         // Consultas externas (Día libre y Papeletas)
-        const key = `${data.nroDocumento}|${fecha}`;
+        const key = `${data.nroDocumento}|${fechaKey(fecha)}`;
          console.log(diasLibresSet,key);
         const esDiaLibre = diasLibresSet.has(key);
 
