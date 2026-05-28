@@ -2207,7 +2207,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
             END
         )
-        IN ('${fechasFormatoBd.split(',')}');
+        IN (${fechasFormatoBd.split(',')});
         `);
         const result = new Set();
         for (const row of rows) {
