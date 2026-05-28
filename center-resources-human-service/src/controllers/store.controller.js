@@ -2098,7 +2098,9 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     }
 
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
-
+        if (data.nroDocumento == '60796298') {
+            console.log(rangoSemana);
+        }
         if (data.totalMins > UMBRAL_PT_SEMANAL_MINS) {
             const excesoMinsSemanal = data.totalMins - UMBRAL_PT_SEMANAL_MINS;
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
