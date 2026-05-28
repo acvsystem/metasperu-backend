@@ -2139,7 +2139,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
     if (!documentos.length || !fechas.length) return new Set();
 
     const fechasLimpias = fechas.map(normalizarFechaReferencia).filter(Boolean);
-    const fechasFormatoBd = fechasLimpias.map(`${normalizarFechaParaBD}`);
+    const fechasFormatoBd = fechasLimpias.map(normalizarFechaParaBD);
 
     try {
         const [rows] = await pool.query(`
