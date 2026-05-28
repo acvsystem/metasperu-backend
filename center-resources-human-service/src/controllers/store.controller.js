@@ -119,7 +119,7 @@ export const storeController = {
         }
 
         try {
-
+            console.log(122,socketId);
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 console.log("postAsistenciaEmployesStore", socketId);
@@ -174,7 +174,6 @@ export const storeController = {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
 
-            console.log(177,socketId);
             // 4. Emitir al dashboard en tiempo real
             getIO().to(socketId.socketId).emit('dashboard_empleados_horario', datosFormateados);
 
