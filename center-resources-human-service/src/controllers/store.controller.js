@@ -2086,7 +2086,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
 
         const rango = obtenerRangoSemana(dia);
-        if (reg.nroDocumento == '60796298') {
+        if (data.nroDocumento == '60796298') {
             console.log(dia,'//',rango);
         }
         if (!resumenPorRangoSemana[rango]) {
