@@ -1993,6 +1993,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esPartTime) {
             stats.partTime += 1;
             if (!resumenPartTimeDias[reg.dia]) {
+                if (reg.nroDocumento == '60796298') {
+                    console.log(reg.dia);
+                }
+
                 resumenPartTimeDias[reg.dia] = { totalMins: 0, nroDocumento: normalizarDocumento(reg.nroDocumento) };
             }
             resumenPartTimeDias[reg.dia].totalMins += minutos;
@@ -2082,9 +2086,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 4. PROCESAR PART-TIME (Cálculo Semanal)
     const resumenPorRangoSemana = {};
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
-        if (data.nroDocumento == '60796298') {
-            console.log(resumenPartTimeDias);
-        }
+
         const rango = obtenerRangoSemana(dia);
         if (!resumenPorRangoSemana[rango]) {
             resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
