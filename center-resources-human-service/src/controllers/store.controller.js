@@ -2086,13 +2086,15 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     for (const [dia, data] of Object.entries(resumenPartTimeDias)) {
 
         const rango = obtenerRangoSemana(dia);
-        if (data.nroDocumento == '60796298') {
-            console.log(dia,'//',rango);
-        }
+
         if (!resumenPorRangoSemana[rango]) {
             resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
         }
         resumenPorRangoSemana[rango].totalMins += data.totalMins;
+
+        if (data.nroDocumento == '60796298') {
+            console.log(resumenPorRangoSemana);
+        }
     }
 
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
