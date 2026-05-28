@@ -174,9 +174,9 @@ export const storeController = {
                 arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
             }
 
-            console.log(socketId);
+            console.log(177,socketId);
             // 4. Emitir al dashboard en tiempo real
-            getIO().emit('dashboard_empleados_horario', datosFormateados);
+            getIO().to(socketId.socketId).emit('dashboard_empleados_horario', datosFormateados);
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
