@@ -2143,7 +2143,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
     try {
         const [rows] = await pool.query(`
-                    SELECT     
+                        SELECT     
             DL.NUMERO_DOCUMENTO,     
             DH.FECHA_NUMBER,     
             DH.FECHA 
@@ -2151,17 +2151,19 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         INNER JOIN bd_metasperu.TB_DIAS_HORARIO DH     
             ON DH.ID_DIAS = DL.ID_TRB_DIAS 
 
-        WHERE DL.NUMERO_DOCUMENTO IN ('${documentos}')
+        WHERE DL.NUMERO_DOCUMENTO IN (?)
 
         AND (
             CASE
 
+                -- DD-MM-YYYY
                 WHEN DH.FECHA_NUMBER REGEXP '^[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}$'
                 THEN DATE_FORMAT(
                     STR_TO_DATE(DH.FECHA_NUMBER, '%d-%m-%Y'),
                     '%Y-%m-%d'
                 )
-                
+
+                -- YYYY-MM-DD
                 WHEN DH.FECHA_NUMBER REGEXP '^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$'
                 THEN DATE_FORMAT(
                     STR_TO_DATE(DH.FECHA_NUMBER, '%Y-%m-%d'),
@@ -2170,25 +2172,8 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
             END
         )
-        IN
-        (
-            CASE
-
-                WHEN ? REGEXP '^[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}$'
-                THEN DATE_FORMAT(
-                    STR_TO_DATE(?, '%d-%m-%Y'),
-                    '%Y-%m-%d'
-                )
-
-                WHEN ? REGEXP '^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}$'
-                THEN DATE_FORMAT(
-                    STR_TO_DATE(?, '%Y-%m-%d'),
-                    '%Y-%m-%d'
-                )
-
-            END
-        );
-        `, [documentos, fechasFormatoBd, fechasFormatoBd, fechasFormatoBd, fechasFormatoBd]);
+        IN (?);
+        `, [documentos, fechasFormatoBd]);
 
         const result = new Set();
         for (const row of rows) {
