@@ -2181,8 +2181,8 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
         for (const row of rows) {
 
-            const fechaNormalizada = fechaKey(row.FECHA) || fechaKey(row.FECHA_NUMBER);
-
+            const fechaNormalizada = fechaKey(row.FECHA_NUMBER);
+            console.log(fechaKey(row.FECHA_NUMBER),row.FECHA_NUMBER);
             if (fechaNormalizada) {
                 result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
