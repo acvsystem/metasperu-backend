@@ -2023,9 +2023,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
-        console.log(diasLibresSet);
+       
         // Consultas externas (Día libre y Papeletas)
         const key = `${data.nroDocumento}|${fecha}`;
+         console.log(diasLibresSet,key);
         const esDiaLibre = diasLibresSet.has(key);
 
         const papeletaRaw = papeletasMap.get(key) || { horas: '00:00' };
