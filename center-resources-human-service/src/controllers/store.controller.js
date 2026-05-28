@@ -2330,7 +2330,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             excesoTiempo,       // HR_EXTRA_SOBRANTE
             estado,             // ESTADO
             estado == 'correcto' ? 1 : 0, // APROBADO (nuevo valor)
-            fechaBase,          // FECHA
+            fechaRef,          // FECHA
             observacion,        // OBSERVACION
             isAprobacion        // ISAPROBACION (nuevo valor)
         ]);
@@ -2338,7 +2338,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         console.log('guardarEnBD insertado:', {
             id: result.insertId,
             nroDocumento,
-            fecha: fechaBase,
+            fecha: fechaRef,
             excesoTiempo,
             estado
         });
