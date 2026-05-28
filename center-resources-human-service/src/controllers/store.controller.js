@@ -2151,7 +2151,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         INNER JOIN bd_metasperu.TB_DIAS_HORARIO DH     
             ON DH.ID_DIAS = DL.ID_TRB_DIAS 
 
-        WHERE DL.NUMERO_DOCUMENTO IN (?)
+        WHERE DL.NUMERO_DOCUMENTO IN ('${documentos}')
 
         AND (
             CASE
@@ -2170,7 +2170,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
             END
         )
-        =
+        IN
         (
             CASE
 
