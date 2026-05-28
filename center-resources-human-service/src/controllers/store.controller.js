@@ -2023,11 +2023,11 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
-
+        console.log(diasLibresSet);
         // Consultas externas (Día libre y Papeletas)
         const key = `${data.nroDocumento}|${fecha}`;
         const esDiaLibre = diasLibresSet.has(key);
-        console.log(esDiaLibre);
+
         const papeletaRaw = papeletasMap.get(key) || { horas: '00:00' };
         const minsPapeleta = Math.round(tiempoADecimal(papeletaRaw.horas) * 60);
 
@@ -2116,7 +2116,7 @@ const verificarDiaLibre = async (documento, fecha) => {
         // Tu query adaptado para usar parámetros seguros
         const fechaLimpia = normalizarFechaParaBD(fecha);
 
-       
+
         const query = `
             SELECT TB_DIAS_HORARIO.ID_DIAS 
             FROM TB_DIAS_LIBRE 
@@ -2175,18 +2175,18 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         )
         IN (${fechasFormatoBd});
         `);
-       
+
         const result = new Set();
 
         for (const row of rows) {
-            
+
             const fechaNormalizada = fechaKey(row.FECHA) || fechaKey(row.FECHA_NUMBER);
-            
+
             if (fechaNormalizada) {
                 result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
         }
-  
+
         return result;
     } catch (error) {
         console.error("Error al precargar dias libres:", error);
