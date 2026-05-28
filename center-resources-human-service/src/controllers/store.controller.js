@@ -66,7 +66,9 @@ export const storeController = {
 
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
 
-        getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
+        if (socket.length) {
+            getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
+        }
     },
     postHorusWorksEmployes: async (req, res) => {
         const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
