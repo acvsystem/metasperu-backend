@@ -2258,7 +2258,7 @@ const normalizarFechaParaBD = (fechaSistema) => {
     // fechaSistema suele ser "YYYY-MM-DD"
     const [anio, mes, dia] = fechaSistema.split('-');
     // parseInt elimina los ceros a la izquierda (04 -> 4)
-    return `'${dia}-${mes}-${anio}'`;
+    return `'${anio}-${mes}-${dia}'`;
 };
 
 const obtenerRangoSemana = (fechaStr) => {
