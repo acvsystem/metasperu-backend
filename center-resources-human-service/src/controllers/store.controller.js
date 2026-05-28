@@ -55,10 +55,6 @@ export const storeController = {
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
 
-        if (documento == '71311853') {
-            console.log('DOCUMENTO:', documento);
-        }
-
         const responseVacio = {
             success: true,
             message: "Proceso completado correctamente",
@@ -68,12 +64,7 @@ export const storeController = {
             totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
         };
 
-        if (documento == '71311853') {
-            console.log('Respuesta procesada para horas trabajadas:', data.length, documento);
-        }
-
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
-
 
         getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
     },
@@ -2269,7 +2260,17 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         `, [nroDocumento, fechaBase, fechaBase]);
 
         if (existe.length > 0) {
-            console.log('guardarEnBD omitido porque ya existe:', { nroDocumento, fechaBase });
+            console.log('guardarEnBD - UPDATE porque ya existe:', { nroDocumento, fechaBase });
+
+            const [result] = await pool.query(`
+            UPDATE tb_hora_extra_empleado SET HR_EXTRA_ACUMULADO = ?, HR_EXTRA_SOBRANTE = ? 
+            WHERE ID_HR_EXTRA = ? AND HR_EXTRA_SOLICITADO = '00:00';
+        `, [
+                excesoTiempo,        // HR_EXTRA_SOLICITADO
+                excesoTiempo,        // HR_EXTRA_ACUMULADO
+                existe[0].ID_HR_EXTRA // ID_HR_EXTRA
+            ]);
+
             return { inserted: false, reason: 'exists' };
         }
 
