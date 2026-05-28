@@ -120,7 +120,7 @@ export const storeController = {
 
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
-                console.log("postAsistenciaEmployesStore",socketId);
+                console.log("postAsistenciaEmployesStore", socketId);
                 getIO().emit('dashboard_refresh_empleados');
             });
 
@@ -2024,10 +2024,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
-       
+
         // Consultas externas (Día libre y Papeletas)
         const key = `${data.nroDocumento}|${fechaKey(fecha)}`;
-       
+
         const esDiaLibre = diasLibresSet.has(key);
 
         const papeletaRaw = papeletasMap.get(key) || { horas: '00:00' };
@@ -2088,6 +2088,9 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     }
 
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
+        if (data.nroDocumento == '60796298') {
+            console.log(data);
+        }
         if (data.totalMins > UMBRAL_PT_SEMANAL_MINS) {
             const excesoMinsSemanal = data.totalMins - UMBRAL_PT_SEMANAL_MINS;
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
@@ -2183,7 +2186,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         for (const row of rows) {
 
             const fechaNormalizada = fechaKey(row.FECHA_NUMBER);
-           
+
             if (fechaNormalizada) {
                 result.add(`${normalizarDocumento(row.NUMERO_DOCUMENTO)}|${fechaNormalizada}`);
             }
