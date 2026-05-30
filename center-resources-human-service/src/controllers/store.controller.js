@@ -1310,10 +1310,10 @@ export const storeController = {
             console.log(values_hrx);
             await connection.execute(query_hrx, values_hrx);
 
-            if (result.affectedRows === 0) {
+         /*   if (result.affectedRows === 0) {
                 await connection.rollback();
                 return res.status(404).json({ success: false, message: 'Registro no encontrado.' });
-            }
+            }*/
 
             await connection.commit();
 
