@@ -1678,18 +1678,9 @@ const searchHorarioEmpleado = async (fecha, documento) => {
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha, documento.trim()]);
+        const [rows] = await pool.query(query, [fecha, documento.trim()]);    
 
-        if(documento == '77349830'){
-            console.log(`
-            SELECT RH.RANGO_HORA 
-            FROM TB_DIAS_TRABAJO DT
-            INNER JOIN TB_RANGO_HORA RH ON RH.ID_RANGO_HORA = DT.ID_TRB_RANGO_HORA 
-            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DT.ID_TRB_DIAS 
-            WHERE DH.FECHA_NUMBER = '${fecha}' AND DT.NUMERO_DOCUMENTO = '${documento.trim()}'
-            LIMIT 1;
-        `);
-        }
+
         if (rows && rows.length > 0) {
             const rangoCompleto = rows[0].RANGO_HORA; // Ejemplo: "08:30 a 17:30"
 
@@ -1746,7 +1737,7 @@ const formatearFechaParaDB = (fechaISO) => {
     // fechaISO viene como "2025-01-27"
     const [anio, mes, dia] = fechaISO.split('-');
     // Retornamos "27-1-2025" (quitando ceros a la izquierda del mes/día si es necesario)
-    return `${parseInt(dia)}-${parseInt(mes)}-${anio}`;
+    return `${dia}-${mes}-${anio}`;
 };
 
 // --- PROCESADOR PRINCIPAL ---
