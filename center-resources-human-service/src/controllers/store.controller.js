@@ -1271,7 +1271,7 @@ export const storeController = {
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
             const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, usuario, id_auth_hrx];
 
-            const [result] = await connection.execute(query, values);
+           // const [result] = await connection.execute(query, values);
 
           /*  if (aprobado) {
                 pushEmailQueue({
