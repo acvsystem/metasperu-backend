@@ -1680,6 +1680,16 @@ const searchHorarioEmpleado = async (fecha, documento) => {
 
         const [rows] = await pool.query(query, [fecha, documento.trim()]);
 
+        if(documento == '77349830'){
+            console.log(`
+            SELECT RH.RANGO_HORA 
+            FROM TB_DIAS_TRABAJO DT
+            INNER JOIN TB_RANGO_HORA RH ON RH.ID_RANGO_HORA = DT.ID_TRB_RANGO_HORA 
+            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DT.ID_TRB_DIAS 
+            WHERE DH.FECHA_NUMBER = '${fecha}' AND DT.NUMERO_DOCUMENTO = '${documento.trim()}'
+            LIMIT 1;
+        `);
+        }
         if (rows && rows.length > 0) {
             const rangoCompleto = rows[0].RANGO_HORA; // Ejemplo: "08:30 a 17:30"
 
@@ -1781,9 +1791,8 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LÓGICA DINÁMICA:
             const primera = lista[0]; // Siempre la primera del día
             const ultima = lista[totalMarcaciones - 1]; // Siempre la última del día
-            console.log(1784, fecha) , dni;
+        
             const fechaSQL = formatearFechaParaDB(fecha);
-            console.log(1786, fechaSQL, dni);
             // Consultas a DB en paralelo
             const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
                 searchHorarioEmpleado(fechaSQL, dni),
