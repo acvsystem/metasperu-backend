@@ -1273,7 +1273,7 @@ export const storeController = {
 
             const [result] = await connection.execute(query, values);
 
-            if (aprobado) {
+          /*  if (aprobado) {
                 pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
@@ -1298,7 +1298,7 @@ export const storeController = {
                         usuario_responsable: usuario
                     }
                 });
-            }
+            }*/
 
             const query_hrx = `
             UPDATE tb_hora_extra_empleado 
@@ -1307,7 +1307,7 @@ export const storeController = {
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
             const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, id_auth_hrx];
-
+            console.log(values_hrx);
             await connection.execute(query_hrx, values_hrx);
 
             if (result.affectedRows === 0) {
