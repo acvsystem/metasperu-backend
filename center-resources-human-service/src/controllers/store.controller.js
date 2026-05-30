@@ -119,7 +119,7 @@ export const storeController = {
         }
 
         try {
-            console.log(122,socketId);
+            console.log(122, socketId);
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 console.log("postAsistenciaEmployesStore", socketId);
@@ -1271,9 +1271,9 @@ export const storeController = {
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
             const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, usuario, id_auth_hrx];
 
-           // const [result] = await connection.execute(query, values);
+            const [result] = await connection.execute(query, values);
 
-          /*  if (aprobado) {
+            if (aprobado) {
                 pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
@@ -1298,7 +1298,7 @@ export const storeController = {
                         usuario_responsable: usuario
                     }
                 });
-            }*/
+            }
 
             const query_hrx = `
             UPDATE tb_hora_extra_empleado 
@@ -1310,10 +1310,10 @@ export const storeController = {
             console.log(values_hrx);
             await connection.execute(query_hrx, values_hrx);
 
-         /*   if (result.affectedRows === 0) {
+            if (result.affectedRows === 0) {
                 await connection.rollback();
                 return res.status(404).json({ success: false, message: 'Registro no encontrado.' });
-            }*/
+            }
 
             await connection.commit();
 
