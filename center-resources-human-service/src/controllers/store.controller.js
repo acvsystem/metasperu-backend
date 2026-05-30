@@ -1306,7 +1306,7 @@ export const storeController = {
             WHERE ID_HR_EXTRA = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, id_hrx];
+            const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, id_auth_hrx];
 
             await connection.execute(query_hrx, values_hrx);
 
