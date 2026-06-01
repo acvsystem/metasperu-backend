@@ -3,6 +3,7 @@ import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 import { configurationController } from '../controllers/configuration.controller.js';
 import { serverController } from '../controllers/server.controller.js';
+import { maintenanceController } from '../controllers/maintenance.controller.js';
 const router = Router();
 
 // ---RUTAS DASHBOARD
@@ -68,5 +69,12 @@ router.get('/api/parameters/tiempo/tolerancia', verifyToken, configurationContro
 router.post('/api/parameters/tiempo/tolerancia/create', verifyToken, configurationController.createTolerancia);
 router.put('/api/parameters/tiempo/tolerancia/update/:id', verifyToken, configurationController.updateTolerancia);
 router.delete('/api/parameters/tiempo/tolerancia/delete/:id', verifyToken, configurationController.deleteTolerancia);
+
+// --- RUTAS MANTENIMIENTO PAPELETAS Y HORAS EXTRA
+router.get('/api/maintenance/:resource', verifyToken, maintenanceController.list);
+router.get('/api/maintenance/:resource/:id', verifyToken, maintenanceController.getById);
+router.post('/api/maintenance/:resource', verifyToken, maintenanceController.create);
+router.put('/api/maintenance/:resource/:id', verifyToken, maintenanceController.update);
+router.delete('/api/maintenance/:resource/:id', verifyToken, maintenanceController.remove);
 
 export default router;
