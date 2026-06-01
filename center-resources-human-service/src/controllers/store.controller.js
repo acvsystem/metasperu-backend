@@ -754,7 +754,6 @@ export const storeController = {
              );`);
 
 
-
                         return paps; // Retorna el array de papeletas de este día
                     }));
 
@@ -763,6 +762,7 @@ export const storeController = {
                     // resultadosPapeletas es un array de arrays [[paps día 1], [paps día 2]...]
                     // Lo aplanamos para que sea un solo array de papeletas
                     papeletasLactancia = resultadosPapeletas.flat();
+                    console.log(765,papeletasLactancia);
                 }
 
                 // Formatear dias e incluir papeletas del día
