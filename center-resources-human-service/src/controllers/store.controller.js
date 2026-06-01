@@ -1788,8 +1788,8 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LÓGICA DINÁMICA:
             const primera = lista[0]; // Siempre la primera del día
             const ultima = lista[totalMarcaciones - 1]; // Siempre la última del día
-            console.log(1791,fecha);
-            const fechaSQL = formatearFechaParaDB(fecha);
+            
+            //const fechaSQL = formatearFechaParaDB(fecha);
             // Consultas a DB en paralelo
             const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
                 searchHorarioEmpleado(fecha, dni),
