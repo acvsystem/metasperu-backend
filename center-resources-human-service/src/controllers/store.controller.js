@@ -752,9 +752,9 @@ export const storeController = {
                     // resultadosPapeletas es un array de arrays [[paps día 1], [paps día 2]...]
                     // Lo aplanamos para que sea un solo array de papeletas
                     papeletasLactancia = resultadosPapeletas.flat();
-                   
+
                 }
-                console.log(757,diasDB);
+                console.log(757, diasDB);
                 // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
 
@@ -770,14 +770,11 @@ export const storeController = {
 
                     // Papeletas que caen en este día
 
-                    const fechaIn = d.FECHA_NUMBER; // El valor original (ej: 12-5-2026)
-                    const fechaFormateada = fechaIn
-                        .split('-')
-                        .map(parte => parte.padStart(2, '0'))
-                        .join('-');
+                    const fechaNormalizada = normalizarFecha(d.FECHA_NUMBER);
 
-
-                    const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
+                    const papsDelDia = papeletasLactancia.filter(p =>
+                        normalizarFecha(p.FECHA_DESDE) === fechaNormalizada
+                    );
 
 
                     // Tu variable con la fecha en formato "DD-MM-YYYY"
@@ -2561,4 +2558,18 @@ const formatearFechaDinamica = (textoEntrada) => {
 
     // 4. Armar el resultado final
     return `${dia}-${mesNumero}-${anioActual}`;
+}
+
+const normalizarFecha = (fecha) => {
+    const partes = fecha.split('-');
+
+    // Si la primera parte tiene 4 dígitos => YYYY-MM-DD
+    if (partes[0].length === 4) {
+        const [anio, mes, dia] = partes;
+        return `${dia.padStart(2, '0')}-${mes.padStart(2, '0')}-${anio}`;
+    }
+
+    // DD-MM-YYYY
+    const [dia, mes, anio] = partes;
+    return `${dia.padStart(2, '0')}-${mes.padStart(2, '0')}-${anio}`;
 }
