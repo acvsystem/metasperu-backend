@@ -119,7 +119,6 @@ export const storeController = {
         }
 
         try {
-            console.log(122, socketId);
             procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
                 arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
                 console.log("postAsistenciaEmployesStore", socketId);
@@ -1675,6 +1674,7 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
 
 const searchHorarioEmpleado = async (fecha, documento) => {
     try {
+
         const query = `
             SELECT RH.RANGO_HORA 
             FROM TB_DIAS_TRABAJO DT
@@ -1683,6 +1683,15 @@ const searchHorarioEmpleado = async (fecha, documento) => {
             WHERE DH.FECHA_NUMBER = ? AND DT.NUMERO_DOCUMENTO = ?
             LIMIT 1;
         `;
+
+        console.log( `
+            SELECT RH.RANGO_HORA 
+            FROM TB_DIAS_TRABAJO DT
+            INNER JOIN TB_RANGO_HORA RH ON RH.ID_RANGO_HORA = DT.ID_TRB_RANGO_HORA 
+            INNER JOIN TB_DIAS_HORARIO DH ON DH.ID_DIAS = DT.ID_TRB_DIAS 
+            WHERE DH.FECHA_NUMBER = '${fecha}' AND DT.NUMERO_DOCUMENTO = '${documento.trim()}'
+            LIMIT 1;
+        `);
 
         const [rows] = await pool.query(query, [fecha, documento.trim()]);
 
