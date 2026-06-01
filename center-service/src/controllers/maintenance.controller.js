@@ -140,8 +140,8 @@ export const maintenanceController = {
 
         try {
             const [rows] = await pool.execute(
-                `SELECT * FROM ${config.table} ${clause} ORDER BY ${config.primaryKey} ${order} LIMIT ? OFFSET ?`,
-                [...values, limit, offset]
+                `SELECT * FROM ${config.table} ${clause} ORDER BY ${config.primaryKey} ${order} LIMIT ${limit} OFFSET ${offset}`,
+                values
             );
             const [countRows] = await pool.execute(
                 `SELECT COUNT(*) AS total FROM ${config.table} ${clause}`,
