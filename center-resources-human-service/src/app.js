@@ -6,6 +6,9 @@ import { initSocket } from './config/socket.js';
 import { pool } from './config/db.js';
 import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
+import { emailService } from '../services/email.service.js';
+import cron from 'node-cron';
+import { extraServices } from '../services/extra.services.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -33,6 +36,59 @@ app.use(cors({
 app.use(compression());
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
+
+
+cron.schedule('32 15 * * *', async () => {
+  console.log('⏰ [Cron Job] Iniciando comprobación de horarios creados...');
+
+  const hoy = new Date();
+
+  const mañana = new Date(hoy.getTime() + 24 * 60 * 60 * 1000);
+
+  const fechaFormateada = mañana.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
+  let day = fechaFormateada.replaceAll('/', '-');
+
+  try {
+
+    const query = `SELECT LT.*
+        FROM TB_LISTA_TIENDA LT
+        LEFT JOIN TB_HORARIO_PROPERTY HP
+            ON HP.CODIGO_TIENDA = LT.SERIE_TIENDA
+            AND TRIM(SUBSTRING_INDEX(HP.RANGO_DIAS, ' ', 1)) = ?
+        WHERE HP.CODIGO_TIENDA IS NULL;`;
+
+    const [rows] = await pool.query(query, [day]);
+
+    if (rows.length > 0) {
+      emailService.pushToEmailQueue({
+        email: ['itperu@metasperu.com'],
+        subject: `Alerta de tiendas Sin horario creado `,
+        template: 'sedesSinHorario',
+        variables: { sedes: rows, periodo: day }
+      });
+    } else {
+      emailService.pushToEmailQueue({
+        email: ['itperu@metasperu.com'],
+        subject: `Alerta de tiendas Sin horario creado `,
+        template: 'sedesHorarioCorrecto',
+        variables: { sedes: rows, periodo: day }
+      });
+    }
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+    await extraServices.enviarSlack(`🚨 *Error en Cron Job*\nDetalle: ${errorMsg}`, "Monitor de horarios creados");
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
 
 app.get('/health', (req, res) => {
   res.status(200).json({

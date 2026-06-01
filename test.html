@@ -1,68 +1,168 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <style>
-        .body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; }
-        .wrapper { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .header { background-color: #1e40af; padding: 30px; text-align: center; }
-        .header h1 { margin: 0; color: #ffffff; font-size: 22px; letter-spacing: 1.5px; text-transform: uppercase; }
-        
-        .content { padding: 30px; text-align: center; }
-        /* Badge verde para éxito */
-        .status-badge { display: inline-block; background-color: #f0fdf4; color: #166534; padding: 6px 16px; border-radius: 50px; font-weight: bold; font-size: 13px; border: 1px solid #bbf7d0; margin-bottom: 20px; }
-        
-        .main-info { background: #ffffff; border: 1px solid #edf2f7; border-radius: 8px; width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-        .main-info th { background: #f7fafc; color: #718096; font-size: 11px; text-transform: uppercase; padding: 10px; border-bottom: 2px solid #edf2f7; }
-        .main-info td { padding: 15px 10px; color: #2d3748; font-size: 14px; border-bottom: 1px solid #edf2f7; }
+        .body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #fef2f2;
+            margin: 0;
+            padding: 20px;
+        }
 
-        /* Estilo de caja de confirmación positiva */
-        .success-box { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; text-align: left; margin: 0 5px; }
-        .success-box strong { color: #166534; display: block; margin-bottom: 5px; font-size: 13px; }
-        .success-text { color: #15803d; font-size: 14px; }
+        .wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.1);
+            border: 1px solid #fee2e2;
+        }
 
-        .footer { background: #f8fafc; padding: 20px; text-align: center; color: #a0aec0; font-size: 12px; border-top: 1px solid #edf2f7; }
+        .header {
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 24px;
+            letter-spacing: 1px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .alert-container {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .alert-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .alert-title {
+            color: #991b1b;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Estilo para la lista de sedes */
+        .info-box {
+            background: #fff5f5;
+            border: 1px dashed #f87171;
+            border-radius: 8px;
+            margin: 0 20px 25px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .periodo-header {
+            background: #fee2e2;
+            padding: 15px;
+            border-bottom: 1px solid #f87171;
+            text-align: center;
+            color: #991b1b;
+            font-size: 14px;
+        }
+
+        .sede-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sede-item {
+            border-bottom: 1px solid #fee2e2;
+        }
+
+        .sede-item:last-child {
+            border-bottom: none;
+        }
+
+        .sede-name {
+            padding: 12px 20px;
+            color: #450a0a;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .sede-status {
+            padding: 12px 20px;
+            text-align: right;
+            color: #b91c1c;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-action {
+            display: inline-block;
+            background-color: #dc2626;
+            color: #ffffff !important;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+        }
+
+        .footer {
+            background: #fdf2f2;
+            padding: 20px;
+            text-align: center;
+            color: #991b1b;
+            font-size: 12px;
+            border-top: 1px solid #fee2e2;
+        }
     </style>
 </head>
+
 <body class="body">
     <div class="wrapper">
         <div class="header">
             <h1>Metas Perú S.A.C</h1>
         </div>
-        
-        <div class="content">
-            <div class="status-badge">✔ HORA EXTRA APROBADA</div>
-            <p style="color: #4a5568; font-size: 14px; margin-bottom: 25px;">Estimado(a) colaborador(a), su solicitud de hora extra ha sido validada y aprobada correctamente.</p>
-            
-            <table class="main-info">
-                <thead>
-                    <tr>
-                        <th>Tienda</th>
-                        <th>Fecha</th>
-                        <th>H. Extra</th>
-                    </tr>
-                </thead>
+
+        <div class="alert-container">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-title">ALERTA: SEDES SIN HORARIO</div>
+            <p style="color: #7f1d1d; font-size: 14px; margin: 0;">Se han detectado omisiones en el registro de horarios
+                para el próximo periodo.</p>
+        </div>
+
+        <div class="info-box">
+            <div class="periodo-header">
+                <strong>PERIODO:</strong> {{periodo}}<br>
+            </div>
+            <table class="sede-table">
                 <tbody>
-                    <tr>
-                        <td style="font-weight: bold; color: #1e40af;">{{tienda}}</td>
-                        <td>{{fecha}}</td>
-                        <td style="font-family: monospace; font-weight: bold;">{{horas}}</td>
+                    {{#each sedes}}
+                    <tr class="sede-item">
+                        <td class="sede-name">• {{this.DESCRIPCION}}</td>
+                        <td class="sede-status">PENDIENTE</td>
                     </tr>
+                    {{/each}}
                 </tbody>
             </table>
-
-            <div class="success-box">
-                <strong>Comentario de autorización:</strong>
-                <span class="success-text">"{{comentario}}"</span>
-            </div>
-            
-            <p style="font-size: 12px; color: #a0aec0; margin-top: 25px;">Responsable de validación: {{usuarioResponsable}}</p>
         </div>
-        
+
+        <div style="text-align: center; padding-bottom: 35px;">
+            <p style="font-size: 14px; color: #450a0a; margin-bottom: 20px; padding: 0 40px;">Por favor, contactar con
+                los encargados de estas sedes para regularizar.</p>
+        </div>
+
         <div class="footer">
-            Este es un correo informativo del Sistema de Gestión de Tiempos.<br>
-            © 2026 Metas Perú S.A.C
+            <strong>NOTIFICACIÓN CRÍTICA DE RECURSOS HUMANOS</strong><br>
+            Este reporte consolidado se genera automáticamente según el estado del sistema.
         </div>
     </div>
 </body>
+
 </html>

@@ -1,62 +1,30 @@
 import amqp from 'amqplib';
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672';
-const EMAIL_QUEUE = process.env.EMAIL_QUEUE || 'email_queue';
-
-let connectionPromise;
-let channelPromise;
-
-const getChannel = async () => {
-    if (!connectionPromise) {
-        connectionPromise = amqp.connect(RABBITMQ_URL).catch((error) => {
-            connectionPromise = null;
-            throw error;
-        });
-    }
-
-    if (!channelPromise) {
-        channelPromise = connectionPromise.then(async (conn) => {
-            conn.on('error', (error) => {
-                console.error('RabbitMQ error:', error.message);
-            });
-            conn.on('close', () => {
-                connectionPromise = null;
-                channelPromise = null;
-                console.error('RabbitMQ conexion cerrada');
-            });
-
-            const channel = await conn.createChannel();
-            await channel.assertQueue(EMAIL_QUEUE, { durable: true });
-            return channel;
-        }).catch((error) => {
-            channelPromise = null;
-            throw error;
-        });
-    }
-
-    return channelPromise;
-};
-
 export const emailService = {
-    async pushToEmailQueue(data, archivo = null) {
-        const channel = await getChannel();
 
+    async pushToEmailQueue(data) {
+        console.log("Enviando mensaje a la cola de correos:", data);
+        const conn = await amqp.connect('amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672');
+        const channel = await conn.createChannel();
+        const queue = 'email_queue';
+
+        await channel.assertQueue(queue, { durable: true });
+
+        // El payload debe coincidir con lo que espera el worker
         const payload = {
             to: data.email,
             subject: data.subject,
-            template: data.template,
+            template: data.template, // ej: 'welcome'
             context: data.variables,
-            archivo: data.archivo ? {
-                filename: data.archivo.filename,
-                content: data.archivo.content.toString('base64'),
-                encoding: 'base64'
-            } : []
+            archivo: data.archivo
         };
 
-        channel.sendToQueue(EMAIL_QUEUE, Buffer.from(JSON.stringify(payload)), {
-            persistent: true
+        channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
+            persistent: true // El mensaje se guarda en disco
         });
 
-        return "Los correos se enviaron a la cola de envios";
+        console.log("Mensaje enviado a la cola de correos");
+        setTimeout(() => conn.close(), 500);
     }
-};
+
+}
