@@ -402,7 +402,7 @@ export const storeController = {
              );`,
                             [code_store, fechaIn, fechaIn]);
 
-                            console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
+                        console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
              FROM bd_metasperu.tb_head_papeleta 
              WHERE ID_PAP_TIPO_PAPELETA = 7 
@@ -741,7 +741,17 @@ export const storeController = {
                 (FECHA_DESDE = ?) OR 
                 (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = ?)
              );`,
-                            [code_store, fechaIn, fechaFormateada]);
+                            [code_store, fechaIn, fechaIn]);
+
+                        console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
+                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
+             FROM bd_metasperu.tb_head_papeleta 
+             WHERE ID_PAP_TIPO_PAPELETA = 7 
+             AND CODIGO_TIENDA = '${code_store}'
+             AND (
+                (FECHA_DESDE = '${fechaIn}') OR 
+                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaIn}')
+             );`);
 
 
 
@@ -1686,7 +1696,7 @@ const searchHorarioEmpleado = async (fecha, documento) => {
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha, documento.trim()]);    
+        const [rows] = await pool.query(query, [fecha, documento.trim()]);
 
 
         if (rows && rows.length > 0) {
@@ -1790,7 +1800,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LÓGICA DINÁMICA:
             const primera = lista[0]; // Siempre la primera del día
             const ultima = lista[totalMarcaciones - 1]; // Siempre la última del día
-        
+
             const fechaSQL = formatearFechaParaDB(fecha);
             // Consultas a DB en paralelo
             const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
@@ -2313,14 +2323,14 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         if (existe.length > 0) {
             console.log('guardarEnBD - UPDATE porque ya existe:', { nroDocumento, fechaBase });
 
-           /* const [result] = await pool.query(`
-            UPDATE tb_hora_extra_empleado SET HR_EXTRA_ACUMULADO = ?, HR_EXTRA_SOBRANTE = ? 
-            WHERE ID_HR_EXTRA = ? AND HR_EXTRA_SOLICITADO = '00:00';
-        `, [
-                excesoTiempo,        // HR_EXTRA_SOLICITADO
-                excesoTiempo,        // HR_EXTRA_ACUMULADO
-                existe[0].ID_HR_EXTRA // ID_HR_EXTRA
-            ]);*/
+            /* const [result] = await pool.query(`
+             UPDATE tb_hora_extra_empleado SET HR_EXTRA_ACUMULADO = ?, HR_EXTRA_SOBRANTE = ? 
+             WHERE ID_HR_EXTRA = ? AND HR_EXTRA_SOLICITADO = '00:00';
+         `, [
+                 excesoTiempo,        // HR_EXTRA_SOLICITADO
+                 excesoTiempo,        // HR_EXTRA_ACUMULADO
+                 existe[0].ID_HR_EXTRA // ID_HR_EXTRA
+             ]);*/
 
             return { inserted: false, reason: 'exists' };
         }
