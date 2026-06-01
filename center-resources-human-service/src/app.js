@@ -37,7 +37,7 @@ app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
 
 
-cron.schedule('0 8 * * 0', async () => {
+cron.schedule('00 17 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación de horarios creados...');
 
   const hoy = new Date();
