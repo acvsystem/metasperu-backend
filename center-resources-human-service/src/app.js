@@ -61,7 +61,7 @@ cron.schedule('37 15 * * *', async () => {
             AND TRIM(SUBSTRING_INDEX(HP.RANGO_DIAS, ' ', 1)) = ?
         WHERE HP.CODIGO_TIENDA IS NULL;`;
 
-    const [rows] = await pool.query(query, [day]);
+    const [rows] = await pool.query(query, ['01-06-2026']);
 
     if (rows.length > 0) {
       emailService.pushToEmailQueue({
