@@ -37,7 +37,7 @@ app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
 
 
-cron.schedule('00 17 * * *', async () => {
+cron.schedule('00 8 * * 0', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación de horarios creados...');
 
   const hoy = new Date();
@@ -58,7 +58,7 @@ cron.schedule('00 17 * * *', async () => {
         FROM TB_LISTA_TIENDA LT
         LEFT JOIN TB_HORARIO_PROPERTY HP
             ON HP.CODIGO_TIENDA = LT.SERIE_TIENDA
-            AND TRIM(SUBSTRING_INDEX(HP.RANGO_DIAS, ' ', 1)) = '01-06-2026'
+            AND TRIM(SUBSTRING_INDEX(HP.RANGO_DIAS, ' ', 1)) = ?
         WHERE HP.CODIGO_TIENDA IS NULL AND LT.SERIE_TIENDA != '9M' AND LT.ESTATUS != 'INACTIVO';`;
 
     const [rows] = await pool.query(query, [day]);
