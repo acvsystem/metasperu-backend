@@ -743,16 +743,6 @@ export const storeController = {
              );`,
                             [code_store, fechaIn, fechaIn]);
 
-                        console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
-                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
-             FROM bd_metasperu.tb_head_papeleta 
-             WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND CODIGO_TIENDA = '${code_store}'
-             AND (
-                (FECHA_DESDE = '${fechaIn}') OR 
-                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaIn}')
-             );`);
-
 
                         return paps; // Retorna el array de papeletas de este día
                     }));
@@ -762,9 +752,9 @@ export const storeController = {
                     // resultadosPapeletas es un array de arrays [[paps día 1], [paps día 2]...]
                     // Lo aplanamos para que sea un solo array de papeletas
                     papeletasLactancia = resultadosPapeletas.flat();
-                    console.log(765,papeletasLactancia);
+                   
                 }
-
+                console.log(757,diasDB);
                 // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
 
@@ -785,6 +775,7 @@ export const storeController = {
                         .split('-')
                         .map(parte => parte.padStart(2, '0'))
                         .join('-');
+
 
                     const papsDelDia = papeletasLactancia.filter(p => p.FECHA_DESDE === d.FECHA_NUMBER || p.FECHA_DESDE === fechaFormateada);
 
