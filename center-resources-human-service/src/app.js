@@ -8,7 +8,6 @@ import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
 import { emailService } from './services/email.service.js';
 import cron from 'node-cron';
-import { extraServices } from '../services/extra.services.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -83,7 +82,6 @@ cron.schedule('34 15 * * *', async () => {
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
     console.error('❌ [Cron Error]:', errorMsg);
-    await extraServices.enviarSlack(`🚨 *Error en Cron Job*\nDetalle: ${errorMsg}`, "Monitor de horarios creados");
   }
 }, {
   scheduled: true,
