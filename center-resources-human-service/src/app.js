@@ -6,7 +6,7 @@ import { initSocket } from './config/socket.js';
 import { pool } from './config/db.js';
 import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
-import { emailService } from '../services/email.service.js';
+import { emailService } from './services/email.service.js';
 import cron from 'node-cron';
 import { extraServices } from '../services/extra.services.js';
 
