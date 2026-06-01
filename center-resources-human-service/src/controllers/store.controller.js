@@ -1792,9 +1792,9 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             const fechaSQL = formatearFechaParaDB(fecha);
             // Consultas a DB en paralelo
             const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
-                searchHorarioEmpleado(fechaSQL, dni),
+                searchHorarioEmpleado(fecha, dni),
                 searchPapeletaEmpleado(fecha, dni),
-                searchDescansoEmpleado(fechaSQL, dni)
+                searchDescansoEmpleado(fecha, dni)
             ]);
 
             // Construimos el registro base
