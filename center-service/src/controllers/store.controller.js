@@ -205,7 +205,7 @@ export const storeController = {
         const { socketId } = req.params;
         try {
 
-            getIO().to('grupo_tiendas').emit('py_delete_cola_panama', { pedido_por: socketId });
+            getIO().to('grupo_tiendas').emit('py_delete_cola_panama');
 
             res.json({
                 message: 'Se emitio señal de eliminar cola panama.'
