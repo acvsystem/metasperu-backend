@@ -1085,28 +1085,30 @@ export const storeController = {
 
             // 4. INSERTAR DETALLE (tb_detalle_papeleta)
             for (const det of detalles) {
-                await connection.execute(
-                    `INSERT INTO tb_detalle_papeleta (
+                if (det.hrExtraSolicitado != "00:00") {
+                    await connection.execute(
+                        `INSERT INTO tb_detalle_papeleta (
                     DET_ID_HEAD_PAPELETA, DET_ID_HR_EXTRA, HR_EXTRA_ACUMULADO, 
                     HR_EXTRA_SOLICITADO, HR_EXTRA_SOBRANTE, ESTADO, APROBADO, 
                     SELECCIONADO, FECHA, FECHA_MODIFICACION
                 ) VALUES (?, ?, ?, ?, ?, 'REGISTRADO', 1, 1, ?, NOW())`,
-                    [idHeadPapeleta, det.idHrExtra, det.hrExtraAcumulado,
-                        det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
-                );
+                        [idHeadPapeleta, det.idHrExtra, det.hrExtraAcumulado,
+                            det.hrExtraSolicitado, det.hrExtraSobrante, det.fecha]
+                    );
 
-                const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "utilizado" : "correcto";
+                    const nuevoEstado = (det.hrExtraSobrante === "00:00") ? "utilizado" : "correcto";
 
-                // 3. Actualizar la tabla maestra de horas extras del empleado
-                await connection.execute(
-                    `UPDATE tb_hora_extra_empleado 
+                    // 3. Actualizar la tabla maestra de horas extras del empleado
+                    await connection.execute(
+                        `UPDATE tb_hora_extra_empleado 
                      SET HR_EXTRA_SOLICITADO = ?, 
                      HR_EXTRA_SOBRANTE = ?, 
                      ESTADO = ? ,
                      SELECCIONADO = ?
                      WHERE ID_HR_EXTRA = ?`,
-                    [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'utilizado' ? 1 : 0, det.idHrExtra]
-                );
+                        [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'utilizado' ? 1 : 0, det.idHrExtra]
+                    );
+                }
 
             }
 
@@ -1788,7 +1790,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
             // LÓGICA DINÁMICA:
             const primera = lista[0]; // Siempre la primera del día
             const ultima = lista[totalMarcaciones - 1]; // Siempre la última del día
-            
+
             //const fechaSQL = formatearFechaParaDB(fecha);
             // Consultas a DB en paralelo
             const [horarioDB, papeletaDB, diaDescanso] = await Promise.all([
