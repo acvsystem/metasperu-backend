@@ -2032,6 +2032,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     ]);
 
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
+        console.log(2035,fecha);
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
@@ -2098,16 +2099,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             resumenPorRangoSemana[rango] = { totalMins: 0, nroDocumento: data.nroDocumento };
         }
         resumenPorRangoSemana[rango].totalMins += data.totalMins;
-
-        if (data.nroDocumento == '60796298') {
-            console.log(resumenPorRangoSemana);
-        }
     }
 
     for (const [rangoSemana, data] of Object.entries(resumenPorRangoSemana)) {
-        if (data.nroDocumento == '60796298') {
-            console.log(rangoSemana);
-        }
+
         if (data.totalMins > UMBRAL_PT_SEMANAL_MINS) {
             const excesoMinsSemanal = data.totalMins - UMBRAL_PT_SEMANAL_MINS;
             const excesoHorasSemanal = Math.round((excesoMinsSemanal / 60) * 100) / 100;
@@ -2311,16 +2306,8 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         `, [nroDocumento, fechaBase, fechaBase]);
 
         if (existe.length > 0) {
-            console.log('guardarEnBD - UPDATE porque ya existe:', { nroDocumento, fechaBase });
-
-            /* const [result] = await pool.query(`
-             UPDATE tb_hora_extra_empleado SET HR_EXTRA_ACUMULADO = ?, HR_EXTRA_SOBRANTE = ? 
-             WHERE ID_HR_EXTRA = ? AND HR_EXTRA_SOLICITADO = '00:00';
-         `, [
-                 excesoTiempo,        // HR_EXTRA_SOLICITADO
-                 excesoTiempo,        // HR_EXTRA_ACUMULADO
-                 existe[0].ID_HR_EXTRA // ID_HR_EXTRA
-             ]);*/
+            console.log('guardarEnBD - ya existe:', { nroDocumento, fechaBase });
+    
 
             return { inserted: false, reason: 'exists' };
         }
