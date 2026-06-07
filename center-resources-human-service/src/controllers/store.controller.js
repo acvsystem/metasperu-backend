@@ -2406,6 +2406,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     try {
         registros = await procesarYRegistrarHoras(registrosDelDocumento);
+        console.log(2409,registros);
     } catch (error) {
         console.error("Error al procesar y registrar horas:", error);
         registros = { success: false, error: error.message };
