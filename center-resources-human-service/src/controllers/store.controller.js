@@ -2282,7 +2282,7 @@ const obtenerRangoSemana = (fechaStr) => {
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
     const excesoTiempo = decimalATiempo(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
-    const fechaBase = normalizarFechaReferencia(fechaRef);
+    const fechaBase = fechaRef;
 
     if (!nroDocumento || !fechaBase || !excesoTiempo) {
         console.warn('guardarEnBD omitido por parametros incompletos:', {
