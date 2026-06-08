@@ -1913,7 +1913,13 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
     // Fecha de control (evitar procesar el día actual en curso)
     const FECHA_HOY_DATE = new Date();
-    const FECHA_HOY_STR = FECHA_HOY_DATE.toISOString().split('T')[0];
+
+    const anio = FECHA_HOY_DATE.getFullYear();
+    // .getMonth() va de 0 a 11, por eso sumamos 1. .padStart asegura los dos dígitos.
+    const mes = String(FECHA_HOY_DATE.getMonth() + 1).padStart(2, '0');
+    const dia = String(FECHA_HOY_DATE.getDate()).padStart(2, '0');
+
+    const FECHA_HOY_STR = `${anio}-${mes}-${dia}`;
 
     const resumenFullTime = {};
     const resumenPartTimeDias = {};
