@@ -1935,6 +1935,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 2. CLASIFICACIÓN INICIAL Y CÁLCULO DE MINUTOS
     listaRegistros.forEach(reg => {
         // No procesar marcaciones del día de hoy
+        console.log(1938, reg.dia, FECHA_HOY_STR);
         if (reg.dia === FECHA_HOY_STR) {
             stats.omitidos += 1;
             return;
@@ -2032,7 +2033,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     ]);
 
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-        console.log(2035,fecha);
+        console.log(2035, fecha);
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
@@ -2307,7 +2308,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
 
         if (existe.length > 0) {
             console.log('guardarEnBD - ya existe:', { nroDocumento, fechaBase });
-    
+
 
             return { inserted: false, reason: 'exists' };
         }
@@ -2393,7 +2394,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     try {
         registros = await procesarYRegistrarHoras(registrosDelDocumento);
-        console.log(2409,registros);
+        console.log(2409, registros);
     } catch (error) {
         console.error("Error al procesar y registrar horas:", error);
         registros = { success: false, error: error.message };
