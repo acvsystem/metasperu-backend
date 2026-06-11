@@ -2056,7 +2056,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
         const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - data.limiteJornada);
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60));
+        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60), data.nroDocumento);
 
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
@@ -2451,18 +2451,19 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     }
 }
 
-const validarNivelAutorizar = async (fecha, horaExtra) => {
+const validarNivelAutorizar = async (fecha, horaExtra, documento) => {
     try {
         // Combinamos ambas tablas en un solo JOIN
         const query = `
             SELECT * 
             FROM tb_head_papeleta h
             WHERE h.FECHA_DESDE = ? 
-            AND h.HORA_SOLICITADA = ?
+            AND h.HORA_SOLICITADA = ? 
+            AND h.NRO_DOCUMENTO_EMPLEADO = ?
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha, horaExtra]);
+        const [rows] = await pool.query(query, [fecha, horaExtra, documento]);
 
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
