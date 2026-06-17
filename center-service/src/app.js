@@ -7,7 +7,7 @@ import { initSocket } from './config/socket.js'; // 1. Importar primero
 import { storeController } from './controllers/store.controller.js';
 import cors from 'cors';
 import cron from 'node-cron';
-import { pool } from '../config/db.js';
+import { pool } from './config/db.js';
 import { getIO } from './config/socket.js'; // 2. Importar después
 
 const app = express();
