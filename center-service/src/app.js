@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { initSocket } from './config/socket.js'; // 1. Importar primero
 import { storeController } from './controllers/store.controller.js';
 import cors from 'cors';
+import cron from 'node-cron';
 
 const app = express();
 const httpServer = createServer(app);
