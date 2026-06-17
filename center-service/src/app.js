@@ -7,6 +7,8 @@ import { initSocket } from './config/socket.js'; // 1. Importar primero
 import { storeController } from './controllers/store.controller.js';
 import cors from 'cors';
 import cron from 'node-cron';
+import { pool } from '../config/db.js';
+import { getIO } from './config/socket.js'; // 2. Importar después
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,7 +27,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 import centerRoutes from './routes/center.routes.js';
 app.use('/s1/center', centerRoutes);
 
-cron.schedule('41 14 * * *', async () => {
+cron.schedule('43 14 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando limpieza de clientes...');
   storeController.callClientDelete();
   try {
