@@ -177,6 +177,7 @@ export const storeController = {
 
             if ((extra_client || []).length) {
                 getIO().to('grupo_tiendas').emit('py_delete_client', { pedido_por: socketId, extra_client: extra_client });
+                getIO().to('servidor_backup').emit('py_delete_client', { pedido_por: socketId, extra_client: extra_client });
             }
 
             res.json({
@@ -240,7 +241,7 @@ export const storeController = {
             if (rows.length === 0) {
                 return res.status(404).json({ error: "Token no válido o expirado" });
             }
-    
+
             // 2. Parseamos el JSON que guardaste como string en la BD
             const documentos = rows[0].documentos;
 
