@@ -27,9 +27,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 import centerRoutes from './routes/center.routes.js';
 app.use('/s1/center', centerRoutes);
 
-cron.schedule('43 14 * * *', async () => {
+cron.schedule('00 10 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando limpieza de clientes...');
-  storeController.callClientDelete();
+
   try {
 
     console.log('Iniciando tarea programada: callClientDelete...');
