@@ -3,6 +3,10 @@
 Cliente Python para leer `CHECKINOUT` + `USERINFO` desde `Access.mdb` y responder
 al backend por Socket.IO.
 
+Por defecto solo consulta marcaciones de `CHECKINOUT.sn = SSR3241000241`.
+Devuelve el nombre de `USERINFO.Name` en `userinfo_Name` y `name`, y el numero
+de documento de `USERINFO.Education` en `userinfo_Education` y `documento`.
+
 ## Instalar
 
 ```powershell
@@ -24,6 +28,7 @@ python test_read_access.py 2026-06-01 2026-06-18 12345678
 
 ```powershell
 $env:ACCESS_DB_PATH="C:\Users\W10\Desktop\Access.mdb"
+$env:CHECKINOUT_SN="SSR3241000241"
 $env:SOCKET_URL="https://api.metasperu.net.pe"
 $env:SOCKET_PATH="s5/socket"
 python socket_client.py
