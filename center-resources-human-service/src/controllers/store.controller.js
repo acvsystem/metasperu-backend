@@ -93,11 +93,11 @@ export const storeController = {
                 });
             }
 
-            const resParse = response.data.map((row) => ({
+           /* const resParse = response.data.map((row) => ({
                 ...row,
                 hora: getHoraMarcacion(row.checktime),
                 horario: searchHorarioEmpleado(fecha, dni)
-            }));
+            }));*/
 
             return res.status(200).json({
                 success: true,
@@ -105,7 +105,7 @@ export const storeController = {
                 fecha_desde,
                 fecha_hasta,
                 count: response.count || 0,
-                data: resParse || []
+                data: response.data || []
             });
         } catch (error) {
             const isTimeout = error?.message?.includes('operation has timed out');
