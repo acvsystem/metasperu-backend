@@ -99,7 +99,7 @@ export const storeController = {
                 asistencia: row.asistencia.map((dia) => ({
                     ...dia, // Mantiene la 'fecha' y los 'registros'
                     // Consultamos la función enviando la fecha de ESTE día específico
-                    horario: await searchHorarioEmpleado(dia.fecha, row.documento)
+                    horario: searchHorarioEmpleado(dia.fecha, row.documento)
                 }))
             }));
 
