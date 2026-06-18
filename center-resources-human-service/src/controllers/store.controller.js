@@ -1747,7 +1747,7 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
 
 const searchHorarioEmpleado = async (fecha, documento) => {
     try {
-
+        console.log("Buscando horario para Documento:", documento, "en Fecha:", fecha);
         const query = `
             SELECT RH.RANGO_HORA 
             FROM TB_DIAS_TRABAJO DT
