@@ -93,15 +93,7 @@ export const storeController = {
                 });
             }
 
-            const resParse = response.data.map((row) => ({
-                ...row,
-                // Iteramos sobre el array interno de asistencias (que tiene múltiples fechas)
-                asistencia: row.asistencia.map((dia) => ({
-                    ...dia, // Mantiene la 'fecha' y los 'registros'
-                    // Consultamos la función enviando la fecha de ESTE día específico
-                    horario: searchHorarioEmpleado(dia.fecha, row.documento)
-                }))
-            }));
+            const resParse = procesarRespuesta(response.data);
 
             return res.status(200).json({
                 success: true,
@@ -2641,4 +2633,31 @@ const normalizarFecha = (fecha) => {
     // DD-MM-YYYY
     const [dia, mes, anio] = partes;
     return `${dia.padStart(2, '0')}-${mes.padStart(2, '0')}-${anio}`;
+}
+
+
+async function procesarRespuesta(response) {
+    
+    const resParse = await Promise.all(response.map(async (row) => {
+        
+        // Mapeamos de forma asíncrona cada día de asistencia
+        const asistenciaConHorario = await Promise.all(
+            row.asistencia.map(async (dia) => {
+                // AQUÍ SÍ necesitas el await porque la función es async
+                const horarioEncontrado = await searchHorarioEmpleado(dia.fecha, row.documento);
+                
+                return {
+                    ...dia,
+                    horario: horarioEncontrado
+                };
+            })
+        );
+
+        return {
+            ...row,
+            asistencia: asistenciaConHorario
+        };
+    }));
+
+    return resParse;
 }
