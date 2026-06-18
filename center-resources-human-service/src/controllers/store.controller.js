@@ -1,4 +1,4 @@
-import { getIO } from '../config/socket.js';
+import { getIO, requestAccessCheckinoutServer } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 import { pool } from '../config/db.js';
 import { dev_pool } from '../config/dev_bd.js';
@@ -51,6 +51,67 @@ const fechaKey = (value) => {
 const normalizarDocumento = (value) => String(value || '').trim();
 
 export const storeController = {
+
+    postAccessCheckinout: async (req, res) => {
+        const { fecha_desde, fecha_hasta, documento, socketId } = req.body;
+
+        if (!fecha_desde || !fecha_hasta) {
+            return res.status(400).json({
+                success: false,
+                message: 'fecha_desde y fecha_hasta son requeridos'
+            });
+        }
+
+        try {
+            const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
+            const payload = {
+                request_id: requestId,
+                fecha_desde,
+                fecha_hasta,
+                documento: documento || null,
+                socketId: socketId || null
+            };
+
+            const response = await requestAccessCheckinoutServer(
+                'py_access_checkinout',
+                payload,
+                Number(process.env.ACCESS_CHECKINOUT_SOCKET_TIMEOUT_MS || 120000)
+            );
+
+            if (!response) {
+                return res.status(504).json({
+                    success: false,
+                    message: 'No se recibio respuesta del servidor Python'
+                });
+            }
+
+            if (response.ok === false) {
+                return res.status(502).json({
+                    success: false,
+                    message: response.error || 'El servidor Python no pudo consultar Access',
+                    request_id: response.request_id || requestId
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                request_id: response.request_id || requestId,
+                fecha_desde,
+                fecha_hasta,
+                count: response.count || 0,
+                data: response.data || []
+            });
+        } catch (error) {
+            const isTimeout = error?.message?.includes('operation has timed out');
+            return res.status(isTimeout ? 504 : 500).json({
+                success: false,
+                message: isTimeout
+                    ? 'Tiempo de espera agotado consultando el servidor Python'
+                    : 'Error interno consultando marcaciones Access',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    },
 
     postHorusWorksEmployesResponse: async (req, res) => {
         const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;

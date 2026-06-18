@@ -4,6 +4,22 @@ let io;
 
 export let tiendasOnline = {};
 
+const emitToRoomWithAck = (room, event, payload, timeoutMs = 60000) => {
+    if (!io) throw new Error("center-resources-human-service: Socket.io no ha sido inicializado");
+
+    return new Promise((resolve, reject) => {
+        io.timeout(timeoutMs).to(room).emit(event, payload, (error, responses) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            const response = Array.isArray(responses) ? responses.find(Boolean) : responses;
+            resolve(response || null);
+        });
+    });
+};
+
 const parseOrigins = () => {
     if (!process.env.CORS_ORIGINS) return (origin, callback) => callback(null, true);
     const allowedOrigins = process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean);
@@ -37,6 +53,12 @@ export const initSocket = (server) => {
             console.log('Servidor EJB registrado');
         });
 
+        socket.on('py_register_server_access_checkinout', (info) => {
+            socket.join('servidor_access_checkinout');
+            socket.servidorId = info.id;
+            console.log('Servidor Access CHECKINOUT registrado');
+        });
+
         socket.on('disconnect', () => {
             console.log('Cliente desconectado');
         });
@@ -48,4 +70,12 @@ export const initSocket = (server) => {
 export const getIO = () => {
     if (!io) throw new Error("center-resources-human-service: Socket.io no ha sido inicializado");
     return io;
+};
+
+export const requestBackupServer = (event, payload, timeoutMs) => {
+    return emitToRoomWithAck('servidor_backup', event, payload, timeoutMs);
+};
+
+export const requestAccessCheckinoutServer = (event, payload, timeoutMs) => {
+    return emitToRoomWithAck('servidor_access_checkinout', event, payload, timeoutMs);
 };
