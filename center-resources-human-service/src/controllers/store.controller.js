@@ -93,6 +93,7 @@ export const storeController = {
                 });
             }
 
+            // CAMBIO: Agregado el 'await' para resolver las promesas de la Base de Datos
             const resParse = await procesarRespuesta(response.data);
 
             return res.status(200).json({
@@ -2637,15 +2638,15 @@ const normalizarFecha = (fecha) => {
 
 
 async function procesarRespuesta(response) {
-    
+
     const resParse = await Promise.all(response.map(async (row) => {
-        
+
         // Mapeamos de forma asíncrona cada día de asistencia
         const asistenciaConHorario = await Promise.all(
             row.asistencia.map(async (dia) => {
                 // AQUÍ SÍ necesitas el await porque la función es async
                 const horarioEncontrado = await searchHorarioEmpleado(dia.fecha, row.documento);
-                
+
                 return {
                     ...dia,
                     horario: horarioEncontrado
