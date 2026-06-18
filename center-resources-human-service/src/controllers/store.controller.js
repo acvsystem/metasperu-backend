@@ -93,7 +93,7 @@ export const storeController = {
                 });
             }
 
-            const resParse = procesarRespuesta(response.data);
+            const resParse = await procesarRespuesta(response.data);
 
             return res.status(200).json({
                 success: true,
