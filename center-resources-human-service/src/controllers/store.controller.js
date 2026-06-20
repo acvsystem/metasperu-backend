@@ -2494,7 +2494,6 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const fechasProcesadas = new Set();
-        console.log("Registros correctos para sumar:", listaCorrectos);
         const totalDecimal = listaCorrectos.reduce((acc, row) => {
             // Si la fecha ya fue procesada, ignoramos este registro y devolvemos el acumulado actual
             if (fechasProcesadas.has(row.FECHA)) {
@@ -2521,7 +2520,8 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             horasExtras: listaCompleta,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
-            registros: registros || []
+            registros: registros || [],
+            marcaciones: registrosDelDocumento || []
         };
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
