@@ -2494,20 +2494,21 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
         const fechasProcesadas = new Set();
-
-        // 1. Filtra para dejar solo la PRIMERA aparición de cada FECHA
-        const elementosUnicosPorFecha = listaCorrectos.filter(row => {
+        console.log("Registros correctos para sumar:", listaCorrectos);
+        const totalDecimal = listaCorrectos.reduce((acc, row) => {
+            // Si la fecha ya fue procesada, ignoramos este registro y devolvemos el acumulado actual
             if (fechasProcesadas.has(row.FECHA)) {
-                return false; // Si la fecha ya se procesó, la descarta
+                return acc;
             }
+
+            // Si es una fecha nueva, la registramos en el Set
             fechasProcesadas.add(row.FECHA);
-            return true; // Si es la primera vez que ve la fecha, la conserva
-        });
-        console.log("Elementos únicos por fecha (sin duplicados):", elementosUnicosPorFecha);
-        // 2. Suma el tiempo de los elementos únicos sin duplicados
-        const totalDecimal = elementosUnicosPorFecha.reduce((acc, row) => {
+
+            // Sumamos el valor de este primer registro encontrado
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
+
+        console.log("Total calculado:", totalDecimal);
 
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
