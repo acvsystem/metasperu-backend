@@ -2503,7 +2503,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             fechasProcesadas.add(row.FECHA);
             return true; // Si es la primera vez que ve la fecha, la conserva
         });
-
+        console.log("Elementos únicos por fecha (sin duplicados):", elementosUnicosPorFecha);
         // 2. Suma el tiempo de los elementos únicos sin duplicados
         const totalDecimal = elementosUnicosPorFecha.reduce((acc, row) => {
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
