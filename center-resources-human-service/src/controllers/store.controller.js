@@ -2493,13 +2493,19 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         `, [documentoNormalizado, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
-        // 1. Filtramos para dejar solo un objeto por cada FECHA única
-        const elementosUnicos = Array.from(
-            new Map(listaCorrectos.map(row => [row.FECHA, row])).values()
-        );
+        const fechasProcesadas = new Set();
 
-        // 2. Sumamos el tiempo de los elementos que ya no tienen fechas duplicadas
-        const totalDecimal = elementosUnicos.reduce((acc, row) => {
+        // 1. Filtra para dejar solo la PRIMERA aparición de cada FECHA
+        const elementosUnicosPorFecha = listaCorrectos.filter(row => {
+            if (fechasProcesadas.has(row.FECHA)) {
+                return false; // Si la fecha ya se procesó, la descarta
+            }
+            fechasProcesadas.add(row.FECHA);
+            return true; // Si es la primera vez que ve la fecha, la conserva
+        });
+
+        // 2. Suma el tiempo de los elementos únicos sin duplicados
+        const totalDecimal = elementosUnicosPorFecha.reduce((acc, row) => {
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
 
