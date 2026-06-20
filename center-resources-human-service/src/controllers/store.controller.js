@@ -131,6 +131,8 @@ export const storeController = {
         const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
 
         if (socket.length) {
+
+
             getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
         }
     },
@@ -2491,8 +2493,13 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         `, [documentoNormalizado, fechaInicio, fechaFin]);
 
         // 3. Sumar solo los correctos usando la utilidad que creamos
-        const totalDecimal = listaCorrectos.reduce((acc, row) => {
+        // 1. Filtramos para dejar solo un objeto por cada FECHA única
+        const elementosUnicos = Array.from(
+            new Map(listaCorrectos.map(row => [row.FECHA, row])).values()
+        );
 
+        // 2. Sumamos el tiempo de los elementos que ya no tienen fechas duplicadas
+        const totalDecimal = elementosUnicos.reduce((acc, row) => {
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
 
