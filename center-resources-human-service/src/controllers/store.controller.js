@@ -2153,6 +2153,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Conversión final a horas decimales para almacenamiento
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
+        console.log(2156,excesoHorasFinal);
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
             const result = await guardarEnBD(data.nroDocumento, fecha, excesoHorasFinal, observacion, esAprobacion);
