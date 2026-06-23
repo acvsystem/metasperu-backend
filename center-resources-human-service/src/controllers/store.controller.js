@@ -136,7 +136,13 @@ export const storeController = {
             }
         } else {
             if (socket.length) {
-                getIO().to(socket).emit('py_asistence_employes_response', { data: data.length ? data : [] });
+
+                const resultado = asistencia.map(item => ({
+                    ...item,
+                    hrWorking: decimalATiempo(item.hrWorking)
+                }));
+
+                getIO().to(socket).emit('py_asistence_employes_response', { data: resultado.length ? resultado : [] });
             }
         }
 
