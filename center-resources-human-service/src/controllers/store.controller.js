@@ -117,7 +117,7 @@ export const storeController = {
     },
 
     postHorusWorksEmployesResponse: async (req, res) => {
-        const { data, documento, fecha_desde, fecha_hasta, socket, isAsistencia } = req.body;
+        const { data, documento, fecha_desde, fecha_hasta, socket, isAsistencia = false } = req.body;
 
         if (!isAsistencia) {
             const responseVacio = {
