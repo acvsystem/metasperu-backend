@@ -31,7 +31,6 @@ router.put('/api/update/date/schedule/store', storeController.putUpdateDateSched
 // --- RUTA CONSULTA HORAS
 router.post('/api/hours/works/employes', storeController.postHorusWorksEmployes);
 router.post('/api/hours/works/employes/response', storeController.postHorusWorksEmployesResponse);
-
 // --- SOLICITUDES EN BALLOT
 router.post('/api/solicitude/approval/hours/works/employes', storeController.postSolicitudHoursWorksEmployes);
 router.post('/api/approval/hours/works/employes', storeController.postApprovalHoursWorksEmployes);
