@@ -2127,7 +2127,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
-            esAprobacion = 0; // Pasa a revisión directa
+            esAprobacion = 1; // Pasa a revisión directa
         } else {
             excesoMins = excesoPreliminarMins;
             const tag = data.lactancia ? "[LACTANCIA] " : "";
