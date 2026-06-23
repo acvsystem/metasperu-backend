@@ -136,7 +136,7 @@ export const storeController = {
             }
         } else {
             if (socket.length) {
-                getIO().to(socket).emit('py_asistence_employes_response', { data: data.length ? respuesta : [] });
+                getIO().to(socket).emit('py_asistence_employes_response', { data: data.length ? data : [] });
             }
         }
 
