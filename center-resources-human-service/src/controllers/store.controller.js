@@ -1375,7 +1375,7 @@ export const storeController = {
 
             const query_hrx = `
             UPDATE tb_hora_extra_empleado 
-            SET ESTADO = ?, APROBADO = ?, ISAPROBADO = ? 
+            SET ESTADO = ?, APROBADO = ?, ISAPROBACION = ? 
             WHERE ID_HR_EXTRA = ?`;
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
