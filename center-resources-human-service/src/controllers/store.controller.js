@@ -2153,7 +2153,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Conversión final a horas decimales para almacenamiento
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
-        console.log(2156, excesoHorasFinal,observacion);
+        console.log(2156, excesoHorasFinal, observacion, excesoHorasFinal >= 3.00 && observacion === null);
         if (excesoHorasFinal >= 3.00 && observacion === null) {
             observacion = "Verificar marcaciones, exceso de 3 horas.";
             esAprobacion = 0;
