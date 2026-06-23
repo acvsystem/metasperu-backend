@@ -2135,16 +2135,16 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             // Lógica de validación de marcaciones
             if (data.count === 1) {
                 observacion = tag + "Solo tiene 1 solo registro de marcacion";
-                esAprobacion = 0;
+                esAprobacion = 1;
             } else if (data.especial) {
                 observacion = tag + "No marco salida";
-                esAprobacion = 0;
+                esAprobacion = 1;
             } else if (data.count > 2) {
                 observacion = tag + "Marcacion irregular, verifique marcaciones.";
-                esAprobacion = 0;
+                esAprobacion = 1;
             } else if (nivel.nivel === 'RECURSOS HUMANOS') {
                 observacion = tag + "Tiene una papeleta ese dia.";
-                esAprobacion = 0;
+                esAprobacion = 1;
             } else if (data.lactancia) {
                 observacion = "Periodo de lactancia (Jornada reducida 7h).";
                 esAprobacion = 0;
@@ -2154,9 +2154,10 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         // Conversión final a horas decimales para almacenamiento
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
         console.log(2156, excesoHorasFinal, observacion, excesoHorasFinal >= 3.00 && observacion === null);
+
         if (excesoHorasFinal >= 3.00 && observacion === null) {
             observacion = "Verificar marcaciones, exceso de 3 horas.";
-            esAprobacion = 0;
+            esAprobacion = 1;
         }
 
         if (excesoHorasFinal >= MINIMO_PARA_REGISTRAR) {
@@ -2389,6 +2390,8 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
 
             return { inserted: false, reason: 'exists' };
         }
+
+        console.log('guardarEnBD - insertando:', { nroDocumento, fechaBase, excesoTiempo, estado });
 
         const [result] = await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
