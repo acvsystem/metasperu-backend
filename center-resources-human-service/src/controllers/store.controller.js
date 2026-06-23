@@ -117,34 +117,39 @@ export const storeController = {
     },
 
     postHorusWorksEmployesResponse: async (req, res) => {
-        const { data, documento, fecha_desde, fecha_hasta, socket } = req.body;
-        console.log("postHorusWorksEmployesResponse", { data ,socket});
-        const responseVacio = {
-            success: true,
-            message: "Proceso completado correctamente",
-            documento: documento,
-            horasExtras: [],
-            totalHorasFormato: "00:00", // Ejemplo: "12:30"
-            totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
-        };
+        const { data, documento, fecha_desde, fecha_hasta, socket, isAsistencia } = req.body;
 
-        const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
+        if (!isAsistencia) {
+            const responseVacio = {
+                success: true,
+                message: "Proceso completado correctamente",
+                documento: documento,
+                horasExtras: [],
+                totalHorasFormato: "00:00", // Ejemplo: "12:30"
+                totalHorasDecimal: 0.0 // Útil si necesitas validar lógicas internas
+            };
 
-        if (socket.length) {
+            const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
 
-
-            getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
+            if (socket.length) {
+                getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
+            }
+        } else {
+            if (socket.length) {
+                getIO().to(socket).emit('py_asistence_employes_response', { data: data.length ? respuesta : [] });
+            }
         }
+
     },
     postHorusWorksEmployes: async (req, res) => {
-        const { fecha_desde, fecha_hasta, documento, socket } = req.body; // Asegúrate que Python envíe la marca
+        const { fecha_desde, fecha_hasta, documento, socket, isAsistencia } = req.body; // Asegúrate que Python envíe la marca
 
         if (!fecha_desde || !fecha_hasta || !documento) {
             return res.status(400).json({ message: 'Fecha y documento son requeridos' });
         }
 
         try {
-            getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket });
+            getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket, isAsistencia });
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
