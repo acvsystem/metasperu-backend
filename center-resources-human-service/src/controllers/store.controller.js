@@ -137,7 +137,7 @@ export const storeController = {
         } else {
             if (socket.length) {
 
-                const resultado = asistencia.map(item => ({
+                const resultado = data.map(item => ({
                     ...item,
                     hrWorking: decimalATiempo(item.hrWorking)
                 }));
