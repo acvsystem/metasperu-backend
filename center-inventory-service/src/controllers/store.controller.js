@@ -393,6 +393,22 @@ function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
                 'cStock': {}, // Aquí guardaremos los stocks de cada tienda
                 'marca': marca
             });
+        } else {
+            mapaMarca.set(item.cCodigoBarra, {
+                'cCodigoArticulo': item.cCodigoArticulo,
+                'cReferencia': item.cReferencia,
+                'cCodigoBarra': item.cCodigoBarra,
+                'cDescripcion': item.cDescripcion,
+                'cDepartamento': item.cDepartamento,
+                'cSeccion': item.cSeccion,
+                'cFamilia': item.cFamilia,
+                'cSubFamilia': item.cSubFamilia,
+                'cTalla': item.cTalla,
+                'cColor': item.cColor,
+                'cTemporada': item.cTemporada,
+                'cStock': 0, // Aquí guardaremos los stocks de cada tienda
+                'marca': marca
+            });
         }
         // Asignamos el stock de la tienda específica
         mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
