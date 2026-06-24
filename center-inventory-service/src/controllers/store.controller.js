@@ -377,24 +377,25 @@ function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
 
     data.forEach(item => {
 
-        mapaMarca.set(item.cCodigoBarra, {
-            'cCodigoArticulo': item.cCodigoArticulo,
-            'cReferencia': item.cReferencia,
-            'cCodigoBarra': item.cCodigoBarra,
-            'cDescripcion': item.cDescripcion,
-            'cDepartamento': item.cDepartamento,
-            'cSeccion': item.cSeccion,
-            'cFamilia': item.cFamilia,
-            'cSubFamilia': item.cSubFamilia,
-            'cTalla': item.cTalla,
-            'cColor': item.cColor,
-            'cTemporada': item.cTemporada,
-            'cStock': {}, // Aquí guardaremos los stocks de cada tienda
-            'marca': marca
-        });
-
+        if (!mapaMarca.has(item.cCodigoBarra)) {
+            mapaMarca.set(item.cCodigoBarra, {
+                'cCodigoArticulo': item.cCodigoArticulo,
+                'cReferencia': item.cReferencia,
+                'cCodigoBarra': item.cCodigoBarra,
+                'cDescripcion': item.cDescripcion,
+                'cDepartamento': item.cDepartamento,
+                'cSeccion': item.cSeccion,
+                'cFamilia': item.cFamilia,
+                'cSubFamilia': item.cSubFamilia,
+                'cTalla': item.cTalla,
+                'cColor': item.cColor,
+                'cTemporada': item.cTemporada,
+                'cStock': {}, // Aquí guardaremos los stocks de cada tienda
+                'marca': marca
+            });
+        }
         // Asignamos el stock de la tienda específica
-        mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock || 0;
+        mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
     });
 
     console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
