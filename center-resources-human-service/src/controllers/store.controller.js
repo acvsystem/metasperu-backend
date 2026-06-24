@@ -1357,10 +1357,14 @@ export const storeController = {
 
             const [result] = await connection.execute(query, values);
 
+            const storeDescription = rows.find(t => {
+                return t;
+            });
+
             if (aprobado) {
                 pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
-                    subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
+                    subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
                     template: 'aprobacionHoraExtra',
                     variables: {
                         tienda: tienda,
@@ -1372,7 +1376,7 @@ export const storeController = {
             } else {
                 pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
-                    subject: `Respuesta de autorización de horas extras - ${nombre_empleado}`,
+                    subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
                     variables: {
                         tienda: tienda,
