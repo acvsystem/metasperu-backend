@@ -375,8 +375,19 @@ async function getActiveStoresByBrand(marca) {
 function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
     const mapaMarca = inventariosPorMarca.get(marca);
 
-    data.forEach(item => {
+    // 1. Creamos un Set con los códigos de barra que vienen en el nuevo envío para búsqueda rápida
+    const codigosNuevos = new Set(data.map(item => item.cCodigoBarra));
 
+    // 2. Primero, limpiamos/ponemos en 0 el stock de los productos que YA NO vienen en esta tienda
+    for (const [cCodigoBarra, producto] of mapaMarca.entries()) {
+        // Si el producto tiene stock registrado en esta tienda, pero ya no vino en la data nueva
+        if (producto.cStock[serieStore] !== undefined && !codigosNuevos.has(cCodigoBarra)) {
+            producto.cStock[serieStore] = 0; // O puedes usar 'delete producto.cStock[serieStore]' si prefieres removerlo por completo
+        }
+    }
+
+    // 3. Procesamos y actualizamos con la data nueva (tu lógica original mejorada)
+    data.forEach(item => {
         if (!mapaMarca.has(item.cCodigoBarra)) {
             mapaMarca.set(item.cCodigoBarra, {
                 'cCodigoArticulo': item.cCodigoArticulo,
@@ -394,11 +405,11 @@ function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
                 'marca': marca
             });
         }
-        // Asignamos el stock de la tienda específica
+        // Asignamos el stock real de la tienda específica
         mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
     });
 
-    console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs: ${mapaMarca.size}`);
+    console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs totales de la marca: ${mapaMarca.size}`);
     getIO().to(socketId).emit('update_inventory', { serieStore, marca });
 }
 
