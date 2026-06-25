@@ -4,9 +4,9 @@ print("⏳ Cargando y unificando inventarios...")
 
 # 1. Cargar el Archivo 1 (Multi Almacén)
 try:
-    df1 = pd.read_excel('INVENTARIO MULTI ALMACEN VSFA 24-06-2026.xls')
+    df1 = pd.read_excel('INVENTARIO_MULTIALMACEN.xls')
 except Exception:
-    df1 = pd.read_excel('INVENTARIO MULTI ALMACEN VSFA 24-06-2026.xls', engine='openpyxl')
+    df1 = pd.read_excel('INVENTARIO_MULTIALMACEN.xls', engine='openpyxl')
 
 # Asegurar nombres limpios de columnas y tipos de datos
 df1['Referencia'] = df1['Referencia'].dropna().astype(str).str.strip()
@@ -14,9 +14,9 @@ df1['Referencia'] = df1['Referencia'].dropna().astype(str).str.strip()
 df1_clean = df1.groupby('Referencia')['Stock'].sum().reset_index()
 
 # 2. Cargar el Archivo 2 (Aplicación)
-df2 = pd.read_excel('inventario_sin_exponer_1782328372163.xlsx')
+df2 = pd.read_excel('INVENTARIO_APLICACION.xlsx')
 df2['cReferencia'] = df2['cReferencia'].dropna().astype(str).str.strip()
-df2_clean = df2.groupby('cReferencia')['VSFA JOCKEY FULL'].sum().reset_index()
+df2_clean = df2.groupby('cReferencia')['cStock'].sum().reset_index()
 
 # 3. Cruzar los datos (Full Outer Join para no perder ningún código)
 df_comparativo = pd.merge(
@@ -30,12 +30,12 @@ df_comparativo = pd.merge(
 # Rellenar códigos faltantes en el cruce
 df_comparativo['Referencia'] = df_comparativo['Referencia'].fillna(df_comparativo['cReferencia'])
 df_comparativo['Stock'] = df_comparativo['Stock'].fillna(0).astype(int)
-df_comparativo['VSFA JOCKEY FULL'] = df_comparativo['VSFA JOCKEY FULL'].fillna(0).astype(int)
+df_comparativo['cStock'] = df_comparativo['cStock'].fillna(0).astype(int)
 
 # 4. Calcular la diferencia matemática
 # Resultado > 0: Falta stock en la App
 # Resultado < 0: Hay más stock en la App que en el almacén físico
-df_comparativo['Diferencia'] = df_comparativo['Stock'] - df_comparativo['VSFA JOCKEY FULL']
+df_comparativo['Diferencia'] = df_comparativo['Stock'] - df_comparativo['cStock']
 
 # 5. Agregar una columna de Estado para facilitar filtros
 def determinar_estado(row):
@@ -49,7 +49,7 @@ def determinar_estado(row):
 df_comparativo['Estado'] = df_comparativo.apply(determinar_estado, axis=1)
 
 # Limpiar columnas sobrantes y ordenar por mayor diferencia
-df_final = df_comparativo[['Referencia', 'Stock', 'VSFA JOCKEY FULL', 'Diferencia', 'Estado']]
+df_final = df_comparativo[['Referencia', 'Stock', 'cStock', 'Diferencia', 'Estado']]
 df_final = df_final.sort_values(by='Diferencia', ascending=False)
 
 # 6. Guardar el resultado final
