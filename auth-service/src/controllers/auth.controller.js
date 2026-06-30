@@ -68,7 +68,7 @@ export const loginCenter = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const [rows] = await poolCenter.query(`SELECT ID_LOGIN,PASSWORD_NW,USUARIO,DEFAULT_PAGE,TB_LOGIN.NIVEL,NOMBRE_MENU,RUTA,TB_LOGIN.EMAIL,CODE_STORE,TB_LISTA_TIENDA.UNID_SERVICIO 
+        const [rows] = await poolCenter.query(`SELECT ID_LOGIN,PASSWORD_NW,USUARIO,DEFAULT_PAGE,TB_LOGIN.NIVEL,NOMBRE_MENU,RUTA,TB_LOGIN.EMAIL,OLD_CODE_STORE,CODE_STORE,TB_LISTA_TIENDA.UNID_SERVICIO 
                 FROM bd_metasperu.TB_PERMISO_SISTEMA 
                 INNER JOIN bd_metasperu.TB_MENU_SISTEMA ON bd_metasperu.TB_MENU_SISTEMA.ID_MENU = TB_PERMISO_SISTEMA.ID_MENU_PS
                 INNER JOIN bd_metasperu.TB_LOGIN ON bd_metasperu.TB_LOGIN.NIVEL = TB_PERMISO_SISTEMA.NIVEL
