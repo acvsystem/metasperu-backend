@@ -148,14 +148,14 @@ export const storeController = {
 
     },
     postHorusWorksEmployes: async (req, res) => {
-        const { fecha_desde, fecha_hasta, documento, socket, isAsistencia = false } = req.body; // Asegúrate que Python envíe la marca
+        const { serie, fecha_desde, fecha_hasta, documento, socket, isAsistencia = false } = req.body; // Asegúrate que Python envíe la marca
 
         if (!fecha_desde || !fecha_hasta || !documento) {
             return res.status(400).json({ message: 'Fecha y documento son requeridos' });
         }
 
         try {
-            getIO().to('servidor_backup').emit('py_works_hours_employes', { fecha_desde, fecha_hasta, documento, socket, isAsistencia });
+            getIO().to('servidor_backup').emit('py_works_hours_employes', { serie, fecha_desde, fecha_hasta, documento, socket, isAsistencia });
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
