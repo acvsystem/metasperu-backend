@@ -1528,7 +1528,7 @@ export const storeController = {
         }
     },
     getAllBallotEmployesStore: async (req, res) => {
-        const { codestore } = req.body;
+        const { old_codestore, codestore } = req.body;
         const currentYear = new Date().getFullYear();
         let connection;
 
@@ -1548,9 +1548,10 @@ export const storeController = {
 
             const params = [currentYear];
 
-            if (codestore) {
-                query += ` AND h.CODIGO_TIENDA = ?`;
+            if (codestore || old_codestore) {
+                query += ` AND (h.CODIGO_TIENDA = ? OR h.CODIGO_TIENDA = ?)`;
                 params.push(codestore);
+                params.push(old_codestore);
             }
 
             query += ` ORDER BY h.ID_HEAD_PAPELETA DESC;`;
