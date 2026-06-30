@@ -99,7 +99,7 @@ export const loginCenter = async (req, res) => {
         // ENVIAR EL TOKEN EN EL JSON
         res.json({
             token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
-            user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL,code_store:user.CODE_STORE, unid_servicio: user.UNID_SERVICIO },
+            user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL, old_code_store: user.OLD_CODE_STORE, code_store: user.CODE_STORE, unid_servicio: user.UNID_SERVICIO },
             menu: rows.map(r => ({ nombre: r.NOMBRE_MENU, ruta: r.RUTA }))
         });
 
