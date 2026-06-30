@@ -305,7 +305,7 @@ export const storeController = {
     },
     postBallotEmployesStore: async (req, res) => {
         const { codeBallot } = req.body;
-
+        console.log(codeBallot);
         // 1. Validación de entrada
         if (!codeBallot) {
             return res.status(400).json({ message: 'El código de papeleta es requerido' });
@@ -334,7 +334,7 @@ export const storeController = {
                             t.DESCRIPCION AS TIENDA,
                             p.DESCRIPCION AS TIPO_PAPELETA
                             FROM tb_head_papeleta h 
-                            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+                            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA OR t.OLD_SERIE_TIENDA = h.CODIGO_TIENDA
                             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
             const [rowsHead] = await pool.query(headQuery, [codeBallot]);
 
@@ -376,7 +376,7 @@ export const storeController = {
                 MAX(H.DATETIME) as datetime, 
                 T.DESCRIPCION as name
             FROM TB_HORARIO_PROPERTY H
-            INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA
+            INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA OR H.CODIGO_TIENDA = T.OLD_SERIE_TIENDA
             GROUP BY H.CODIGO_TIENDA, H.RANGO_DIAS, T.DESCRIPCION
             ORDER BY STR_TO_DATE(rango_1, '%d-%m-%Y') DESC;
         `;
@@ -385,7 +385,7 @@ export const storeController = {
 
             // Mapeamos los resultados al formato exacto que solicitaste
             const responseData = rows.map(item => ({
-                cFecha: item.rango_1, // Usamos el inicio del rango como fecha de referencia
+                cFecha: item.rango_1, // Usamos el inicio del rango como fecha de reference
                 cSerieStore: item.code,
                 cRango_1: item.rango_1,
                 cRango_2: item.rango_2,
