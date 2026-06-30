@@ -750,7 +750,7 @@ export const storeController = {
         }
     },
     getOneSearchScheduleStore: async (req, res) => {
-        const { code_store, range_days } = req.body;
+        const { old_code_store, code_store, range_days } = req.body;
 
         if (!range_days || !code_store) {
             return res.status(400).json({
@@ -771,9 +771,9 @@ export const storeController = {
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, CARGO, FECHA, RANGO_DIAS 
              FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)
+             WHERE (CODIGO_TIENDA = ? OR CODIGO_TIENDA = ?) AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)
              ORDER BY FECHA ASC`,
-                [code_store, range_days, rango_fecha_old]
+                [old_code_store, code_store, range_days, rango_fecha_old]
             );
 
             const respuestaFinal = [];
