@@ -258,6 +258,8 @@ export const storeController = {
         const { path: filePath, originalname: fileName } = req.file;
         const { ftpDirectorio, origenStore, destinoStore, email } = req.body;
 
+        console.log(ftpDirectorio, origenStore, destinoStore, email);
+        console.log({ path: filePath, originalname: fileName });
         // Obtenemos la hora para el template
         const ahora = new Date();
         const fechaPE = ahora.toLocaleDateString('es-PE');
@@ -278,7 +280,8 @@ export const storeController = {
 
             // 3. Subida al FTP
             // Usamos la ruta dinámica que viene en el body o la de prueba
-            const targetDir = `ITPERU/${ftpDirectorio}` || `ITPERU/PRUEBA`;
+           // const targetDir = `ITPERU/${ftpDirectorio}` || `ITPERU/PRUEBA`;
+            const targetDir = `ITPERU/PRUEBA` || `ITPERU/PRUEBA`;
             await client.ensureDir(targetDir);
             await client.uploadFrom(filePath, fileName);
 
