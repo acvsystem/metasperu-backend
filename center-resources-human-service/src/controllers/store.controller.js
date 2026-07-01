@@ -1770,11 +1770,11 @@ const searchHorarioEmpleado = async (fecha, documento) => {
 
 
         if (rows && rows.length > 0) {
-            const rangoCompleto = rows[0].RANGO_HORA; // Ejemplo: "08:30 a 17:30"
+            const rangoCompleto = rows[0].RANGO_HORA; // Ejemplo: "08:30 - 17:30"
 
-            // Dividimos por la " a " y tomamos el primer elemento [0]
+            // Dividimos por la " - " y tomamos el primer elemento [0]
             // Usamos .trim() por si hay espacios extra alrededor
-            const horaEntrada = rangoCompleto.split(' a ')[0].trim();
+            const horaEntrada = rangoCompleto.split(' - ')[0].trim();
 
             return {
                 rango: rangoCompleto,
