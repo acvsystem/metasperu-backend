@@ -1489,9 +1489,10 @@ export const storeController = {
                 ID_HORA_EXTRA, 
                 COMENTARIO, 
                 USUARIO_MODF, 
-                EMAIL 
+                EMAIL,
+                CODIGO_TIENDA 
             FROM bd_metasperu.tb_autorizar_hr_extra h
-            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
+            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA OR t.OLD_SERIE_TIENDA = h.CODIGO_TIENDA
             ORDER BY 
                 /* Esta condición devuelve 0 si es verdad y 1 si es falso, 
                    por eso los que cumplen aparecen primero */
@@ -1514,6 +1515,7 @@ export const storeController = {
                 id_hora_extra: item.ID_HORA_EXTRA,
                 comentario: item.COMENTARIO,
                 usuario_modf: item.USUARIO_MODF,
+                store_code: item.CODIGO_TIENDA || '',
                 email: item.EMAIL || ''
             }));
 
