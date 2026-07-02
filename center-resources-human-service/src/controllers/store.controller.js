@@ -1347,6 +1347,19 @@ export const storeController = {
 
             // 1. Uso de parámetros (?) para prevenir inyección SQL
             // 2. Simplificación de la lógica de actualización
+
+            const queryCheck = `
+            SELECT ID_AUTH_HR_EXT, APROBADO, RECHAZADO 
+            FROM tb_autorizar_hr_extra 
+            WHERE ID_AUTH_HR_EXT = ?`;
+
+            const [resultCheck] = await connection.execute(queryCheck, [id_auth_hrx]);
+
+            if (resultCheck[0].APROBADO === 0 || resultCheck[0].RECHAZADO === 1) {
+                await connection.rollback();
+                return res.status(404).json({ success: false, message: 'Error en horas extras, consulte nuevamente las horas extras.' });
+            }
+
             const query = `
             UPDATE tb_autorizar_hr_extra 
             SET APROBADO = ?, RECHAZADO = ?, COMENTARIO = ?, USUARIO_MODF = ? 
