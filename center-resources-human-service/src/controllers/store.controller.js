@@ -1355,7 +1355,7 @@ export const storeController = {
 
             const [resultCheck] = await connection.execute(queryCheck, [id_auth_hrx]);
 
-            if (resultCheck[0].APROBADO === 0 || resultCheck[0].RECHAZADO === 1) {
+            if (resultCheck[0].RECHAZADO === 1) {
                 await connection.rollback();
                 return res.status(404).json({ success: false, message: 'Error en horas extras, consulte nuevamente las horas extras.' });
             }
