@@ -1382,7 +1382,7 @@ export const storeController = {
                         usuario_responsable: usuario
                     }
                 });
-            } else {
+            } else {/*
                 pushEmailQueue({
                     email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
@@ -1394,7 +1394,7 @@ export const storeController = {
                         comentario: comentario,
                         usuario_responsable: usuario
                     }
-                });
+                });*/
             }
 
             const query_hrx = `
