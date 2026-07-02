@@ -1851,7 +1851,7 @@ const procesarAsistenciaFinal = async (empleados, marcaciones) => {
         if (susMarcaciones.length === 0) return [];
 
         // 1. Agrupar por día
-        const cajasExcluidas = ['9M1', '9M2', '9M3'];
+        const cajasExcluidas = ['HK1', 'HK2', 'HK3'];
 
         const grupos = susMarcaciones.reduce((acc, curr) => {
             // 1. Validamos si la caja actual NO está en la lista de excluidas
