@@ -157,7 +157,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de python server al backend traffic counter de servidor backup
         socket.on('py_response_traffic_counter_verification', (data) => {
-
+            console.log('py_response_traffic_counter_verification', data);
             const trafficCounter = data || {};
             const offlineTraffic = trafficCounter.devices.find((t) => t.online == false);
 
