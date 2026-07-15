@@ -164,26 +164,27 @@ export const initSocket = (server) => {
             if (!offlineTraffic) {
                 console.log("🚀 Todos los Traffic Counter están ONLINE");
                 return;
-            }else{
-            const [rows] = await connection.execute(
-                `SELECT DESCRIPCION
+            } else {
+                const connection = await pool.getConnection();
+                const [rows] = await connection.execute(
+                    `SELECT DESCRIPCION
                     FROM bd_metasperu.tb_lista_tienda t
                     WHERE t.SERIE_TIENDA = ?`,
-                [(offlineTraffic || {}).serie]
-            );
+                    [(offlineTraffic || {}).serie]
+                );
 
-            const store = rows[0];
+                const store = rows[0];
 
-           /* emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com'],
-                subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
-                template: 'alertaTrafficCounterOffLine',
-                variables: {
-                    tienda: store.DESCRIPCION, // Esta es la variable {{tienda}}
-                    ip: offlineTraffic.ip,
-                    estatus: offlineTraffic.online ? 'ONLINE' : 'OFFLINE'
-                }
-            });*/
+                emailService.pushToEmailQueue({
+                    email: ['itperu@metasperu.com'],
+                    subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
+                    template: 'alertaTrafficCounterOffLine',
+                    variables: {
+                        tienda: store.DESCRIPCION, // Esta es la variable {{tienda}}
+                        ip: offlineTraffic.ip,
+                        estatus: offlineTraffic.online ? 'ONLINE' : 'OFFLINE'
+                    }
+                });
             }
 
             io.emit('traffic_counter_dashboard', data);
