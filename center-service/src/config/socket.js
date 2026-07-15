@@ -160,7 +160,7 @@ export const initSocket = (server) => {
         socket.on('py_response_traffic_counter_verification', async (data) => {
             try {
                 const trafficCounter = data || {};
-                console.log('py_response_traffic_counter_verification', trafficCounter);
+
                 // Validamos de forma segura que existan dispositivos en el objeto de entrada
                 if (!trafficCounter.devices || !Array.isArray(trafficCounter.devices)) {
                     console.log("⚠️ Estructura de Traffic Counter no válida o vacía.");
@@ -173,6 +173,7 @@ export const initSocket = (server) => {
                 if (!offlineTraffic) {
                     console.log("🚀 Todos los Traffic Counter están ONLINE");
                 } else {
+                    console.log('py_response_traffic_counter_verification', trafficCounter);
                     // Si hay un dispositivo offline, procedemos a consultar base de datos
                     let connection;
                     try {
@@ -183,6 +184,8 @@ export const initSocket = (server) => {
                      WHERE t.SERIE_TIENDA = ?`,
                             [offlineTraffic.serie || '']
                         );
+
+                        console.log('py_response_traffic_counter_verification', trafficCounter);
 
                         if (rows.length > 0) {
                             const store = rows[0];
