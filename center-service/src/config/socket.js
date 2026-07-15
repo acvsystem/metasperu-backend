@@ -160,7 +160,7 @@ export const initSocket = (server) => {
         socket.on('py_response_traffic_counter_verification', async (data) => {
             try {
                 const trafficCounter = data || {};
-
+                console.log('py_response_traffic_counter_verification', trafficCounter);
                 // Validamos de forma segura que existan dispositivos en el objeto de entrada
                 if (!trafficCounter.devices || !Array.isArray(trafficCounter.devices)) {
                     console.log("⚠️ Estructura de Traffic Counter no válida o vacía.");
