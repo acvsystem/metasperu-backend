@@ -639,17 +639,21 @@ export const storeController = {
             await connection.beginTransaction();
 
 
+            // FOR UPDATE bloquea las filas coincidentes hasta el commit/rollback, evitando que dos
+            // solicitudes simultáneas para el mismo codigoTienda+rangoDias pasen ambas la validación
+            // y creen horarios duplicados (condición de carrera "verificar-y-luego-insertar").
             const [cabeceras] = await connection.execute(
                 `SELECT ID_HORARIO, CARGO, FECHA, RANGO_DIAS 
              FROM tb_horario_property 
              WHERE CODIGO_TIENDA = ? AND RANGO_DIAS = ?
-             ORDER BY FECHA ASC`,
+             ORDER BY FECHA ASC
+             FOR UPDATE`,
                 [codigoTienda, rangoDias]
             );
 
             if (cabeceras.length > 0) {
-                if (connection) await connection.rollback();
-                res.status(500).json({ success: false, message: 'Horario con ese rango de fecha ya existe.' });
+                await connection.rollback();
+                return res.status(409).json({ success: false, message: 'Horario con ese rango de fecha ya existe.' });
             } else {
 
                 for (const item of datos) {
@@ -686,6 +690,10 @@ export const storeController = {
                     }
 
                     // 4. Insertar Filas de Trabajo
+                    // OPTIMIZACION: se recolectan todas las filas de tb_dias_trabajo y se insertan
+                    // en un solo round-trip (bulk insert) en vez de un INSERT por cada trabajador,
+                    // que con varias celdas/trabajadores podia significar cientos de queries seriales.
+                    const filasTrabajoValues = [];
                     if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
                         for (const fila of item.filasTrabajo) {
                             const [resRango] = await connection.execute(
@@ -698,17 +706,13 @@ export const storeController = {
                                 for (const diaInfo of fila.celdas) {
                                     if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
                                         for (const user of diaInfo.trabajadores) {
-                                            await connection.execute(
-                                                `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
-                                         VALUES (?, ?, ?, ?, ?)`,
-                                                [
-                                                    idHorario,
-                                                    mappingDias[diaInfo.id_dia],
-                                                    idRangoReal,
-                                                    n(user.nro_documento),
-                                                    n(user.nombre_completo)
-                                                ]
-                                            );
+                                            filasTrabajoValues.push([
+                                                idHorario,
+                                                mappingDias[diaInfo.id_dia],
+                                                idRangoReal,
+                                                n(user.nro_documento),
+                                                n(user.nombre_completo)
+                                            ]);
                                         }
                                     }
                                 }
@@ -716,24 +720,35 @@ export const storeController = {
                         }
                     }
 
-                    // 5. Insertar Libres
+                    if (filasTrabajoValues.length) {
+                        await connection.query(
+                            `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) VALUES ?`,
+                            [filasTrabajoValues]
+                        );
+                    }
+
+                    // 5. Insertar Libres (mismo tratamiento de bulk insert)
+                    const filaLibresValues = [];
                     if (item.filaLibres && Array.isArray(item.filaLibres)) {
                         for (const libre of item.filaLibres) {
                             if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
                                 for (const trb of libre.trabajadores) {
-                                    await connection.execute(
-                                        `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
-                                 VALUES (?, ?, ?, ?)`,
-                                        [
-                                            idHorario,
-                                            mappingDias[libre.id_dia],
-                                            n(trb.nro_documento),
-                                            n(trb.nombre_completo)
-                                        ]
-                                    );
+                                    filaLibresValues.push([
+                                        idHorario,
+                                        mappingDias[libre.id_dia],
+                                        n(trb.nro_documento),
+                                        n(trb.nombre_completo)
+                                    ]);
                                 }
                             }
                         }
+                    }
+
+                    if (filaLibresValues.length) {
+                        await connection.query(
+                            `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) VALUES ?`,
+                            [filaLibresValues]
+                        );
                     }
                 }
             }
@@ -1042,7 +1057,8 @@ export const storeController = {
                     }
                 }
 
-                // 4. Insertar Filas de Trabajo
+                // 4. Insertar Filas de Trabajo (bulk insert para reducir round-trips)
+                const filasTrabajoValues = [];
                 if (item.filasTrabajo && Array.isArray(item.filasTrabajo)) {
                     for (const fila of item.filasTrabajo) {
                         const [resRango] = await connection.execute(
@@ -1055,17 +1071,13 @@ export const storeController = {
                             for (const diaInfo of fila.celdas) {
                                 if (diaInfo.trabajadores && Array.isArray(diaInfo.trabajadores)) {
                                     for (const user of diaInfo.trabajadores) {
-                                        await connection.execute(
-                                            `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
-                                         VALUES (?, ?, ?, ?, ?)`,
-                                            [
-                                                idHorario,
-                                                mappingDias[diaInfo.id_dia],
-                                                idRangoReal,
-                                                n(user.nro_documento),
-                                                n(user.nombre_completo)
-                                            ]
-                                        );
+                                        filasTrabajoValues.push([
+                                            idHorario,
+                                            mappingDias[diaInfo.id_dia],
+                                            idRangoReal,
+                                            n(user.nro_documento),
+                                            n(user.nombre_completo)
+                                        ]);
                                     }
                                 }
                             }
@@ -1073,24 +1085,35 @@ export const storeController = {
                     }
                 }
 
-                // 5. Insertar Libres
+                if (filasTrabajoValues.length) {
+                    await connection.query(
+                        `INSERT INTO tb_dias_trabajo (ID_TRB_HORARIO, ID_TRB_DIAS, ID_TRB_RANGO_HORA, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) VALUES ?`,
+                        [filasTrabajoValues]
+                    );
+                }
+
+                // 5. Insertar Libres (bulk insert)
+                const filaLibresValues = [];
                 if (item.filaLibres && Array.isArray(item.filaLibres)) {
                     for (const libre of item.filaLibres) {
                         if (libre.trabajadores && Array.isArray(libre.trabajadores)) {
                             for (const trb of libre.trabajadores) {
-                                await connection.execute(
-                                    `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) 
-                                 VALUES (?, ?, ?, ?)`,
-                                    [
-                                        idHorario,
-                                        mappingDias[libre.id_dia],
-                                        n(trb.nro_documento),
-                                        n(trb.nombre_completo)
-                                    ]
-                                );
+                                filaLibresValues.push([
+                                    idHorario,
+                                    mappingDias[libre.id_dia],
+                                    n(trb.nro_documento),
+                                    n(trb.nombre_completo)
+                                ]);
                             }
                         }
                     }
+                }
+
+                if (filaLibresValues.length) {
+                    await connection.query(
+                        `INSERT INTO tb_dias_libre (ID_TRB_HORARIO, ID_TRB_DIAS, NUMERO_DOCUMENTO, NOMBRE_COMPLETO) VALUES ?`,
+                        [filaLibresValues]
+                    );
                 }
             }
 
@@ -1113,9 +1136,12 @@ export const storeController = {
             await connection.beginTransaction();
 
             // 1. VALIDACIÓN DE NEGOCIO: Evitar papeletas duplicadas para el mismo empleado/fecha
+            // FOR UPDATE bloquea la fila hasta el commit/rollback, evitando que dos solicitudes
+            // simultáneas para el mismo empleado/fecha pasen ambas la validación.
             const [existe] = await connection.execute(
                 `SELECT ID_HEAD_PAPELETA FROM tb_head_papeleta 
-             WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?`,
+             WHERE NRO_DOCUMENTO_EMPLEADO = ? AND FECHA_DESDE = ?
+             FOR UPDATE`,
                 [empleado.nroDocumento, papeleta.fechaDesde]
             );
             if (existe.length > 0) throw new Error("Ya existe una papeleta para este empleado en esta fecha.");
@@ -1195,7 +1221,7 @@ export const storeController = {
         } catch (error) {
             await connection.rollback();
             const code = error.message.includes("Ya existe") ? 409 : 500;
-            res.status(201).json({ error: error.message });
+            res.status(code).json({ success: false, error: error.message });
         } finally {
             connection.release();
         }
@@ -1244,36 +1270,41 @@ export const storeController = {
             });
         }
 
-        const [existe] = await pool.execute(
-            `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
-             WHERE ID_HORA_EXTRA = ?`,
-            [id_hora_extra]
-        );
-
-        if (existe.length > 0) {
-            return res.status(409).json({
-                success: false,
-                message: "Ya existe una solicitud para esta hora extra."
-            });
-        }
-
-        const query = `
-                    SELECT DESCRIPCION
-                    FROM bd_metasperu.tb_lista_tienda t
-                    WHERE t.SERIE_TIENDA = ?
-                `;
-
-        const [rows] = await pool.execute(query, [codigoTienda]);
-
-        const storeDescription = rows.find(t => {
-            return t;
-        });
-
-        const nivel = comentario == 'Tiene una papeleta ese dia.' ? 'RECURSOS HUMANOS' : 'GENERAL';
+        const connection = await pool.getConnection();
 
         try {
-            const query = `
-            INSERT INTO tb_autorizar_hr_extra (
+            await connection.beginTransaction();
+
+            // FOR UPDATE bloquea la fila hasta el commit/rollback: evita que dos solicitudes
+            // simultáneas para la misma hora extra pasen ambas la validación de duplicados.
+            const [existe] = await connection.execute(
+                `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
+             WHERE ID_HORA_EXTRA = ?
+             FOR UPDATE`,
+                [id_hora_extra]
+            );
+
+            if (existe.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({
+                    success: false,
+                    message: "Ya existe una solicitud para esta hora extra."
+                });
+            }
+
+            const [rows] = await connection.execute(
+                `SELECT DESCRIPCION
+                    FROM bd_metasperu.tb_lista_tienda t
+                    WHERE t.SERIE_TIENDA = ?`,
+                [codigoTienda]
+            );
+
+            const storeDescription = rows[0];
+
+            const nivel = comentario == 'Tiene una papeleta ese dia.' ? 'RECURSOS HUMANOS' : 'GENERAL';
+
+            const [result] = await connection.execute(
+                `INSERT INTO tb_autorizar_hr_extra (
                 ID_HORA_EXTRA,
                 HR_EXTRA_ACOMULADO, 
                 NRO_DOCUMENTO_EMPLEADO, 
@@ -1283,25 +1314,25 @@ export const storeController = {
                 FECHA, 
                 CODIGO_TIENDA,  
                 NIVEL
-            ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)
-        `;
+            ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)`,
+                [
+                    id_hora_extra,
+                    horasAcumuladas, // "01:30"
+                    nroDocumento,
+                    nombreCompleto,
+                    fecha,           // "2026-04-24"
+                    codigoTienda,
+                    nivel || 'SISTEMAS'
+                ]
+            );
 
-            const [result] = await pool.query(query, [
-                id_hora_extra,
-                horasAcumuladas, // "01:30"
-                nroDocumento,
-                nombreCompleto,
-                fecha,           // "2026-04-24"
-                codigoTienda,
-                nivel || 'SISTEMAS'
-            ]);
+            await connection.execute(
+                `UPDATE tb_hora_extra_empleado SET ESTADO = 'espera aprobacion' 
+                    WHERE ID_HR_EXTRA = ?;`,
+                [id_hora_extra]
+            );
 
-
-            const query_update_hora_extra = `
-                    UPDATE tb_hora_extra_empleado SET ESTADO = 'espera aprobacion' 
-                    WHERE ID_HR_EXTRA = ?;`;
-
-            await pool.execute(query_update_hora_extra, [id_hora_extra]);
+            await connection.commit();
 
             pushEmailQueue({
                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
@@ -1325,11 +1356,14 @@ export const storeController = {
             });
 
         } catch (error) {
+            await connection.rollback();
             console.error("Error al registrar autorización:", error);
             res.status(500).json({
                 success: false,
                 message: "Error interno del servidor al procesar la solicitud."
             });
+        } finally {
+            connection.release();
         }
     },
     postApprovalHoursWorksEmployes: async (req, res) => {
@@ -2263,7 +2297,6 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
     if (!documentos.length || !fechas.length) return new Set();
 
     const fechasLimpias = fechas.map(normalizarFechaReferencia).filter(Boolean);
-    const fechasFormatoBd = fechasLimpias.map(normalizarFechaParaBD);
 
     try {
         const [rows] = await pool.query(`
@@ -2275,7 +2308,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
         INNER JOIN bd_metasperu.TB_DIAS_HORARIO DH     
             ON DH.ID_DIAS = DL.ID_TRB_DIAS 
 
-        WHERE DL.NUMERO_DOCUMENTO IN ('${documentos}')
+        WHERE DL.NUMERO_DOCUMENTO IN (?)
 
         AND (
             CASE
@@ -2296,8 +2329,8 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
             END
         )
-        IN (${fechasFormatoBd});
-        `);
+        IN (?);
+        `, [documentos, fechasLimpias]);
 
         const result = new Set();
 
@@ -2447,6 +2480,17 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
 
         return { inserted: result.affectedRows > 0, id: result.insertId };
     } catch (err) {
+        // Defensa final contra condiciones de carrera: si dos llamadas concurrentes a
+        // guardarEnBD pasan ambas el SELECT de "no existe" antes de que la primera inserte
+        // (por ejemplo, el mismo webhook/proceso disparado dos veces), la segunda insercion
+        // choca contra un UNIQUE KEY en (NRO_DOCUMENTO_EMPLEADO, FECHA) y cae aqui en vez de
+        // crear un registro duplicado. Este UNIQUE KEY debe existir en la base de datos
+        // (ver recomendaciones: no se puede crear una migracion sin acceso a la BD).
+        if (err.code === 'ER_DUP_ENTRY') {
+            console.warn('guardarEnBD - insercion concurrente detectada, ya existia:', { nroDocumento, fechaBase });
+            return { inserted: false, reason: 'exists' };
+        }
+
         console.error(`Error al insertar en guardarEnBD:`, {
             message: err.message,
             code: err.code,
