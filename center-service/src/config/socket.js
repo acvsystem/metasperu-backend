@@ -156,6 +156,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de python server al backend traffic counter de servidor backup
         socket.on('py_response_traffic_counter_verification', (data) => {
+            console.log('py_response_traffic_counter_verification', data);
             io.emit('traffic_counter_dashboard', data);
         });
 
