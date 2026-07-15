@@ -173,7 +173,6 @@ export const initSocket = (server) => {
                 if (!offlineTraffic) {
                     console.log("🚀 Todos los Traffic Counter están ONLINE");
                 } else {
-                    console.log('py_response_traffic_counter_verification', trafficCounter);
                     // Si hay un dispositivo offline, procedemos a consultar base de datos
                     let connection;
                     try {
@@ -182,10 +181,9 @@ export const initSocket = (server) => {
                             `SELECT DESCRIPCION
                      FROM bd_metasperu.tb_lista_tienda t
                      WHERE t.SERIE_TIENDA = ?`,
-                            [offlineTraffic.serie || '']
+                            [trafficCounter.serie || '']
                         );
 
-                        console.log('py_response_traffic_counter_verification', trafficCounter);
 
                         if (rows.length > 0) {
                             const store = rows[0];
