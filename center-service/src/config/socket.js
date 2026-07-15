@@ -165,7 +165,7 @@ export const initSocket = (server) => {
                 console.log("🚀 Todos los Traffic Counter están ONLINE");
                 return;
             } else {
-                const connection = await pool.getConnection();
+              /*  const connection = await pool.getConnection();
                 const [rows] = await connection.execute(
                     `SELECT DESCRIPCION
                     FROM bd_metasperu.tb_lista_tienda t
@@ -173,7 +173,7 @@ export const initSocket = (server) => {
                     [(offlineTraffic || {}).serie]
                 );
 
-                const store = rows[0];
+                const store = rows[0];*/
 
                 emailService.pushToEmailQueue({
                     email: ['itperu@metasperu.com'],
