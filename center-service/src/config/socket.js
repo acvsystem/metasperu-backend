@@ -157,7 +157,35 @@ export const initSocket = (server) => {
 
         // --- Retorno de python server al backend traffic counter de servidor backup
         socket.on('py_response_traffic_counter_verification', (data) => {
-            console.log('py_response_traffic_counter_verification', data);
+
+            const trafficCounter = data || {};
+            const offlineTraffic = trafficCounter.devices.find((t) => t.online == false);
+
+            if (!offlineTraffic) {
+                console.log("🚀 Todos los Traffic Counter están ONLINE");
+                return;
+            } else {
+                const [rows] = await connection.execute(
+                    `SELECT DESCRIPCION
+                    FROM bd_metasperu.tb_lista_tienda t
+                    WHERE t.SERIE_TIENDA = ?`,
+                    [(offlineTraffic || {}).serie]
+                );
+
+                const store = rows[0];
+
+                emailService.pushToEmailQueue({
+                    email: ['itperu@metasperu.com'],
+                    subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
+                    template: 'alertaTrafficCounterOffLine',
+                    variables: {
+                        tienda: store.DESCRIPCION, // Esta es la variable {{tienda}}
+                        ip: offlineTraffic.ip,
+                        estatus: offlineTraffic.online ? 'ONLINE' : 'OFFLINE'
+                    }
+                });
+            }
+
             io.emit('traffic_counter_dashboard', data);
         });
 
@@ -230,15 +258,15 @@ async function iniciarProcesoComparacion(serie) {
                 "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
 
-           /* emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
-                subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
-                template: 'documentosPendientes',
-                variables: {
-                    tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
-                    documentos: resultadosFinales.documents
-                }
-            });*/
+            /* emailService.pushToEmailQueue({
+                 email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
+                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
+                 template: 'documentosPendientes',
+                 variables: {
+                     tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
+                     documentos: resultadosFinales.documents
+                 }
+             });*/
         }
 
         io.emit('documents_response_dashboard', resultadosFinales);
