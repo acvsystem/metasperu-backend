@@ -157,7 +157,7 @@ export const initSocket = (server) => {
 
         // --- Retorno de python server al backend traffic counter de servidor backup
         socket.on('py_response_traffic_counter_verification', (data) => {
-/*
+
             const trafficCounter = data || {};
             const offlineTraffic = trafficCounter.devices.find((t) => t.online == false);
 
@@ -174,7 +174,7 @@ export const initSocket = (server) => {
 
             const store = rows[0];
 
-            emailService.pushToEmailQueue({
+           /* emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com'],
                 subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
                 template: 'alertaTrafficCounterOffLine',
@@ -183,9 +183,9 @@ export const initSocket = (server) => {
                     ip: offlineTraffic.ip,
                     estatus: offlineTraffic.online ? 'ONLINE' : 'OFFLINE'
                 }
-            });
+            });*/
             }
-*/
+
             io.emit('traffic_counter_dashboard', data);
         });
 
