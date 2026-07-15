@@ -190,7 +190,7 @@ export const initSocket = (server) => {
 
                             // Enviamos al queue de emails con los parámetros simplificados (IP, TIENDA, ESTATUS)
                             emailService.pushToEmailQueue({
-                                email: ['itperu@metasperu.com'],
+                                email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
                                 subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
                                 template: 'alertaTrafficCounterOffLine',
                                 variables: {

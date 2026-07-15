@@ -49,6 +49,26 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
+// Se ejecuta a las horas: 09:00, 12:00, 15:00, 18:00 y 21:00
+cron.schedule('0 9,12,15,18,21 * * *', async () => {
+  console.log('⏰ [Cron Job] Iniciando verificacion traffic counter...');
+
+  try {
+    console.log('Iniciando tarea programada: verificacion traffic counter...');
+
+    // Emitimos la señal reutilizando la lógica
+    getIO().to('grupo_tiendas').emit('py_traffic_counter_verification', {
+      pedido_por: 'mismosistema'
+    });
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima" // Mantiene tu zona horaria de Perú
+});
 
 const executeClientDeleteLogic = async (socketIdFallback) => {
   try {
