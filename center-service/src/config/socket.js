@@ -156,42 +156,64 @@ export const initSocket = (server) => {
         });
 
         // --- Retorno de python server al backend traffic counter de servidor backup
-        socket.on('py_response_traffic_counter_verification', (data) => {
+        // 1. Agregamos "async" al callback del socket
+        socket.on('py_response_traffic_counter_verification', async (data) => {
+            try {
+                const trafficCounter = data || {};
 
-            const trafficCounter = data || {};
-            const offlineTraffic = trafficCounter.devices.find((t) => t.online == false);
+                // Validamos de forma segura que existan dispositivos en el objeto de entrada
+                if (!trafficCounter.devices || !Array.isArray(trafficCounter.devices)) {
+                    console.log("⚠️ Estructura de Traffic Counter no válida o vacía.");
+                    return;
+                }
 
-            if (Object.keys(trafficCounter).length === 0) {
+                // Buscamos el dispositivo offline
+                const offlineTraffic = trafficCounter.devices.find((t) => t.online === false);
+
                 if (!offlineTraffic) {
                     console.log("🚀 Todos los Traffic Counter están ONLINE");
-                    return;
                 } else {
-                    const connection = await pool.getConnection();
-                    const [rows] = await connection.execute(
-                        `SELECT DESCRIPCION
-                          FROM bd_metasperu.tb_lista_tienda t
-                          WHERE t.SERIE_TIENDA = ?`,
-                        [(offlineTraffic || {}).serie]
-                    );
+                    // Si hay un dispositivo offline, procedemos a consultar base de datos
+                    let connection;
+                    try {
+                        connection = await pool.getConnection();
+                        const [rows] = await connection.execute(
+                            `SELECT DESCRIPCION
+                     FROM bd_metasperu.tb_lista_tienda t
+                     WHERE t.SERIE_TIENDA = ?`,
+                            [offlineTraffic.serie || '']
+                        );
 
-                    const store = rows[0];
+                        if (rows.length > 0) {
+                            const store = rows[0];
 
-                    emailService.pushToEmailQueue({
-                        email: ['itperu@metasperu.com'],
-                        subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
-                        template: 'alertaTrafficCounterOffLine',
-                        variables: {
-                            tienda: store.DESCRIPCION, // Esta es la variable {{tienda}}
-                            ip: offlineTraffic.ip,
-                            estatus: offlineTraffic.online ? 'ONLINE' : 'OFFLINE'
+                            // Enviamos al queue de emails con los parámetros simplificados (IP, TIENDA, ESTATUS)
+                            emailService.pushToEmailQueue({
+                                email: ['itperu@metasperu.com'],
+                                subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
+                                template: 'alertaTrafficCounterOffLine',
+                                variables: {
+                                    tienda: store.DESCRIPCION,
+                                    ip: offlineTraffic.ip || 'Sin IP',
+                                    estatus: 'OFFLINE' // Forzado a OFFLINE ya que entramos por la condición de t.online === false
+                                }
+                            });
+                        } else {
+                            console.log(`⚠️ No se encontró la tienda con la serie: ${offlineTraffic.serie}`);
                         }
-                    });
+                    } catch (dbError) {
+                        console.error("❌ Error en la consulta a base de datos:", dbError);
+                    } finally {
+                        if (connection) connection.release(); // Siempre libera la conexión del pool
+                    }
                 }
+
+                // Transmitimos al dashboard independientemente de si hay offline o no
                 io.emit('traffic_counter_dashboard', data);
+
+            } catch (error) {
+                console.error("❌ Error crítico en el socket de verificación:", error);
             }
-
-
-
         });
 
         socket.on('disconnect', () => {
