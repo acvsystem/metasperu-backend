@@ -1406,7 +1406,7 @@ export const storeController = {
 
             if (aprobado) {
                 pushEmailQueue({
-                    email: ['metasperurrhh@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
+                    email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
                     template: 'aprobacionHoraExtra',
                     variables: {
@@ -1418,7 +1418,7 @@ export const storeController = {
                 });
             } else {
                 pushEmailQueue({
-                    email: ['metasperurrhh@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
+                    email: ['metasperurrhh@gmail.com','metasperurrhh2@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
                     variables: {
