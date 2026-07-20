@@ -1220,7 +1220,7 @@ export const storeController = {
 
         } catch (error) {
             await connection.rollback();
-            const code = error.message.includes("Ya existe") ? 409 : 500;
+            const code = error.message.includes("Ya existe") ? 200 : 500;
             res.status(code).json({ success: false, error: error.message });
         } finally {
             connection.release();
