@@ -4,10 +4,18 @@ import { storeController } from '../controllers/store.controller.js';
 import { configurationController } from '../controllers/configuration.controller.js';
 import { serverController } from '../controllers/server.controller.js';
 import { maintenanceController } from '../controllers/maintenance.controller.js';
+import { rrwebController } from '../controllers/rrweb.controller.js';
 const router = Router();
 
 // ---RUTAS DASHBOARD
 router.get('/api/dashboard/store/refresh', verifyToken, storeController.getDashboarRefresh);
+
+// --- RUTAS RRWEB
+router.post('/api/rrweb/session/start', verifyToken, rrwebController.startSession);
+router.post('/api/rrweb/events', verifyToken, rrwebController.saveEvents);
+router.post('/api/rrweb/session/end', verifyToken, rrwebController.endSession);
+router.get('/api/rrweb/sessions', verifyToken, rrwebController.listSessions);
+router.get('/api/rrweb/session/:sessionId/events', verifyToken, rrwebController.getSessionEvents);
 
 // --- RUTAS PARA TIENDAS
 
