@@ -10,22 +10,24 @@ const inventariosPorMarca = new Map();
 export const storeController = {
     postReqInventory: async (req, res) => {
         const { stockData, marca, socketId } = req.body; // Asegúrate que Python envíe la marca
-        console.log(stockData,socketId);
+        console.log(stockData, socketId);
         if (!stockData || !marca) {
             return res.status(400).json({ message: 'Data y Marca son requeridos' });
         }
 
         try {
-            // Inicializar el mapa para la marca si no existe
-            if (!inventariosPorMarca.has(marca)) {
-                inventariosPorMarca.set(marca, new Map());
+            if (stockData.length > 0) {
+                // Inicializar el mapa para la marca si no existe
+                if (!inventariosPorMarca.has(marca)) {
+                    inventariosPorMarca.set(marca, new Map());
+                }
+
+                setImmediate(() => {
+                    actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData, socketId);
+                });
+
+                res.status(200).json({ message: 'Procesando...' });
             }
-
-            setImmediate(() => {
-                actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData, socketId);
-            });
-
-            res.status(200).json({ message: 'Procesando...' });
         } catch (error) {
             res.status(500).json({ message: 'Error interno' });
         }
