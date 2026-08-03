@@ -371,6 +371,7 @@ export const getInventoryReqStore = async (req, res) => {
 
 export const postInventoryResStore = async (req, res) => {
     const dataBody = req.body;
+    console.log('postInventoryResStore - Datos recibidos:', dataBody);
     if (dataBody) {
         console.log(dataBody[0]['cSessionCode']);
 
