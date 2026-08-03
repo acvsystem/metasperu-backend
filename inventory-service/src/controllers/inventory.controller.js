@@ -379,7 +379,7 @@ export const postInventoryResStore = async (req, res) => {
                 `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
              cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
                 [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
-                d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, d.cTemporada, d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
+                d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
             );
         });
 
@@ -410,7 +410,7 @@ export const postInventoryImport = async (req, res) => {
                         `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
              cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
                         [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
-                        d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, d.cTemporada, d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
+                        d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
                     );
                 });
 
