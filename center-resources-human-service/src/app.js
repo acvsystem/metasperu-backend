@@ -65,7 +65,7 @@ cron.schedule('00 8 * * 0', async () => {
 
     if (rows.length > 0) {
       emailService.pushToEmailQueue({
-        email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
+        email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com', 'fieldleaderbbw@metasperu.com', 'fieldleadervs@metasperu.com'],
         subject: `Alerta de tiendas Sin horario creado `,
         template: 'sedesSinHorario',
         variables: { sedes: rows, periodo: day }
