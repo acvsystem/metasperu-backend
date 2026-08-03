@@ -370,27 +370,70 @@ export const getInventoryReqStore = async (req, res) => {
 };
 
 export const postInventoryResStore = async (req, res) => {
-    const dataBody = req.body;
-    console.log('postInventoryResStore - Datos recibidos:', dataBody);
-    if (dataBody) {
-        console.log(dataBody[0]['cSessionCode']);
+    try {
+        const dataBody = req.body;
+        console.log('postInventoryResStore - Datos recibidos:', dataBody);
 
-        const data = await dataBody.map(async (d) => {
-            await pool.execute(
-                `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
-             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-                [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
-                d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
+        if (!dataBody || dataBody.length === 0) {
+            return res.status(400).json({ message: "El cuerpo de la petición está vacío" });
+        }
+
+        const sessionCode = dataBody[0]['cSessionCode'];
+        console.log("Sesión:", sessionCode);
+
+        // 1. Preparamos un arreglo con todas las promesas de inserción
+        const insertPromises = dataBody.map((d) => {
+            // Reemplazamos cualquier 'undefined' por 'null' (o strings vacíos / ceros)
+            const valores = [
+                d.cSessionCode ?? null,
+                d.cCodigoTienda ?? null,
+                d.cCodigoArticulo ?? null,
+                d.cReferencia ?? null,
+                d.cCodigoBarra ?? null,
+                d.cDescripcion ?? null,
+                d.cDepartamento ?? null,
+                d.cSeccion ?? null,
+                d.cFamilia ?? null,
+                d.cSubFamilia ?? null,
+                d.cTalla ?? null,
+                d.cColor ?? null,
+                d.cStock ?? 0,
+                d.cTemporada ?? '',
+                d.cConteo ?? 0,
+                d.cTotalConteo ?? 0,
+                d.cEsencia ?? '',
+                d.cStyleDesc ?? ''
+            ];
+
+            // Retornamos la promesa de ejecución (NO usamos await aquí dentro)
+            return pool.execute(
+                `INSERT INTO inventario_store (cSessionCode, cCodigoTienda, cCodigoArticulo, cReferencia, cCodigoBarra, cDescripcion, cDepartamento, cSeccion, cFamilia, cSubFamilia, cTalla, cColor, cStock, cTemporada, cConteo, cTotalConteo, cEsencia, cStyleDescription) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                valores
             );
         });
 
-        const sesion = await pool.execute(`UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
-            [dataBody[0]['cSessionCode']]
+        // 2. Esperamos a que TODAS las inserciones terminen correctamente
+        await Promise.all(insertPromises);
+
+        // 3. Actualizamos el estado de la sesión
+        await pool.execute(
+            `UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
+            [sessionCode]
         );
 
-        Promise.all(data, sesion);
+        // 4. Emitimos evento de WebSocket
+        getIO().to(sessionCode).emit('res_inv_store', dataBody);
 
-        getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
+        // 5. IMPORTANTE: Responder a la petición HTTP para que no se quede colgada
+        return res.status(200).json({
+            message: "Inventario registrado y sesión actualizada correctamente"
+        });
+
+    } catch (error) {
+        // Si hay CUALQUIER error en la BD, entra aquí, no crashea la app, y se le avisa al cliente
+        console.error("Error al registrar inventario:", error);
+        return res.status(500).json({ error: error.message });
     }
 }
 
