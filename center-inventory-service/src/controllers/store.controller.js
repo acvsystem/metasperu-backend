@@ -10,7 +10,7 @@ const inventariosPorMarca = new Map();
 export const storeController = {
     postReqInventory: async (req, res) => {
         const { stockData, marca, socketId } = req.body; // Asegúrate que Python envíe la marca
-
+        console.log(stockData,socketId);
         if (!stockData || !marca) {
             return res.status(400).json({ message: 'Data y Marca son requeridos' });
         }
