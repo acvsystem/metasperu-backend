@@ -49,6 +49,24 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
+cron.schedule('50 15 * * *', async () => {
+  console.log('⏰ [Cron Job] Iniciando envio de ventas Arequipa...');
+
+  try {
+
+    console.log('Iniciando tarea programada: SendVentasFTP...');
+
+    executeSendVentasFTP();
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
+
 // Se ejecuta a las horas: 09:00, 12:00, 15:00, 18:00 y 21:00
 cron.schedule('0 9,12,15,18,21 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando verificacion traffic counter...');
@@ -83,6 +101,17 @@ const executeClientDeleteLogic = async (socketIdFallback) => {
       });
       console.log(`[CRON] Señal emitida exitosamente a las 10:00 AM`);
     }
+  } catch (error) {
+    console.error('[CRON ERROR] Error en ejecución programada:', error);
+  }
+};
+
+const executeSendVentasFTP = async () => {
+  try {
+    // Asegúrate de que getIO() esté disponible en este archivo
+    getIO().to('servidor_backup').emit('py_send_ventas_ftp');
+    console.log(`[CRON] Señal emitida exitosamente a las 10:00 AM`);
+
   } catch (error) {
     console.error('[CRON ERROR] Error en ejecución programada:', error);
   }
