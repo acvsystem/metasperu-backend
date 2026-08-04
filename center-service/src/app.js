@@ -49,7 +49,7 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('52 15 * * *', async () => {
+cron.schedule('00 10 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando envio de ventas Arequipa...');
 
   try {
