@@ -92,6 +92,7 @@ pm2.connect((err) => {
 
     // ⚠️ EXCEPCIÓN NO MANEJADA
     bus.on('process:exception', (packet) => {
+        console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name);
       const proc = packet.process;
       const errorMsg = packet.data?.message || packet.data || 'Error desconocido';
 
@@ -102,6 +103,7 @@ pm2.connect((err) => {
 
     // ✅ SERVICIO RECUPERADO (online)
     bus.on('process:online', (packet) => {
+        console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name);
       const proc = packet.process;
       const nombre = proc.name;
       const id = proc.pm_id;
