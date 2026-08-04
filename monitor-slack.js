@@ -1,14 +1,15 @@
+require('dotenv').config();
 const pm2 = require('pm2');
 const https = require('https');
 const { URL } = require('url');
-const { exec } = require('child_process');
 
 // ─── CONFIGURA AQUÍ ───
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-const MAX_LOG_LINES = 15; // Cuántas líneas del log incluir en la alerta
+const INTERVALO_SEGUNDOS = 5;
 // ──────────────────────
 
 const hostname = require('os').hostname();
+let estadosAnteriores = {};
 
 function enviarSlack(mensaje) {
   const url = new URL(SLACK_WEBHOOK_URL);
@@ -29,39 +30,52 @@ function enviarSlack(mensaje) {
   };
 
   const req = https.request(options, (res) => {
-    let data = '';
-    res.on('data', (chunk) => (data += chunk));
+    res.on('data', () => {});
     res.on('end', () => {
-      if (res.statusCode === 200) {
-        console.log(`[${new Date().toLocaleString()}] ✅ Alerta enviada a Slack`);
-      } else {
-        console.error(`❌ Error Slack: ${res.statusCode} - ${data}`);
-      }
+      console.log(`[${new Date().toLocaleString()}] ✅ Slack: ${mensaje.split('\n')[0]}`);
     });
   });
 
   req.on('error', (e) => {
-    console.error('Error enviando a Slack:', e.message);
+    console.error('❌ Error Slack:', e.message);
   });
 
   req.write(payload);
   req.end();
 }
 
-// Obtiene las últimas líneas del log de un proceso
-function obtenerLog(procName, callback) {
-  exec(`pm2 logs ${procName} --lines ${MAX_LOG_LINES} --nostream`, (error, stdout) => {
-    if (error) {
-      callback('No se pudo obtener el log.');
+function verificarProcesos() {
+  pm2.list((err, procesos) => {
+    if (err) {
+      console.error('Error listando procesos:', err);
       return;
     }
-    // Limpiamos y truncamos el log para Slack
-    const logLimpio = stdout
-      .split('\n')
-      .slice(-MAX_LOG_LINES)
-      .join('\n')
-      .substring(0, 2800); // Slack tiene límite de ~4000 chars
-    callback(logLimpio || 'Log vacío');
+
+    procesos.forEach((proc) => {
+      const nombre = proc.name;
+      const estado = proc.pm2_env.status;
+      const id = proc.pm_id;
+      const anterior = estadosAnteriores[nombre];
+
+      // Ignorar el propio monitor para no alertar de sí mismo
+      if (nombre === 'monitor-slack') return;
+
+      if (anterior && anterior !== estado) {
+        const hora = new Date().toLocaleString();
+
+        if (estado === 'online' && (anterior === 'stopped' || anterior === 'errored')) {
+          // ✅ RECUPERADO
+          enviarSlack(`✅ *SERVICIO RECUPERADO*\n\n*Servicio:* \`${nombre}\` (ID: ${id})\n*Servidor:* ${hostname}\n*Hora:* ${hora}\n\nEl servicio volvió a estar online.`);
+        }
+        else if (estado === 'stopped' || estado === 'errored') {
+          // 🚨 CAÍDO
+          const logPath = proc.pm2_env.pm_out_log_path || 'N/A';
+          enviarSlack(`🚨 *ALERTA: Servicio caído*\n\n*Servicio:* \`${nombre}\` (ID: ${id})\n*Estado:* ${estado}\n*Servidor:* ${hostname}\n*Hora:* ${hora}\n\nRevisa logs: \`pm2 logs ${nombre}\``);
+        }
+      }
+
+      estadosAnteriores[nombre] = estado;
+    });
   });
 }
 
@@ -71,46 +85,20 @@ pm2.connect((err) => {
     process.exit(2);
   }
 
-  console.log('🔍 Monitor de PM2 + Slack iniciado...');
+  console.log('🔍 Monitor de PM2 + Slack iniciado (modo polling)...');
 
-  pm2.launchBus((err, bus) => {
-    if (err) throw err;
-
-    // 🚨 SERVICIO CAÍDO
-    bus.on('process:exit', (packet) => {
-      console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name)
-      const proc = packet.process;
-      const nombre = proc.name;
-      const id = proc.pm_id;
-
-      obtenerLog(nombre, (log) => {
-        const mensaje = `🚨 *ALERTA: Servicio caído*\n\n*Servicio:* \`${nombre}\` (ID: ${id})\n*Servidor:* ${hostname}\n*Hora:* ${new Date().toLocaleString()}\n\n*Últimas líneas del log:*\n\`\`\`\n${log}\n\`\`\``;
-
-        enviarSlack(mensaje);
+  // Primera lectura para inicializar estados
+  pm2.list((err, procesos) => {
+    if (!err) {
+      procesos.forEach((proc) => {
+        if (proc.name !== 'monitor-slack') {
+          estadosAnteriores[proc.name] = proc.pm2_env.status;
+        }
       });
-    });
-
-    // ⚠️ EXCEPCIÓN NO MANEJADA
-    bus.on('process:exception', (packet) => {
-        console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name);
-      const proc = packet.process;
-      const errorMsg = packet.data?.message || packet.data || 'Error desconocido';
-
-      const mensaje = `⚠️ *EXCEPCIÓN EN SERVICIO*\n\n*Servicio:* \`${proc.name}\`\n*Error:* \`${errorMsg}\`\n*Servidor:* ${hostname}\n*Hora:* ${new Date().toLocaleString()}\n\nRevisa con: \`pm2 logs ${proc.name}\``;
-
-      enviarSlack(mensaje);
-    });
-
-    // ✅ SERVICIO RECUPERADO (online)
-    bus.on('process:online', (packet) => {
-        console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name);
-      const proc = packet.process;
-      const nombre = proc.name;
-      const id = proc.pm_id;
-
-      const mensaje = `✅ *SERVICIO RECUPERADO*\n\n*Servicio:* \`${nombre}\` (ID: ${id})\n*Servidor:* ${hostname}\n*Hora:* ${new Date().toLocaleString()}\n\nEl servicio está funcionando correctamente de nuevo.`;
-
-      enviarSlack(mensaje);
-    });
+      console.log('📋 Procesos monitoreados:', Object.keys(estadosAnteriores).join(', '));
+    }
   });
+
+  // Revisar cada X segundos
+  setInterval(verificarProcesos, INTERVALO_SEGUNDOS * 1000);
 });
