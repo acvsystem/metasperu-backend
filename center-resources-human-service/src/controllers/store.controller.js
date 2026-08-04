@@ -2166,7 +2166,6 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     ]);
 
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-        console.log(`Procesando ${fecha} para documento ${data.nroDocumento}: Total Minutos = ${data.totalMins}, Limite Jornada = ${data.limiteJornada}, Count = ${data.count}, Especial = ${data.especial}, Lactancia = ${data.lactancia}`);
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
@@ -2200,6 +2199,8 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             } else if (data.especial) {
                 observacion = tag + "No marco salida";
                 esAprobacion = 1;
+                console.log(`Procesando ${fecha} para documento ${data.nroDocumento}: Total Minutos = ${data.totalMins}, Limite Jornada = ${data.limiteJornada}, Count = ${data.count}, Especial = ${data.especial}, Lactancia = ${data.lactancia}`);
+
             } else if (data.count > 2) {
                 observacion = tag + "Marcacion irregular, verifique marcaciones.";
                 esAprobacion = 1;
@@ -2418,6 +2419,7 @@ const obtenerRangoSemana = (fechaStr) => {
 }
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
+    console.log('guardarEnBD - parametros recibidos:', { nroDocumento, fechaRef, excesoDecimal, observacion, isAprobacion });
     const excesoTiempo = decimalATiempo(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
     const fechaBase = fechaRef;
