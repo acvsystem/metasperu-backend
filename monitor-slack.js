@@ -78,6 +78,7 @@ pm2.connect((err) => {
 
     // 🚨 SERVICIO CAÍDO
     bus.on('process:exit', (packet) => {
+      console.log('>>> EVENTO EXIT DISPARADO:', packet.process.name)
       const proc = packet.process;
       const nombre = proc.name;
       const id = proc.pm_id;
