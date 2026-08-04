@@ -2153,7 +2153,6 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             }
             resumenFullTime[reg.dia].totalMins += minutos;
             resumenFullTime[reg.dia].count += 1;
-            console.log(`Registro para ${reg.dia}: Total Minutos = ${resumenFullTime[reg.dia].totalMins}, Count = ${resumenFullTime[reg.dia].count}, Especial = ${esTurnoEspecial}`);
             if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
     });
@@ -2167,7 +2166,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     ]);
 
     for (const [fecha, data] of Object.entries(resumenFullTime)) {
-        console.log(2035, fecha);
+        console.log(`Procesando ${fecha} para documento ${data.nroDocumento}: Total Minutos = ${data.totalMins}, Limite Jornada = ${data.limiteJornada}, Count = ${data.count}, Especial = ${data.especial}, Lactancia = ${data.lactancia}`);
         let excesoMins = 0;
         let observacion = null;
         let esAprobacion = 0;
