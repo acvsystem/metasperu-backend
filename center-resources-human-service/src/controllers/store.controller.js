@@ -1418,7 +1418,7 @@ export const storeController = {
                 });
             } else {
                 pushEmailQueue({
-                    email: ['metasperurrhh@gmail.com','metasperurrhh2@gmail.com','itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
+                    email: ['metasperurrhh@gmail.com', 'metasperurrhh2@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
                     subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
                     template: 'rechazoHoraExtra',
                     variables: {
@@ -2153,6 +2153,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             }
             resumenFullTime[reg.dia].totalMins += minutos;
             resumenFullTime[reg.dia].count += 1;
+            console.log(`Registro para ${reg.dia}: Total Minutos = ${resumenFullTime[reg.dia].totalMins}, Count = ${resumenFullTime[reg.dia].count}, Especial = ${esTurnoEspecial}`);
             if (esTurnoEspecial) resumenFullTime[reg.dia].especial = true;
         }
     });
@@ -2214,7 +2215,6 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Conversión final a horas decimales para almacenamiento
         const excesoHorasFinal = Math.round((excesoMins / 60) * 100) / 100;
-        console.log(2156, excesoHorasFinal, observacion, excesoHorasFinal >= 3.00 && observacion === null);
 
         if (excesoHorasFinal >= 3.00 && observacion === null) {
             observacion = "Verificar marcaciones, exceso de 3 horas.";
