@@ -286,7 +286,7 @@ async function iniciarProcesoComparacion(serie) {
                 "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
 
-            /* emailService.pushToEmailQueue({
+             emailService.pushToEmailQueue({
                  email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
                  subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                  template: 'documentosPendientes',
@@ -294,7 +294,7 @@ async function iniciarProcesoComparacion(serie) {
                      tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
                      documentos: resultadosFinales.documents
                  }
-             });*/
+             });
         }
 
         io.emit('documents_response_dashboard', resultadosFinales);
