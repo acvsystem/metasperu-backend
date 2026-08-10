@@ -190,7 +190,7 @@ export const initSocket = (server) => {
 
                             // Enviamos al queue de emails con los parámetros simplificados (IP, TIENDA, ESTATUS)
                             emailService.pushToEmailQueue({
-                                email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
+                                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
                                 subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
                                 template: 'alertaTrafficCounterOffLine',
                                 variables: {
@@ -285,16 +285,16 @@ async function iniciarProcesoComparacion(serie) {
                 `*Documentos:* ${urlTemporal}`,
                 "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
-
-             emailService.pushToEmailQueue({
-                 email: ['itperu@metasperu.com','johnnygermano@metasperu.com'],
-                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
-                 template: 'documentosPendientes',
-                 variables: {
-                     tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
-                     documentos: resultadosFinales.documents
-                 }
-             });
+/*
+            emailService.pushToEmailQueue({
+                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
+                subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
+                template: 'documentosPendientes',
+                variables: {
+                    tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
+                    documentos: resultadosFinales.documents
+                }
+            });*/
         }
 
         io.emit('documents_response_dashboard', resultadosFinales);
@@ -311,35 +311,38 @@ function obtenerFaltantes(serieStore, storeRaw, servidorRaw) {
         const store = JSON.parse(storeRaw || '[]');
         const servidor = JSON.parse(servidorRaw || '[]');
 
-        if (store.length === 0) {
-            return { serie: serieStore, documents: [], length: 0 };
-        }
+        if (store.length && servidor.length) {
 
-        // 2. Indexación eficiente de documentos del servidor
-        // Usamos un Set para búsquedas de O(1)
-        const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
-
-        // 3. Filtrado y transformación en una sola pasada
-        const faltantes = store.reduce((acc, t) => {
-            const idNormalizado = `${t.cmpSerie}-${String(t.cmpNumero).padStart(8, '0')}`;
-
-            if (!idsEnServidor.has(idNormalizado)) {
-                acc.push({
-                    id: idNormalizado,
-                    tipo: t.cmpTipo,
-                    fecha: t.cmpFecha
-                });
+            if (store.length === 0) {
+                return { serie: serieStore, documents: [], length: 0 };
             }
-            return acc;
-        }, []);
 
-        console.info(`🚀 Documentos Faltantes [${serieStore}]: ${faltantes.length} encontrados.`);
+            // 2. Indexación eficiente de documentos del servidor
+            // Usamos un Set para búsquedas de O(1)
+            const idsEnServidor = new Set(servidor.map(s => s.cmpNumero));
 
-        return {
-            serie: serieStore,
-            documents: faltantes,
-            length: faltantes.length
-        };
+            // 3. Filtrado y transformación en una sola pasada
+            const faltantes = store.reduce((acc, t) => {
+                const idNormalizado = `${t.cmpSerie}-${String(t.cmpNumero).padStart(8, '0')}`;
+
+                if (!idsEnServidor.has(idNormalizado)) {
+                    acc.push({
+                        id: idNormalizado,
+                        tipo: t.cmpTipo,
+                        fecha: t.cmpFecha
+                    });
+                }
+                return acc;
+            }, []);
+
+            console.info(`🚀 Documentos Faltantes [${serieStore}]: ${faltantes.length} encontrados.`);
+
+            return {
+                serie: serieStore,
+                documents: faltantes,
+                length: faltantes.length
+            };
+        }
 
     } catch (error) {
         console.error("Error al procesar la comparación de documentos:", error);
