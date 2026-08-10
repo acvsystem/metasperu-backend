@@ -2611,10 +2611,10 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     }
 }
 
-const validarHoraExtraPapeleta = async (horaExtras) => {
+const validarHoraExtraPapeleta = async (horasExtras) => {
     try {
 
-        const arrHoraPapeleta = (horaExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
+        const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
 
         arrHoraPapeleta.filter((item) => {
             // Combinamos ambas tablas en un solo JOIN
@@ -2634,7 +2634,7 @@ const validarHoraExtraPapeleta = async (horaExtras) => {
         });
 
         // Si encontramos al menos un registro, el nivel es RRHH
-        return horaExtras;
+        return horasExtras;
 
     } catch (error) {
         console.error("Error al validar nivel de autorización:", error);
