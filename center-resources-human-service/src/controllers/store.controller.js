@@ -2593,6 +2593,8 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         const totalTiempo = decimalATiempo(totalDecimal);
 
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
+        validarHoraExtraPapeleta(listaCompleta);
+
         return {
             success: true,
             message: "Proceso completado correctamente",
@@ -2606,6 +2608,32 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     } catch (error) {
         console.error("Error al obtener el saldo final:", error);
         throw error;
+    }
+}
+
+const validarHoraExtraPapeleta = async (horaExtras) => {
+    try {
+
+        const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia');
+        console.log("Filtrando horas extras con papeleta:", arrHoraPapeleta);
+/*
+        // Combinamos ambas tablas en un solo JOIN
+        const query = `
+            SELECT * 
+            FROM tb_head_papeleta h
+            WHERE h.FECHA_DESDE = ? 
+            AND h.NRO_DOCUMENTO_EMPLEADO = ?
+            LIMIT 1;
+        `;
+
+        const [rows] = await pool.query(query, [fecha, documento]);
+        console.log("Resultado de la consulta de nivel de autorización:", rows);
+        // Si encontramos al menos un registro, el nivel es RRHH*/
+        return horaExtras;
+
+    } catch (error) {
+        console.error("Error al validar nivel de autorización:", error);
+       
     }
 }
 
