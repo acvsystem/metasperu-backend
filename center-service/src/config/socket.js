@@ -264,7 +264,7 @@ async function iniciarProcesoComparacion(serie) {
 
         resultadosFinales = obtenerFaltantes(serie, ((auditoriaEstado.tiendasData || [])[serie] || []), auditoriaEstado.serverData.documentos);
 
-        if (resultadosFinales.length > 20) {
+        if (resultadosFinales.length > 10) {
 
             const token = crypto.randomBytes(25).toString('hex');
 
