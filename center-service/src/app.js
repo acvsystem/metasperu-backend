@@ -67,6 +67,59 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
+cron.schedule('10 10 * * *', async () => {
+  console.log('⏰ [Cron Job 1] Iniciando comprobacion documentos faltantes...');
+
+  try {
+
+    getIO().to('servidor_backup').emit('py_request_documents_server');
+    getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
+
+cron.schedule('00 17 * * *', async () => {
+  console.log('⏰ [Cron Job 2] Iniciando comprobacion documentos faltantes...');
+
+  try {
+
+    getIO().to('servidor_backup').emit('py_request_documents_server');
+    getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
+
+cron.schedule('00 09 * * *', async () => {
+  console.log('⏰ [Cron Job 3] Iniciando comprobacion documentos faltantes...');
+
+  try {
+
+    getIO().to('servidor_backup').emit('py_request_documents_server');
+    getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
+
+
+
 // Se ejecuta a las horas: 09:00, 12:00, 15:00, 18:00 y 21:00
 cron.schedule('0 9,12,15,18,21 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando verificacion traffic counter...');
