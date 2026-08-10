@@ -2593,13 +2593,13 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
         const totalTiempo = decimalATiempo(totalDecimal);
 
         // 3. Retornamos el saldo para que el controlador lo envíe al Frontend
-        validarHoraExtraPapeleta(listaCompleta);
+        const rHorasExtras = await validarHoraExtraPapeleta(listaCompleta);
 
         return {
             success: true,
             message: "Proceso completado correctamente",
             documento: documentoNormalizado,
-            horasExtras: listaCompleta,
+            horasExtras: rHorasExtras,
             totalHorasFormato: totalTiempo, // Ejemplo: "12:30"
             totalHorasDecimal: totalDecimal, // Útil si necesitas validar lógicas internas
             registros: registros || [],
@@ -2611,24 +2611,69 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     }
 }
 
-const validarHoraExtraPapeleta = async (horasExtras) => {
-    try {
+const validarHoraExtraPapeleta = async (horasExtras = []) => {
+    let connection;
 
-        const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
-        
-        if (arrHoraPapeleta.length) {
-      
+    try {
+        // 1. Identificar los candidatos a eliminar
+        const idsAEliminar = new Set();
+
+        const candidatos = horasExtras.filter(item =>
+            item?.OBSERVACION === 'Tiene una papeleta ese dia.'
+        );
+
+        if (candidatos.length === 0) {
+            return horasExtras; // Nada que hacer
         }
 
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
 
-        // Si encontramos al menos un registro, el nivel es RRHH
-        return horasExtras;
+        // 2. Verificar en BD y acumular los que se deben borrar
+        for (const item of candidatos) {
+            const { ID_HR_EXTRA, FECHA, NRO_DOCUMENTO_EMPLEADO } = item || {};
+
+            if (!ID_HR_EXTRA) continue;
+
+            const [rows] = await connection.query(
+                `SELECT 1 
+                 FROM tb_head_papeleta 
+                 WHERE FECHA_DESDE = ? 
+                   AND NRO_DOCUMENTO_EMPLEADO = ?
+                 LIMIT 1`,
+                [FECHA, NRO_DOCUMENTO_EMPLEADO]
+            );
+
+            // Si NO existe papeleta, marcar para eliminar
+            if (rows.length === 0) {
+                idsAEliminar.add(ID_HR_EXTRA);
+            }
+        }
+
+        // 3. Ejecutar los DELETE solo de los identificados
+        for (const id of idsAEliminar) {
+            await connection.query(
+                `DELETE FROM tb_hora_extra_empleado WHERE ID_HR_EXTRA = ?`,
+                [id]
+            );
+        }
+
+        await connection.commit();
+
+        // 4. Retornar el array original MENOS los eliminados
+        return horasExtras.filter(item => !idsAEliminar.has(item?.ID_HR_EXTRA));
 
     } catch (error) {
-        console.error("Error al validar nivel de autorización:", error);
+        if (connection) await connection.rollback();
+        console.error('Error validando papeletas:', error);
 
+        // Si falla algo en BD, no se eliminó nada → devolvemos todo igual
+        return horasExtras;
+
+    } finally {
+        if (connection) connection.release();
     }
-}
+};
 
 const validarNivelAutorizar = async (fecha, documento) => {
     try {
