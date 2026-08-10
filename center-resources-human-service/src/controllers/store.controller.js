@@ -2615,10 +2615,11 @@ const validarHoraExtraPapeleta = async (horasExtras) => {
     try {
 
         const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
-
-        arrHoraPapeleta.filter((item) => {
-            // Combinamos ambas tablas en un solo JOIN
-            const query = `
+        
+        if (arrHoraPapeleta.length) {
+            arrHoraPapeleta.filter((item) => {
+                // Combinamos ambas tablas en un solo JOIN
+                const query = `
             SELECT * 
             FROM tb_head_papeleta h
             WHERE h.FECHA_DESDE = ? 
@@ -2626,12 +2627,14 @@ const validarHoraExtraPapeleta = async (horasExtras) => {
             LIMIT 1;
         `;
 
-            const [rows] = await pool.query(query, [item.FECHA, item.NRO_DOCUMENTO_EMPLEADO]);
+                const [rows] = await pool.query(query, [item.FECHA, item.NRO_DOCUMENTO_EMPLEADO]);
 
-            if (rows.length == 0) {
-                console.log("No se encontró papeleta para:", item.FECHA, item.NRO_DOCUMENTO_EMPLEADO);
-            }
-        });
+                if (rows.length == 0) {
+                    console.log("No se encontró papeleta para:", item.FECHA, item.NRO_DOCUMENTO_EMPLEADO);
+                }
+            });
+        }
+
 
         // Si encontramos al menos un registro, el nivel es RRHH
         return horasExtras;
