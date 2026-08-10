@@ -2613,12 +2613,12 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 const validarHoraExtraPapeleta = async (horaExtras) => {
     try {
-        console.log("Validando horas extras con papeleta:", horaExtras);
+
         const arrHoraPapeleta = (horaExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
-        console.log("Filtrando horas extras con papeleta:", arrHoraPapeleta);
-/*
-        // Combinamos ambas tablas en un solo JOIN
-        const query = `
+
+        arrHoraPapeleta.filter((item) => {
+            // Combinamos ambas tablas en un solo JOIN
+            const query = `
             SELECT * 
             FROM tb_head_papeleta h
             WHERE h.FECHA_DESDE = ? 
@@ -2626,14 +2626,19 @@ const validarHoraExtraPapeleta = async (horaExtras) => {
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha, documento]);
-        console.log("Resultado de la consulta de nivel de autorización:", rows);
-        // Si encontramos al menos un registro, el nivel es RRHH*/
+            const [rows] = await pool.query(query, [item.FECHA, item.NRO_DOCUMENTO_EMPLEADO]);
+
+            if (rows.length == 0) {
+                console.log("No se encontró papeleta para:", item.FECHA, item.NRO_DOCUMENTO_EMPLEADO);
+            }
+        });
+
+        // Si encontramos al menos un registro, el nivel es RRHH
         return horaExtras;
 
     } catch (error) {
         console.error("Error al validar nivel de autorización:", error);
-       
+
     }
 }
 
