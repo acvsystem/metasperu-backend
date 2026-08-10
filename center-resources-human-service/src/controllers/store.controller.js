@@ -2617,22 +2617,7 @@ const validarHoraExtraPapeleta = async (horasExtras) => {
         const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia.');
         
         if (arrHoraPapeleta.length) {
-            arrHoraPapeleta.filter((item) => {
-                // Combinamos ambas tablas en un solo JOIN
-                const query = `
-            SELECT * 
-            FROM tb_head_papeleta h
-            WHERE h.FECHA_DESDE = ? 
-            AND h.NRO_DOCUMENTO_EMPLEADO = ?
-            LIMIT 1;
-        `;
-
-                const [rows] = await pool.query(query, [item.FECHA, item.NRO_DOCUMENTO_EMPLEADO]);
-
-                if (rows.length == 0) {
-                    console.log("No se encontró papeleta para:", item.FECHA, item.NRO_DOCUMENTO_EMPLEADO);
-                }
-            });
+      
         }
 
 
