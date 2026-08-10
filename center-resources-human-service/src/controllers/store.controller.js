@@ -2183,7 +2183,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
         const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - data.limiteJornada);
         const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60), data.nroDocumento);
-
+        console.log("Resultado de la consulta de nivel de autorización:", nivel);
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
@@ -2621,7 +2621,7 @@ const validarNivelAutorizar = async (fecha, horaExtra, documento) => {
         `;
 
         const [rows] = await pool.query(query, [fecha, horaExtra, documento]);
-
+        console.log("Resultado de la consulta de nivel de autorización:", rows);
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
             nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL",
