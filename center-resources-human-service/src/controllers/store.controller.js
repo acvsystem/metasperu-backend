@@ -2616,7 +2616,6 @@ const validarNivelAutorizar = async (fecha, horaExtra, documento) => {
             SELECT * 
             FROM tb_head_papeleta h
             WHERE h.FECHA_DESDE = ? 
-            AND h.HORA_SOLICITADA = ? 
             AND h.NRO_DOCUMENTO_EMPLEADO = ?
             LIMIT 1;
         `;
