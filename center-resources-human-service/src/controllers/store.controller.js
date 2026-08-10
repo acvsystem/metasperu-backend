@@ -2614,7 +2614,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 const validarHoraExtraPapeleta = async (horaExtras) => {
     try {
 
-        const arrHoraPapeleta = (horasExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia');
+        const arrHoraPapeleta = (horaExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia');
         console.log("Filtrando horas extras con papeleta:", arrHoraPapeleta);
 /*
         // Combinamos ambas tablas en un solo JOIN
