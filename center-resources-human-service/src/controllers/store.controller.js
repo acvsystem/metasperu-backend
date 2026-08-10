@@ -2182,7 +2182,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
 
         // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
         const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - data.limiteJornada);
-        const nivel = await validarNivelAutorizar(fecha, decimalATiempo(excesoPreliminarMins / 60), data.nroDocumento);
+        const nivel = await validarNivelAutorizar(fecha, data.nroDocumento);
         console.log("Resultado de la consulta de nivel de autorización:", nivel);
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
@@ -2609,7 +2609,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
     }
 }
 
-const validarNivelAutorizar = async (fecha, horaExtra, documento) => {
+const validarNivelAutorizar = async (fecha, documento) => {
     try {
         // Combinamos ambas tablas en un solo JOIN
         const query = `
@@ -2620,7 +2620,7 @@ const validarNivelAutorizar = async (fecha, horaExtra, documento) => {
             LIMIT 1;
         `;
 
-        const [rows] = await pool.query(query, [fecha, horaExtra, documento]);
+        const [rows] = await pool.query(query, [fecha, documento]);
         console.log("Resultado de la consulta de nivel de autorización:", rows);
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
