@@ -2613,7 +2613,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
 const validarHoraExtraPapeleta = async (horaExtras) => {
     try {
-
+        console.log("Validando horas extras con papeleta:", horaExtras);
         const arrHoraPapeleta = (horaExtras || []).filter((item) => item.OBSERVACION === 'Tiene una papeleta ese dia');
         console.log("Filtrando horas extras con papeleta:", arrHoraPapeleta);
 /*
