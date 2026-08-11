@@ -248,7 +248,7 @@ function verificarYComparar(serie) {
 async function iniciarProcesoComparacion(serie) {
     let resultadosFinales = {};
 
-    if (((auditoriaEstado.tiendasData || [])[serie] || []).length) {
+    if (((auditoriaEstado.tiendasData || [])[serie] || []).length && (((auditoriaEstado || {}).serverData || {}).documentos || []).length) {
 
         const query = `
             SELECT DESCRIPCION
@@ -296,7 +296,7 @@ async function iniciarProcesoComparacion(serie) {
                 }
             });
         }
-
+        
         io.emit('documents_response_dashboard', resultadosFinales);
     } else {
         resultadosFinales = { serie: serie, documents: [], length: 0 };
