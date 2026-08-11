@@ -405,6 +405,8 @@ function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
                 'cTalla': item.cTalla,
                 'cColor': item.cColor,
                 'cTemporada': item.cTemporada,
+                'cEsnencia': item.cEsnencia,
+                'cStyleDesc': item.cStyleDesc,
                 'cStock': {}, // Aquí guardaremos los stocks de cada tienda
                 'marca': marca
             });
