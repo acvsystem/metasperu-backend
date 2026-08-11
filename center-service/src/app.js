@@ -101,7 +101,7 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('00 09 * * *', async () => {
+cron.schedule('00 21 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando comprobacion documentos faltantes...');
 
   try {
