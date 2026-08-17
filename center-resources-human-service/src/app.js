@@ -8,7 +8,7 @@ import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
 import { emailService } from './services/email.service.js';
 import cron from 'node-cron';
-import { createApiLogger } from '../../shared/api-log.middleware.js';
+//import { createApiLogger } from '../../shared/api-log.middleware.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -36,7 +36,7 @@ app.use(cors({
 app.use(compression());
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
-app.use(createApiLogger({ pool, serviceName: 'center-resources-human-service' }));
+//app.use(createApiLogger({ pool, serviceName: 'center-resources-human-service' }));
 
 
 cron.schedule('00 8 * * 0', async () => {

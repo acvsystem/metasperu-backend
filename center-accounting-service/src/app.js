@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getIO } from './config/socket.js';
-import { createApiLogger } from '../../shared/api-log.middleware.js';
+//import { createApiLogger } from '../../shared/api-log.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +31,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(createApiLogger({ pool, serviceName: 'center-accounting-service' }));
+//app.use(createApiLogger({ pool, serviceName: 'center-accounting-service' }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
 cron.schedule('10 10 * * *', async () => {
