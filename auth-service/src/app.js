@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { initSocket } from './config/socket.js'; // 1. Importar primero
 import cors from 'cors';
 import { pool } from './config/db.js';
-import { createApiLogger } from '../../shared/api-log.middleware.js';
+//import { createApiLogger } from '../../shared/api-log.middleware.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -19,7 +19,7 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.use(createApiLogger({ pool, serviceName: 'auth-service' }));
+//app.use(createApiLogger({ pool, serviceName: 'auth-service' }));
 
 import authRoutes from './routes/auth.routes.js';
 app.use('/s2/auth', authRoutes);
