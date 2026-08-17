@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getIO, servidorOnline } from '../config/socket.js';
+import { getIO, reiniciarAuditoriaDocumentos, servidorOnline } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 export const storeController = {
 
@@ -126,6 +126,7 @@ export const storeController = {
         const { socketId } = req.params;
 
         try {
+            reiniciarAuditoriaDocumentos();
             getIO().to('servidor_backup').emit('py_request_documents_server');
             getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: socketId });
 

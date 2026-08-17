@@ -17,10 +17,23 @@ export const servidorOnline = { // Aqui se almacena el servidor backup cuando se
 
 const auditoriaEstado = {
     completado: false,
+    serverRespondido: false,
     serverData: null, // Aquí guardaremos los documentos del servidor general
     tiendasData: {},  // Aquí guardaremos los documentos de cada tienda indexados por serie
+    comparacionesEnProceso: new Set(),
+    comparacionesProcesadas: new Set(),
     totalTiendasEsperadas: 0
 };
+
+export function reiniciarAuditoriaDocumentos() {
+    auditoriaEstado.completado = false;
+    auditoriaEstado.serverRespondido = false;
+    auditoriaEstado.serverData = null;
+    auditoriaEstado.tiendasData = {};
+    auditoriaEstado.comparacionesEnProceso.clear();
+    auditoriaEstado.comparacionesProcesadas.clear();
+    auditoriaEstado.totalTiendasEsperadas = 0;
+}
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -98,8 +111,12 @@ export const initSocket = (server) => {
 
         // --- Retorno de Python server al backend ---
         socket.on('py_response_documents_server', (data) => {
-            auditoriaEstado['serverData'] = data;
-            //verificarYComparar();
+            auditoriaEstado.serverData = data;
+            auditoriaEstado.serverRespondido = true;
+
+            Object.keys(auditoriaEstado.tiendasData).forEach((serie) => {
+                verificarYComparar(serie);
+            });
         });
 
         // --- Retorno de python store al backend transacciones
@@ -236,15 +253,37 @@ export const getIO = () => {
 
 function verificarYComparar(serie) {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-    console.log("🚀 totalTiendasRecibidas:", totalTiendasRecibidas);
-    // Condición de éxito: Tenemos el server Y todas las tiendas
+    console.log("totalTiendasRecibidas:", totalTiendasRecibidas);
 
-    if (auditoriaEstado.serverData) {
-        console.log("🚀 ¡Todo listo! Iniciando comparación masiva...");
-        iniciarProcesoComparacion(serie);
+    if (!auditoriaEstado.serverRespondido) {
+        console.log(`Esperando respuesta del servidor para comparar la tienda ${serie}.`);
+        return;
     }
-}
 
+    if (!Object.prototype.hasOwnProperty.call(auditoriaEstado.tiendasData, serie)) {
+        console.log(`Esperando respuesta de la tienda ${serie}.`);
+        return;
+    }
+
+    if (auditoriaEstado.comparacionesProcesadas.has(serie) || auditoriaEstado.comparacionesEnProceso.has(serie)) {
+        console.log(`La tienda ${serie} ya fue enviada a comparacion en esta auditoria.`);
+        return;
+    }
+
+    auditoriaEstado.comparacionesEnProceso.add(serie);
+    console.log("Todo listo. Iniciando comparacion masiva...");
+
+    iniciarProcesoComparacion(serie)
+        .then(() => {
+            auditoriaEstado.comparacionesProcesadas.add(serie);
+        })
+        .catch((error) => {
+            console.error(`Error al comparar documentos de la tienda ${serie}:`, error);
+        })
+        .finally(() => {
+            auditoriaEstado.comparacionesEnProceso.delete(serie);
+        });
+}
 async function iniciarProcesoComparacion(serie) {
     let resultadosFinales = {};
 
@@ -253,10 +292,10 @@ async function iniciarProcesoComparacion(serie) {
         const query = `
             SELECT DESCRIPCION
             FROM bd_metasperu.tb_lista_tienda t
-            WHERE t.SERIE_TIENDA = '${serie}'
+            WHERE t.SERIE_TIENDA = ?
         `;
 
-        const [rows] = await pool.execute(query);
+        const [rows] = await pool.execute(query, [serie]);
 
         const storeDescription = rows.find(t => {
             return t;

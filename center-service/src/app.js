@@ -3,12 +3,11 @@
 import express from 'express';
 import { createServer } from 'http';
 import cookieParser from 'cookie-parser';
-import { initSocket } from './config/socket.js'; // 1. Importar primero
+import { getIO, initSocket, reiniciarAuditoriaDocumentos } from './config/socket.js'; // 1. Importar primero
 import { storeController } from './controllers/store.controller.js';
 import cors from 'cors';
 import cron from 'node-cron';
 import { pool } from './config/db.js';
-import { getIO } from './config/socket.js'; // 2. Importar después
 
 const app = express();
 const httpServer = createServer(app);
@@ -72,6 +71,7 @@ cron.schedule('10 10 * * *', async () => {
 
   try {
 
+    reiniciarAuditoriaDocumentos();
     getIO().to('servidor_backup').emit('py_request_documents_server');
     getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
 
@@ -89,6 +89,7 @@ cron.schedule('00 17 * * *', async () => {
 
   try {
 
+    reiniciarAuditoriaDocumentos();
     getIO().to('servidor_backup').emit('py_request_documents_server');
     getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
 
@@ -106,6 +107,7 @@ cron.schedule('00 21 * * *', async () => {
 
   try {
 
+    reiniciarAuditoriaDocumentos();
     getIO().to('servidor_backup').emit('py_request_documents_server');
     getIO().to('grupo_tiendas').emit('py_request_documents_store', { pedido_por: 'cronwe2e22er2e2' });
 
