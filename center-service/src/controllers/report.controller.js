@@ -5,7 +5,7 @@ export const reportsController = {
     infRendimiento: async (req, res) => {
         const { socket_id, fecha_desde, fecha_hasta } = req.params;
         try {
-
+            console.log('Emitir señal de informe de rendimiento', { socket_id, fecha_desde, fecha_hasta });
             getIO().to('grupo_tiendas').emit('py_request_informe_rendimiento', { pedido_por: socket_id, fecha_desde: fecha_desde, fecha_hasta: fecha_hasta });
 
             res.json({
