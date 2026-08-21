@@ -4,7 +4,8 @@ import { storeController } from '../controllers/store.controller.js';
 import { configurationController } from '../controllers/configuration.controller.js';
 import { serverController } from '../controllers/server.controller.js';
 import { maintenanceController } from '../controllers/maintenance.controller.js';
-import { rrwebController } from '../controllers/rrweb.controller.js';
+import { rrwebController } from '../controllers/rrweb.controller.js'
+import { reportsController } from '../controllers/report.controller.js';
 import { pool } from '../config/db.js';
 const router = Router();
 
@@ -235,5 +236,8 @@ router.get('/api/maintenance/:resource/:id', verifyToken, maintenanceController.
 router.post('/api/maintenance/:resource', verifyToken, maintenanceController.create);
 router.put('/api/maintenance/:resource/:id', verifyToken, maintenanceController.update);
 router.delete('/api/maintenance/:resource/:id', verifyToken, maintenanceController.remove);
+
+// --- RUTAS INFORMES
+router.get('/api/reports/informe-rendimiento', verifyToken, reportsController.infRendimiento);
 
 export default router;

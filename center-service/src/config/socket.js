@@ -234,6 +234,10 @@ export const initSocket = (server) => {
             }
         });
 
+        socket.on('py_response_informe_rendimiento', (data) => {
+            io.to(data.enviar_a).emit('response_informe_rendimiento', data);
+        });
+
         socket.on('disconnect', () => {
             console.log(`❌ Un socket se ha ido.`);
             enviarActualizacionDashboard();
@@ -335,7 +339,7 @@ async function iniciarProcesoComparacion(serie) {
                 }
             });
         }
-        
+
         io.emit('documents_response_dashboard', resultadosFinales);
     } else {
         resultadosFinales = { serie: serie, documents: [], length: 0 };

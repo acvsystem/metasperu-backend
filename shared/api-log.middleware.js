@@ -117,7 +117,7 @@ function shouldSkip(req) {
     return false;
 }
 
-export function createApiLogger({ pool, serviceName }) {
+function createApiLogger({ pool, serviceName }) {
     ensureLogTable(pool);
 
     return (req, res, next) => {
@@ -192,3 +192,6 @@ export function createApiLogger({ pool, serviceName }) {
         next();
     };
 }
+
+export { createApiLogger };
+export default createApiLogger;
