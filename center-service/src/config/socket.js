@@ -235,6 +235,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_informe_rendimiento', (data) => {
+            console.log('py_response_informe_rendimiento', data);
             io.to(data.enviar_a).emit('response_informe_rendimiento', data);
         });
 
