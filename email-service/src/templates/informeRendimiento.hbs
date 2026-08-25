@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informe de Rendimiento</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f9;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #333333;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f4f6f9;
+      padding: 24px 0;
+    }
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .header {
+      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+      color: #ffffff;
+      padding: 28px 32px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .body {
+      padding: 28px 32px;
+    }
+    .intro {
+      font-size: 15px;
+      line-height: 1.55;
+      margin: 0 0 20px;
+    }
+    .card {
+      background-color: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2b6cb0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 14px;
+    }
+    .row:last-child {
+      border-bottom: none;
+    }
+    .label {
+      color: #718096;
+    }
+    .value {
+      font-weight: 600;
+      color: #1a202c;
+    }
+    .note {
+      font-size: 13px;
+      color: #718096;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+    .footer {
+      background-color: #edf2f7;
+      padding: 18px 32px;
+      text-align: center;
+      font-size: 12px;
+      color: #718096;
+    }
+    .footer strong {
+      color: #4a5568;
+    }
+    @media only screen and (max-width: 640px) {
+      .container { margin: 0 12px; }
+      .header, .body, .footer { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+
+      <div class="header">
+        <h1>Informe de Rendimiento</h1>
+        <p>Reporte diario consolidado de tiendas</p>
+      </div>
+
+      <div class="body">
+        <p class="intro">
+          Hola,<br /><br />
+          Se ha generado el <strong>Informe de Rendimiento</strong> correspondiente al período indicado.
+          El archivo Excel con el detalle por tienda se encuentra adjunto a este correo.
+        </p>
+
+        <div class="card">
+          <div class="card-title">Resumen del reporte</div>
+
+          <div class="row">
+            <span class="label">Fecha desde</span>
+            <span class="value">{{fechaDesde}}</span>
+          </div>
+          <div class="row">
+            <span class="label">Fecha hasta</span>
+            <span class="value">{{fechaHasta}}</span>
+          </div>
+          <div class="row">
+            <span class="label">Tiendas en catálogo</span>
+            <span class="value">{{tiendasCatalogo}}</span>
+          </div>
+          <div class="row">
+            <span class="label">Tiendas que respondieron</span>
+            <span class="value">{{tiendasRespondieron}}</span>
+          </div>
+        </div>
+
+        <p class="note">
+          El Excel incluye por cada tienda: orden, brand, nombre, tipo,
+          ventas del día (S/ y $), unidades vendidas y stock.
+        </p>
+        <p class="note">
+          Las tiendas sin respuesta aparecen con celdas vacías en ventas y stock.
+        </p>
+      </div>
+
+      <div class="footer">
+        <strong>Metas Perú</strong> · Center Service<br />
+        Este correo fue generado automáticamente. No responder a este mensaje.
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -34,7 +34,7 @@ const informeRendimientoEstado = {
     tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
     timeoutId: null,
     timeoutMs: 180000,    // 3 minutos para esperar respuestas
-    emails: ['itperu@metasperu.com', 'johnnygermano@metasperu.com']
+    emails: ['itperu@metasperu.com']
 };
 
 export function reiniciarAuditoriaDocumentos() {
