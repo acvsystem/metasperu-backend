@@ -3,6 +3,7 @@ import { emailService } from '../services/email.service.js';
 import { pool } from './db.js';
 import { extraServices } from '../services/extra.services.js';
 import crypto from 'crypto';
+import * as XLSX from 'xlsx';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -25,6 +26,17 @@ const auditoriaEstado = {
     totalTiendasEsperadas: 0
 };
 
+/** Estado para recolectar informes de rendimiento de todas las tiendas */
+const informeRendimientoEstado = {
+    activo: false,
+    fechaDesde: null,
+    fechaHasta: null,
+    tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
+    timeoutId: null,
+    timeoutMs: 180000,    // 3 minutos para esperar respuestas
+    emails: ['itperu@metasperu.com', 'johnnygermano@metasperu.com']
+};
+
 export function reiniciarAuditoriaDocumentos() {
     auditoriaEstado.completado = false;
     auditoriaEstado.serverRespondido = false;
@@ -33,6 +45,28 @@ export function reiniciarAuditoriaDocumentos() {
     auditoriaEstado.comparacionesEnProceso.clear();
     auditoriaEstado.comparacionesProcesadas.clear();
     auditoriaEstado.totalTiendasEsperadas = 0;
+}
+
+/**
+ * Inicia la recolección del informe de rendimiento (llamado desde el cron o endpoint).
+ * Reinicia el estado y programa el cierre automático por timeout.
+ */
+export function iniciarRecoleccionInformeRendimiento(fechaDesde, fechaHasta) {
+    if (informeRendimientoEstado.timeoutId) {
+        clearTimeout(informeRendimientoEstado.timeoutId);
+    }
+
+    informeRendimientoEstado.activo = true;
+    informeRendimientoEstado.fechaDesde = fechaDesde;
+    informeRendimientoEstado.fechaHasta = fechaHasta;
+    informeRendimientoEstado.tiendasData = {};
+
+    console.log(`📊 [Informe Rendimiento] Recolección iniciada (${fechaDesde} → ${fechaHasta}). Esperando respuestas de tiendas...`);
+
+    informeRendimientoEstado.timeoutId = setTimeout(() => {
+        console.log('⏰ [Informe Rendimiento] Timeout alcanzado. Generando Excel con las tiendas que respondieron...');
+        finalizarInformeRendimiento();
+    }, informeRendimientoEstado.timeoutMs);
 }
 
 export const initSocket = (server) => {
@@ -235,8 +269,26 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_informe_rendimiento', (data) => {
-            console.log('py_response_informe_rendimiento', data);
-            io.to(data.enviar_a).emit('response_informe_rendimiento', data);
+            console.log('py_response_informe_rendimiento', data?.serie, Array.isArray(data?.data) ? data.data.length + ' filas' : 'sin data');
+
+            // Si hay un destinatario real (dashboard), reenviar en vivo
+            if (data?.enviar_a && data.enviar_a !== 'CRONREPORTE01') {
+                io.to(data.enviar_a).emit('response_informe_rendimiento', data);
+            }
+
+            // Recolección para el Excel consolidado (cron o sesión activa)
+            if (informeRendimientoEstado.activo && data?.serie) {
+                informeRendimientoEstado.tiendasData[data.serie] = {
+                    data: Array.isArray(data.data) ? data.data : [],
+                    recibidoEn: new Date()
+                };
+
+                const totalRecibidas = Object.keys(informeRendimientoEstado.tiendasData).length;
+                console.log(`📊 [Informe Rendimiento] (${data.serie}) Tiendas respondieron: ${totalRecibidas}`);
+
+                // Intentar finalizar si ya respondieron todas las tiendas online
+                tryFinalizarSiCompleto();
+            }
         });
 
         socket.on('disconnect', () => {
@@ -409,4 +461,204 @@ async function enviarActualizacionDashboard() {
 
     console.log(listaTiendas);
     io.emit('actualizar_dashboard', listaTiendas);
+}
+
+/**
+ * Si ya respondieron todas las tiendas online, finaliza antes del timeout.
+ */
+async function tryFinalizarSiCompleto() {
+    if (!informeRendimientoEstado.activo) return;
+
+    try {
+        const sockets = await io.in('grupo_tiendas').fetchSockets();
+        const seriesOnline = new Set(
+            sockets
+                .map(s => s.data?.serie || s.data?.id_tienda)
+                .filter(Boolean)
+        );
+
+        const seriesRecibidas = Object.keys(informeRendimientoEstado.tiendasData);
+        const todasRespondieron =
+            seriesOnline.size > 0 &&
+            [...seriesOnline].every(serie => seriesRecibidas.includes(serie));
+
+        if (todasRespondieron) {
+            console.log('✅ [Informe Rendimiento] Todas las tiendas online respondieron. Generando Excel...');
+            await finalizarInformeRendimiento();
+        }
+    } catch (err) {
+        console.error('❌ [Informe Rendimiento] Error al verificar completitud:', err.message);
+    }
+}
+
+/**
+ * Genera el Excel consolidado con 1 fila por tienda (usando TOTAL GENERAL)
+ * y lo envía por correo a itperu@metasperu.com
+ */
+async function finalizarInformeRendimiento() {
+    if (!informeRendimientoEstado.activo) return;
+
+    // Evitar doble ejecución
+    informeRendimientoEstado.activo = false;
+    if (informeRendimientoEstado.timeoutId) {
+        clearTimeout(informeRendimientoEstado.timeoutId);
+        informeRendimientoEstado.timeoutId = null;
+    }
+
+    const fechaDesde = informeRendimientoEstado.fechaDesde;
+    const fechaHasta = informeRendimientoEstado.fechaHasta;
+    const respuestas = { ...informeRendimientoEstado.tiendasData };
+
+    try {
+        // Catálogo de tiendas activas (orden, brand, name, type)
+        const [tiendasDb] = await pool.execute(`
+            SELECT 
+                SERIE_TIENDA AS serie,
+                DESCRIPCION AS nombre,
+                UNID_SERVICIO AS brand,
+                TIPO_TIENDA AS tipo
+            FROM bd_metasperu.tb_lista_tienda
+            WHERE ESTATUS = 'ACTIVO'
+            ORDER BY UNID_SERVICIO ASC, DESCRIPCION ASC
+        `);
+
+        const mapaTiendas = {};
+        tiendasDb.forEach((t, idx) => {
+            mapaTiendas[t.serie] = {
+                orden: idx + 1,
+                brand: t.brand || '',
+                nombre: t.nombre || t.serie,
+                tipo: t.tipo || 'RETAIL'
+            };
+        });
+
+        // Filas del Excel (una por tienda del catálogo)
+        const filas = [];
+
+        tiendasDb.forEach((t, idx) => {
+            const respuesta = respuestas[t.serie];
+            let ventaSoles = null;
+            let ventaDolares = null;
+            let unidades = null;
+            let stock = null;
+
+            if (respuesta && Array.isArray(respuesta.data)) {
+                // Preferir la fila TOTAL GENERAL
+                const total = respuesta.data.find(
+                    r => r.NombreDepartamento === 'TOTAL GENERAL' || r.CodDepartamento == null
+                ) || respuesta.data[respuesta.data.length - 1];
+
+                if (total) {
+                    ventaSoles = total.VentaSoles != null ? Number(total.VentaSoles) : null;
+                    ventaDolares = total.VentaDolares != null ? Number(total.VentaDolares) : null;
+                    unidades = total.CantidadVendida != null ? Number(total.CantidadVendida) : null;
+                    stock = total.Stock != null ? Number(total.Stock) : null;
+                }
+            }
+
+            filas.push({
+                'ORDEN DE TIENDA': idx + 1,
+                'BRAND': t.brand || '',
+                'NAME': t.nombre || t.serie,
+                'TYPE': t.tipo || 'RETAIL',
+                'DAILY SALES S/': ventaSoles,
+                'DAILY SALES $': ventaDolares,
+                'DAILY UNITS': unidades,
+                'STOCK': stock
+            });
+        });
+
+        // También incluir series que respondieron pero no están en el catálogo ACTIVO
+        Object.keys(respuestas).forEach(serie => {
+            if (mapaTiendas[serie]) return;
+
+            const respuesta = respuestas[serie];
+            const total = (respuesta.data || []).find(
+                r => r.NombreDepartamento === 'TOTAL GENERAL' || r.CodDepartamento == null
+            );
+
+            filas.push({
+                'ORDEN DE TIENDA': filas.length + 1,
+                'BRAND': '',
+                'NAME': serie,
+                'TYPE': '',
+                'DAILY SALES S/': total?.VentaSoles != null ? Number(total.VentaSoles) : null,
+                'DAILY SALES $': total?.VentaDolares != null ? Number(total.VentaDolares) : null,
+                'DAILY UNITS': total?.CantidadVendida != null ? Number(total.CantidadVendida) : null,
+                'STOCK': total?.Stock != null ? Number(total.Stock) : null
+            });
+        });
+
+        // Generar Excel en memoria
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(filas, {
+            header: [
+                'ORDEN DE TIENDA',
+                'BRAND',
+                'NAME',
+                'TYPE',
+                'DAILY SALES S/',
+                'DAILY SALES $',
+                'DAILY UNITS',
+                'STOCK'
+            ]
+        });
+
+        // Anchos de columna legibles
+        ws['!cols'] = [
+            { wch: 16 },
+            { wch: 8 },
+            { wch: 24 },
+            { wch: 12 },
+            { wch: 16 },
+            { wch: 16 },
+            { wch: 14 },
+            { wch: 12 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Daily Report');
+
+        const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        const base64 = Buffer.from(buffer).toString('base64');
+
+        const nombreArchivo = `Informe_Rendimiento_${fechaDesde}_${fechaHasta}.xlsx`;
+        const subject = `Informe de Rendimiento ${fechaDesde}${fechaDesde !== fechaHasta ? ' - ' + fechaHasta : ''}`;
+
+        const respondieron = Object.keys(respuestas).length;
+        const totalCatalogo = tiendasDb.length;
+
+        await emailService.pushToEmailQueue({
+            email: informeRendimientoEstado.emails,
+            subject,
+            template: 'informeRendimiento',
+            variables: {
+                fechaDesde,
+                fechaHasta,
+                tiendasRespondieron: respondieron,
+                tiendasCatalogo: totalCatalogo
+            },
+            archivo: {
+                filename: nombreArchivo,
+                content: base64,
+                contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                encoding: 'base64'
+            }
+        });
+
+        console.log(`📧 [Informe Rendimiento] Excel enviado (${respondieron}/${totalCatalogo} tiendas). Archivo: ${nombreArchivo}`);
+
+        // Notificar al dashboard (opcional)
+        io.emit('informe_rendimiento_completado', {
+            fechaDesde,
+            fechaHasta,
+            tiendasRespondieron: respondieron,
+            tiendasCatalogo: totalCatalogo,
+            archivo: nombreArchivo
+        });
+
+    } catch (error) {
+        console.error('❌ [Informe Rendimiento] Error al generar/enviar Excel:', error);
+    } finally {
+        informeRendimientoEstado.tiendasData = {};
+    }
 }

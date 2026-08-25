@@ -3,7 +3,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import cookieParser from 'cookie-parser';
-import { getIO, initSocket, reiniciarAuditoriaDocumentos } from './config/socket.js'; // 1. Importar primero
+import { getIO, initSocket, reiniciarAuditoriaDocumentos, iniciarRecoleccionInformeRendimiento } from './config/socket.js'; // 1. Importar primero
 import { storeController } from './controllers/store.controller.js';
 import cors from 'cors';
 import cron from 'node-cron';
@@ -122,7 +122,31 @@ cron.schedule('00 21 * * *', async () => {
   timezone: "America/Lima"
 });
 
+cron.schedule('00 21 * * *', async () => {
+  console.log('⏰ [Cron Job 3] Iniciando generacion de reportes de rendimiento...');
 
+  // Fecha actual en formato YYYY-MM-DD (zona America/Lima)
+  const fechaActual = new Date().toLocaleDateString('en-CA', {
+    timeZone: 'America/Lima'
+  });
+
+  try {
+    // Activa la recolección: las respuestas se acumulan y al final se arma el Excel + email
+    iniciarRecoleccionInformeRendimiento(fechaActual, fechaActual);
+
+    getIO().to('grupo_tiendas').emit('py_request_informe_rendimiento', {
+      pedido_por: 'CRONREPORTE01',
+      fecha_desde: fechaActual,
+      fecha_hasta: fechaActual
+    });
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error Informe Rendimiento]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
 
 // Se ejecuta a las horas: 09:00, 12:00, 15:00, 18:00 y 21:00
 cron.schedule('0 9,12,15,18,21 * * *', async () => {
