@@ -122,7 +122,7 @@ cron.schedule('00 21 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('07 48 * * *', async () => {
+cron.schedule('56 10 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando generacion de reportes de rendimiento...');
 
   // Fecha actual en formato YYYY-MM-DD (zona America/Lima)
@@ -139,7 +139,7 @@ cron.schedule('07 48 * * *', async () => {
       fecha_desde: fechaActual,
       fecha_hasta: fechaActual
     });
-
+    
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
     console.error('❌ [Cron Error Informe Rendimiento]:', errorMsg);
