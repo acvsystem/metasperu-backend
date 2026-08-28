@@ -534,29 +534,29 @@ async function finalizarInformeRendimiento() {
 
         // ===== ORDEN DESEADO (exactamente como en tu imagen) =====
         const ordenDeseado = [
-            'AVENTURA MALL AREQUIPA',          // BBW
-            'E-COMMERCE PERU',                 // BBW
-            'JOCKEY PLAZA',                    // BBW
-            'LA RAMBLA MALL',                  // BBW
-            'MALL PLAZA TRUJILLO',             // BBW
-            'PLAZA SALAVERRY',                 // BBW
-            'PLAZA SAN MIGUEL MALL',           // BBW
-            'AVENTURA MALL SANTA ANITA',       // BBW
-            'AVENTURA MALL AREQUIPA',          // VICTORIAS
-            'AVENTURA MALL SANTA ANITA',       // VICTORIAS
-            'E-COMMERCE PERU',                 // VICTORIAS
-            'LA RAMBLA MALL',                  // VICTORIAS
-            'MALL DEL SUR',                    // VICTORIAS
-            'MALL PLAZA ANGAMOS',              // VICTORIAS
-            'MALL PLAZA TRUJILLO',             // VICTORIAS
-            'MEGAPLAZA',                       // VICTORIAS
-            'PLAZA NORTE MALL',                // VICTORIAS
-            'PLAZA SALAVERRY',                 // VICTORIAS
-            'PLAZA SAN MIGUEL MALL',           // VICTORIAS
-            'PURUCHUCO MALL',                  // VICTORIAS
-            'MINKA',                           // VSFA
-            'JOCKEY PLAZA',                    // VSFA
-            'JOCKEY PLAZA'                     // TUMI
+            { serie: '7J', nombre: 'AVENTURA MALL AREQUIPA' },          // BBW
+            { serie: '7F', nombre: 'E-COMMERCE PERU' },                 // BBW
+            { serie: '7A', nombre: 'JOCKEY PLAZA' },                    // BBW
+            { serie: '7E', nombre: 'LA RAMBLA MALL' },                  // BBW
+            { serie: '7I', nombre: 'MALL PLAZA TRUJILLO' },             // BBW
+            { serie: '7D', nombre: 'PLAZA SALAVERRY' },                 // BBW
+            { serie: '7C', nombre: 'PLAZA SAN MIGUEL MALL' },           // BBW
+            { serie: '7R', nombre: 'AVENTURA MALL SANTA ANITA' },       // BBW
+            { serie: 'HL', nombre: 'AVENTURA MALL AREQUIPA' },          // VICTORIAS
+            { serie: 'HN', nombre: 'AVENTURA MALL SANTA ANITA' },       // VICTORIAS
+            { serie: 'HK', nombre: 'E-COMMERCE PERU' },                 // VICTORIAS
+            { serie: 'HE', nombre: 'LA RAMBLA MALL' },                  // VICTORIAS
+            { serie: 'HF', nombre: 'MALL DEL SUR' },                    // VICTORIAS
+            { serie: 'HO', nombre: 'MALL PLAZA ANGAMOS' },              // VICTORIAS
+            { serie: 'HM', nombre: 'MALL PLAZA TRUJILLO' },             // VICTORIAS
+            { serie: 'HJ', nombre: 'MEGAPLAZA' },                       // VICTORIAS
+            { serie: 'HC', nombre: 'PLAZA NORTE MALL' },                // VICTORIAS
+            { serie: 'HH', nombre: 'PLAZA SALAVERRY' },                 // VICTORIAS
+            { serie: 'HD', nombre: 'PLAZA SAN MIGUEL MALL' },           // VICTORIAS
+            { serie: 'HI', nombre: 'PURUCHUCO MALL' },                  // VICTORIAS
+            { serie: 'HB', nombre: 'MINKA' },                           // VSFA
+            { serie: 'HA', nombre: 'JOCKEY PLAZA' },                    // VSFA
+            { serie: '8A', nombre: 'JOCKEY PLAZA' }                     // TUMI
         ];
 
         // Filas del Excel
@@ -582,10 +582,11 @@ async function finalizarInformeRendimiento() {
                 }
             }
 
+            const nameStore = ordenDeseado.find(o => o.serie === t.serie)?.nombre || t.nombre || t.serie;
             filas.push({
                 'ORDEN DE TIENDA': 0, // se recalcula después
                 'BRAND': t.brand || '',
-                'NAME': t.nombre || t.serie,
+                'NAME': nameStore,
                 'TYPE': t.tipo || 'RETAIL',
                 'DAILY SALES S/': ventaSoles,
                 'DAILY SALES $': ventaDolares,
