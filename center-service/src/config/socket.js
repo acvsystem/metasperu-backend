@@ -632,8 +632,8 @@ async function finalizarInformeRendimiento() {
             'VSFA', 'VSFA', 'TUMI'
         ];
 
-        ordenDeseado.forEach((name, idx) => {
-            const key = `${brandsOrden[idx]}|${name.toUpperCase()}`;
+        ordenDeseado.forEach((dt, idx) => {
+            const key = `${brandsOrden[idx]}|${dt.nombre.toUpperCase()}`;
             ordenMap.set(key, idx);
         });
 
