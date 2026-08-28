@@ -596,7 +596,7 @@ async function finalizarInformeRendimiento() {
                 'ORDEN DE TIENDA': 0,
                 'BRAND': t.brand == 'VS' ? 'VICTORIAS' : t.brand == 'BBW' ? 'BBW' : t.brand == 'MT' ? 'TUMI' : nameStore == 'MINKA' || (t.brand == 'VS' && nameStore == 'JOCKEY PLAZA') ? 'VSFA' : t.brand || '',
                 'NAME': nameStore,
-                'TYPE': t.tipo || 'RETAIL',
+                'TYPE': nameStore == 'E-COMMERCE PERU' || nameStore == 'VSFA ECOMMERCE' ? 'ECOMMERCE' : nameStore == 'MINKA' ? 'OUTLET' : 'RETAIL',
                 'DAILY SALES S/': ventaSoles,
                 'DAILY SALES $': ventaDolares,
                 'DAILY UNITS': unidades,
