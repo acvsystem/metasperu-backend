@@ -594,7 +594,7 @@ async function finalizarInformeRendimiento() {
             filas.push({
                 _serie: t.serie,                    // clave interna para ordenar
                 'ORDEN DE TIENDA': 0,
-                'BRAND': t.brand || '',
+                'BRAND': t.brand == 'VS' ? 'VICTORIAS' : t.brand == 'BBW' ? 'BBW' : t.brand == 'MT' ? 'TUMI' : nameStore == 'MINKA' || (t.brand == 'VS' && nameStore == 'JOCKEY PLAZA') ? 'VSFA' : t.brand || '',
                 'NAME': nameStore,
                 'TYPE': t.tipo || 'RETAIL',
                 'DAILY SALES S/': ventaSoles,
