@@ -532,7 +532,7 @@ async function finalizarInformeRendimiento() {
             };
         });
 
-        // ===== ORDEN DESEADO (exactamente como en tu imagen) =====
+        // ===== ORDEN DESEADO (por SERIE) =====
         const ordenDeseado = [
             { serie: '7J', nombre: 'AVENTURA MALL AREQUIPA' },          // BBW
             { serie: '7F', nombre: 'E-COMMERCE PERU' },                 // BBW
@@ -559,6 +559,12 @@ async function finalizarInformeRendimiento() {
             { serie: '8A', nombre: 'JOCKEY PLAZA' }                     // TUMI
         ];
 
+        // Mapa rápido de serie → posición
+        const ordenMap = new Map();
+        ordenDeseado.forEach((item, idx) => {
+            ordenMap.set(item.serie, idx);
+        });
+
         // Filas del Excel
         const filas = [];
 
@@ -582,10 +588,12 @@ async function finalizarInformeRendimiento() {
                 }
             }
 
+            // Nombre preferido del ordenDeseado (si existe)
             const nameStore = ordenDeseado.find(o => o.serie === t.serie)?.nombre || t.nombre || t.serie;
-            console.log(`Procesando tienda: ${t.serie} - ${nameStore} | Ventas S/: ${ventaSoles}, Ventas $: ${ventaDolares}, Unidades: ${unidades}, Stock: ${stock}`);
+
             filas.push({
-                'ORDEN DE TIENDA': 0, // se recalcula después
+                _serie: t.serie,                    // clave interna para ordenar
+                'ORDEN DE TIENDA': 0,
                 'BRAND': t.brand || '',
                 'NAME': nameStore,
                 'TYPE': t.tipo || 'RETAIL',
@@ -606,6 +614,7 @@ async function finalizarInformeRendimiento() {
             );
 
             filas.push({
+                _serie: serie,
                 'ORDEN DE TIENDA': 0,
                 'BRAND': '',
                 'NAME': serie,
@@ -618,34 +627,16 @@ async function finalizarInformeRendimiento() {
         });
 
         // ===== ORDENAR SEGÚN LA LISTA DESEADA =====
-        // Se usa BRAND + NAME para desambiguar nombres repetidos (ej: JOCKEY PLAZA)
-        const getKey = (f) => `${(f.BRAND || '').toUpperCase()}|${(f.NAME || '').toUpperCase()}`;
-
-        // Mapa de posición deseada (usando brand+name)
-        const ordenMap = new Map();
-        // Como hay nombres repetidos, construimos el orden con brand implícito del array
-        const brandsOrden = [
-            'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW',
-            'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS',
-            'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS',
-            'VICTORIAS', 'VICTORIAS',
-            'VSFA', 'VSFA', 'TUMI'
-        ];
-
-        ordenDeseado.forEach((dt, idx) => {
-            const key = `${brandsOrden[idx]}|${dt.nombre.toUpperCase()}`;
-            ordenMap.set(key, idx);
-        });
-
         filas.sort((a, b) => {
-            const posA = ordenMap.has(getKey(a)) ? ordenMap.get(getKey(a)) : 9999;
-            const posB = ordenMap.has(getKey(b)) ? ordenMap.get(getKey(b)) : 9999;
+            const posA = ordenMap.has(a._serie) ? ordenMap.get(a._serie) : 9999;
+            const posB = ordenMap.has(b._serie) ? ordenMap.get(b._serie) : 9999;
             return posA - posB;
         });
 
-        // Recalcular ORDEN DE TIENDA
+        // Recalcular ORDEN DE TIENDA y limpiar propiedad interna
         filas.forEach((f, idx) => {
             f['ORDEN DE TIENDA'] = idx + 1;
+            delete f._serie;
         });
 
         // Generar Excel
