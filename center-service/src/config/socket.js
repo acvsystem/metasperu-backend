@@ -583,6 +583,7 @@ async function finalizarInformeRendimiento() {
             }
 
             const nameStore = ordenDeseado.find(o => o.serie === t.serie)?.nombre || t.nombre || t.serie;
+            console.log(`Procesando tienda: ${t.serie} - ${nameStore} | Ventas S/: ${ventaSoles}, Ventas $: ${ventaDolares}, Unidades: ${unidades}, Stock: ${stock}`);
             filas.push({
                 'ORDEN DE TIENDA': 0, // se recalcula después
                 'BRAND': t.brand || '',
