@@ -34,7 +34,7 @@ const informeRendimientoEstado = {
     tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
     timeoutId: null,
     timeoutMs: 180000,    // 3 minutos para esperar respuestas
-    emails: ['itperu@metasperu.com','paulodosreis@metasperu.com','johnnygermano@metasperu.com','carlosmoron@metasperu.com']
+    emails: ['itperu@metasperu.com']
 };
 
 export function reiniciarAuditoriaDocumentos() {
@@ -510,7 +510,7 @@ async function finalizarInformeRendimiento() {
     const respuestas = { ...informeRendimientoEstado.tiendasData };
 
     try {
-        // Catálogo de tiendas activas (orden, brand, name, type)
+        // Catálogo de tiendas activas
         const [tiendasDb] = await pool.execute(`
             SELECT 
                 SERIE_TIENDA AS serie,
@@ -532,10 +532,37 @@ async function finalizarInformeRendimiento() {
             };
         });
 
-        // Filas del Excel (una por tienda del catálogo)
+        // ===== ORDEN DESEADO (exactamente como en tu imagen) =====
+        const ordenDeseado = [
+            'AVENTURA MALL AREQUIPA',          // BBW
+            'E-COMMERCE PERU',                 // BBW
+            'JOCKEY PLAZA',                    // BBW
+            'LA RAMBLA MALL',                  // BBW
+            'MALL PLAZA TRUJILLO',             // BBW
+            'PLAZA SALAVERRY',                 // BBW
+            'PLAZA SAN MIGUEL MALL',           // BBW
+            'AVENTURA MALL SANTA ANITA',       // BBW
+            'AVENTURA MALL AREQUIPA',          // VICTORIAS
+            'AVENTURA MALL SANTA ANITA',       // VICTORIAS
+            'E-COMMERCE PERU',                 // VICTORIAS
+            'LA RAMBLA MALL',                  // VICTORIAS
+            'MALL DEL SUR',                    // VICTORIAS
+            'MALL PLAZA ANGAMOS',              // VICTORIAS
+            'MALL PLAZA TRUJILLO',             // VICTORIAS
+            'MEGAPLAZA',                       // VICTORIAS
+            'PLAZA NORTE MALL',                // VICTORIAS
+            'PLAZA SALAVERRY',                 // VICTORIAS
+            'PLAZA SAN MIGUEL MALL',           // VICTORIAS
+            'PURUCHUCO MALL',                  // VICTORIAS
+            'MINKA',                           // VSFA
+            'JOCKEY PLAZA',                    // VSFA
+            'JOCKEY PLAZA'                     // TUMI
+        ];
+
+        // Filas del Excel
         const filas = [];
 
-        tiendasDb.forEach((t, idx) => {
+        tiendasDb.forEach((t) => {
             const respuesta = respuestas[t.serie];
             let ventaSoles = null;
             let ventaDolares = null;
@@ -543,7 +570,6 @@ async function finalizarInformeRendimiento() {
             let stock = null;
 
             if (respuesta && Array.isArray(respuesta.data)) {
-                // Preferir la fila TOTAL GENERAL
                 const total = respuesta.data.find(
                     r => r.NombreDepartamento === 'TOTAL GENERAL' || r.CodDepartamento == null
                 ) || respuesta.data[respuesta.data.length - 1];
@@ -557,7 +583,7 @@ async function finalizarInformeRendimiento() {
             }
 
             filas.push({
-                'ORDEN DE TIENDA': idx + 1,
+                'ORDEN DE TIENDA': 0, // se recalcula después
                 'BRAND': t.brand || '',
                 'NAME': t.nombre || t.serie,
                 'TYPE': t.tipo || 'RETAIL',
@@ -568,7 +594,7 @@ async function finalizarInformeRendimiento() {
             });
         });
 
-        // También incluir series que respondieron pero no están en el catálogo ACTIVO
+        // Series que respondieron pero no están en el catálogo ACTIVO
         Object.keys(respuestas).forEach(serie => {
             if (mapaTiendas[serie]) return;
 
@@ -578,7 +604,7 @@ async function finalizarInformeRendimiento() {
             );
 
             filas.push({
-                'ORDEN DE TIENDA': filas.length + 1,
+                'ORDEN DE TIENDA': 0,
                 'BRAND': '',
                 'NAME': serie,
                 'TYPE': '',
@@ -589,7 +615,38 @@ async function finalizarInformeRendimiento() {
             });
         });
 
-        // Generar Excel en memoria
+        // ===== ORDENAR SEGÚN LA LISTA DESEADA =====
+        // Se usa BRAND + NAME para desambiguar nombres repetidos (ej: JOCKEY PLAZA)
+        const getKey = (f) => `${(f.BRAND || '').toUpperCase()}|${(f.NAME || '').toUpperCase()}`;
+
+        // Mapa de posición deseada (usando brand+name)
+        const ordenMap = new Map();
+        // Como hay nombres repetidos, construimos el orden con brand implícito del array
+        const brandsOrden = [
+            'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW', 'BBW',
+            'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS',
+            'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS', 'VICTORIAS',
+            'VICTORIAS', 'VICTORIAS',
+            'VSFA', 'VSFA', 'TUMI'
+        ];
+
+        ordenDeseado.forEach((name, idx) => {
+            const key = `${brandsOrden[idx]}|${name.toUpperCase()}`;
+            ordenMap.set(key, idx);
+        });
+
+        filas.sort((a, b) => {
+            const posA = ordenMap.has(getKey(a)) ? ordenMap.get(getKey(a)) : 9999;
+            const posB = ordenMap.has(getKey(b)) ? ordenMap.get(getKey(b)) : 9999;
+            return posA - posB;
+        });
+
+        // Recalcular ORDEN DE TIENDA
+        filas.forEach((f, idx) => {
+            f['ORDEN DE TIENDA'] = idx + 1;
+        });
+
+        // Generar Excel
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(filas, {
             header: [
@@ -604,7 +661,6 @@ async function finalizarInformeRendimiento() {
             ]
         });
 
-        // Anchos de columna legibles
         ws['!cols'] = [
             { wch: 16 },
             { wch: 8 },
@@ -647,7 +703,6 @@ async function finalizarInformeRendimiento() {
 
         console.log(`📧 [Informe Rendimiento] Excel enviado (${respondieron}/${totalCatalogo} tiendas). Archivo: ${nombreArchivo}`);
 
-        // Notificar al dashboard (opcional)
         io.emit('informe_rendimiento_completado', {
             fechaDesde,
             fechaHasta,
