@@ -402,13 +402,15 @@ export const postInventoryResStore = async (req, res) => {
                 d.cConteo ?? 0,
                 d.cTotalConteo ?? 0,
                 d.cEsencia ?? '',
-                d.cStyleDesc ?? ''
+                d.cStyleDesc ?? '',
+                d.cCodigoBarra2 ?? null,
+                d.cCodigoBarra3 ?? null
             ];
 
             // Retornamos la promesa de ejecución (NO usamos await aquí dentro)
             return pool.execute(
-                `INSERT INTO inventario_store (cSessionCode, cCodigoTienda, cCodigoArticulo, cReferencia, cCodigoBarra, cDescripcion, cDepartamento, cSeccion, cFamilia, cSubFamilia, cTalla, cColor, cStock, cTemporada, cConteo, cTotalConteo, cEsencia, cStyleDescription) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+                `INSERT INTO inventario_store (cSessionCode, cCodigoTienda, cCodigoArticulo, cReferencia, cCodigoBarra, cDescripcion, cDepartamento, cSeccion, cFamilia, cSubFamilia, cTalla, cColor, cStock, cTemporada, cConteo, cTotalConteo, cEsencia, cStyleDescription, cCodigoBarra2, cCodigoBarra3) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
                 valores
             );
         });
@@ -452,9 +454,9 @@ export const postInventoryImport = async (req, res) => {
                 const data = await dataBody.map(async (d) => {
                     await pool.execute(
                         `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
-             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription,cCodigoBarra2,cCodigoBarra3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
                         [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
-                        d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '']
+                        d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '', (d || {}).cCodigoBarra2 || null, (d || {}).cCodigoBarra3 || null]
                     );
                 });
 
