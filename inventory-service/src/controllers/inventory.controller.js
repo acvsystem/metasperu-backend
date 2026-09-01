@@ -329,7 +329,7 @@ export const getActiveSessions = async (req, res) => {
 export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie_store } = req.query;
     let objResponse = { success: true };
-
+    console.log('getInventoryReqStore - Parámetros recibidos:', { session_code, serie_store });
     if (!session_code || !serie_store) {
         return res.status(400).json({ error: "Faltan parámetros requeridos: session_code y serie_store" });
     }
