@@ -34,7 +34,7 @@ const informeRendimientoEstado = {
     tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
     timeoutId: null,
     timeoutMs: 180000,    // 3 minutos para esperar respuestas
-    emails: ['itperu@metasperu.com', 'paulodosreis@metasperu.com', 'johnnygermano@metasperu.com', 'carlosmoron@metasperu.com']
+    emails: ['itperu@metasperu.com']
 };
 
 export function reiniciarAuditoriaDocumentos() {
@@ -554,6 +554,7 @@ async function finalizarInformeRendimiento() {
             { serie: 'HH', nombre: 'PLAZA SALAVERRY' },                 // VICTORIAS
             { serie: 'HD', nombre: 'PLAZA SAN MIGUEL MALL' },           // VICTORIAS
             { serie: 'HI', nombre: 'PURUCHUCO MALL' },                  // VICTORIAS
+            { serie: 'HG', nombre: 'E-COMMERCE PERU' },                 // VICTORIAS
             { serie: 'HB', nombre: 'MINKA' },                           // VSFA
             { serie: 'HA', nombre: 'JOCKEY PLAZA' },                    // VSFA
             { serie: '8A', nombre: 'JOCKEY PLAZA' }                     // TUMI
