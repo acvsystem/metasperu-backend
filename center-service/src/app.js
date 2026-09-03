@@ -122,7 +122,7 @@ cron.schedule('00 21 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('48 09 * * *', async () => {
+cron.schedule('05 22 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando generacion de reportes de rendimiento...');
 
   // Fecha actual en formato YYYY-MM-DD (zona America/Lima)
