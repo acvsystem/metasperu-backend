@@ -2034,7 +2034,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 1. CONSTANTES DE TIEMPO (en minutos para precisión)
     const JORNADA_NORMAL_MINS = 8.0 * 60;    // 480 min
     const JORNADA_LACTANCIA_MINS = 7.0 * 60;  // 420 min
-    const UMBRAL_PT_SEMANAL_MINS = 24.0 * 60; // 1440 min
+    const UMBRAL_PT_SEMANAL_MINS = 23.5 * 60; // 1380 min
     const MINIMO_PARA_REGISTRAR = 0.5;        // Horas mínimas para guardar en BD
     const MINIMO_PARA_REGISTRAR_PART_TIME = 0.25;
 
