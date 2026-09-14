@@ -61,7 +61,7 @@ cron.schedule('00 8 * * 0', async () => {
         LEFT JOIN TB_HORARIO_PROPERTY HP
             ON HP.CODIGO_TIENDA = LT.SERIE_TIENDA
             AND TRIM(SUBSTRING_INDEX(HP.RANGO_DIAS, ' ', 1)) = ?
-        WHERE HP.CODIGO_TIENDA IS NULL AND LT.SERIE_TIENDA != '9M' AND LT.ESTATUS != 'INACTIVO';`;
+        WHERE HP.CODIGO_TIENDA IS NULL AND LT.SERIE_TIENDA != 'HK' AND LT.SERIE_TIENDA != 'HG'AND LT.ESTATUS != 'INACTIVO';`;
 
     const [rows] = await pool.query(query, [day]);
 
