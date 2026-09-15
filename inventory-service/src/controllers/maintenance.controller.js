@@ -111,3 +111,60 @@ export const delSecitons = async (req, res) => {
     }
 
 };
+
+export const postSectionsCountSession = async (req, res) => {
+    const { session_code, seccion_id } = req.body;
+
+    try {
+        const [rows] = await pool.execute(
+            `SELECT 
+    sa.seccion_id_fk, 
+    sa.nombre_seccion,
+    SUM(ie.cantidad) AS total_cantidad
+FROM 
+    secciones_asginados sa
+INNER JOIN 
+    inventario_escaneos ie ON ie.seccion_id = sa.seccion_id_fk
+WHERE 
+    sa.codigo_sesion = ? AND sa.seccion_id_fk = ?
+GROUP BY 
+    sa.seccion_id_fk, 
+    sa.nombre_seccion;`,
+            [session_code, seccion_id]
+        );
+
+        res.json(rows);
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error al consultar', error: error.message });
+    }
+
+}
+
+export const postSectionsGroupSession = async (req, res) => {
+    const { session_code } = req.body;
+
+    try {
+        const [rows] = await pool.execute(
+            `SELECT 
+    sa.seccion_id_fk, 
+    sa.nombre_seccion,
+    SUM(ie.cantidad) AS total_cantidad
+FROM 
+    secciones_asginados sa
+INNER JOIN 
+    inventario_escaneos ie ON ie.seccion_id = sa.seccion_id_fk
+WHERE 
+    sa.codigo_sesion = ? 
+GROUP BY 
+    sa.seccion_id_fk, 
+    sa.nombre_seccion;`,
+            [session_code]
+        );
+
+        res.json(rows);
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error al consultar', error: error.message });
+    }
+}
