@@ -18,7 +18,7 @@ import {
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
-import { getZonasSubzonas, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
+import { getZonasSubzonas, delZonas, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 
@@ -61,6 +61,7 @@ router.put('/api/v2/zonas/subzonas', verifyToken, putZonasSubzonas);
 router.get('/api/v2/zonas', verifyToken, getZonasv2);
 router.post('/api/v2/zonas', verifyToken, postZonasv2);
 router.put('/api/v2/zonas', verifyToken, putZonasv2);
+router.delete('/api/v2/zona/:zona_id', verifyToken, delZonas);
 
 // --- RUTAS PARA USUARIOS
 router.get('/api/v1/user', verifyToken, userController.getUsers);

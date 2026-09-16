@@ -193,6 +193,23 @@ export const postSections = async (req, res) => {
     }
 };
 
+export const delZonas = async (req, res) => {
+    const { zona_id } = req.params;
+
+    try {
+        await pool.execute(
+            'DELETE FROM zonas_escaneos WHERE zona_id = ?;',
+            [zona_id]
+        );
+
+        res.status(200).json({ message: 'Zona eliminada correctamente' });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error al eliminar zona', error: error.message });
+    }
+
+};
+
 
 export const putSecitons = async (req, res) => {
     const { seccion_id, nombre_seccion } = req.body;
