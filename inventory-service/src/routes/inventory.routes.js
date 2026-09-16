@@ -18,7 +18,7 @@ import {
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
-import { getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
+import { getSectionsv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 
@@ -54,6 +54,8 @@ router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 router.post('/api/v1/seccion/count/session', verifyToken, postSectionsCountSession);
 router.post('/api/v1/seccion/group/session', verifyToken, postSectionsGroupSession);
+
+router.get('/api/v2/seccion', verifyToken, getSectionsv2);
 
 // --- RUTAS PARA USUARIOS
 router.get('/api/v1/user', verifyToken, userController.getUsers);
