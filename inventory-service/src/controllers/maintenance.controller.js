@@ -16,7 +16,7 @@ export const getSectionsv2 = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT zona_escaneo_id,zona_id,seccion_id,nombre_zona,nombre_seccion FROM zonas_seccion zs
             INNER JOIN zonas_escaneos ze on ze.zona_id = zs.zona_id_fk
-            INNER JOIN secciones_escaneos se on se.seccion_id = zs.seccion_id_fk;
+            RIGHT JOIN secciones_escaneos se on se.seccion_id = zs.seccion_id_fk;
         `);
 
         res.json(rows);
