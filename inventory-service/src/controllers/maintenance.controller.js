@@ -26,7 +26,92 @@ export const getZonasv2 = async (req, res) => {
     }
 };
 
-export const getSectionsv2 = async (req, res) => {
+export const postZonasv2 = async (req, res) => {
+    const { nombre_zona } = req.body;
+
+    if (!nombre_zona || nombre_zona.trim() === '') {
+        return res.status(400).json({ message: 'El nombre de la zona es requerido.' });
+    }
+
+    // Normalizamos el nombre (ej. "ZONA A") para evitar bypass por sutiles diferencias de espacios o mayúsculas
+    const normalizedZoneName = nombre_zona.trim().toUpperCase();
+
+    // --- ARQUITECTURA DE DEDUPLICACIÓN (CREATE ZONA LOCK) ---
+    // Bloqueamos usando el nombre de la zona como identificador único en Redis
+    const lockKey = `lock:zona:create:${normalizedZoneName}`;
+
+    try {
+        // Ponemos un bloqueo rápido de 3 segundos en Redis
+        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 3);
+
+        if (!lockAcquired) {
+            console.warn(`[DEDUPLICACIÓN] Intento duplicado de crear la zona [${normalizedZoneName}] bloqueado.`);
+            return res.status(429).json({
+                message: 'Ya se está procesando la creación de esta zona. Por favor, espere.'
+            });
+        }
+
+        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
+        await pool.execute(
+            'INSERT INTO zonas_escaneos (nombre_zona) VALUES (?)',
+            [nombre_zona]
+        );
+
+        // --- ¡LIBERACIÓN EXITOSA! ---
+        // Como el insert en MySQL terminó bien, removemos el candado de inmediato
+        await redis.del(lockKey);
+
+        res.status(200).json({ message: 'Zona registrada correctamente' });
+
+    } catch (error) {
+        // Si el proceso falla por pérdida de conexión a la BD u otro motivo, limpiamos Redis
+        await redis.del(lockKey);
+
+        // Manejo controlado en caso de que ya exista un índice UNIQUE en tu BD a nivel físico
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ message: `La zona '${nombre_zona}' ya está registrada.` });
+        }
+
+        res.status(500).json({ message: 'Error al registrar zona', error: error.message });
+    }
+};
+
+
+export const putZonasv2 = async (req, res) => {
+    const { zona_id, nombre_zona } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE zonas_escaneos SET nombre_zona = ? WHERE zona_id = ?;',
+            [nombre_zona, zona_id]
+        );
+
+        res.status(200).json({ message: 'Zona actualizada correctamente' });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error al actualizar zona', error: error.message });
+    }
+
+};
+
+export const putZonasSubzonas = async (req, res) => {
+    const { zona_escaneo_id, zona_id } = req.body;
+
+    try {
+        await pool.execute(
+            'UPDATE zonas_seccion SET zona_id_fk = ? WHERE zona_escaneo_id = ?;',
+            [zona_id, zona_escaneo_id]
+        );
+
+        res.status(200).json({ message: 'Zona actualizada correctamente' });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error al actualizar zona', error: error.message });
+    }
+
+};
+
+export const getZonasSubzonas = async (req, res) => {
     try {
         const [rows] = await pool.query(`
             SELECT zona_escaneo_id,zona_id,seccion_id,nombre_zona,nombre_seccion FROM zonas_seccion zs
