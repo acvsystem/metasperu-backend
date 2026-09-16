@@ -11,6 +11,21 @@ const redis = new Redis({
 
 /** MANTENIMIENTO SECCION */
 
+export const getZonasv2 = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT * FROM zonas_escaneos;
+        `);
+
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error al obtener las zonas',
+            error: error.message
+        });
+    }
+};
+
 export const getSectionsv2 = async (req, res) => {
     try {
         const [rows] = await pool.query(`
