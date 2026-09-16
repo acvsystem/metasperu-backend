@@ -276,6 +276,67 @@ export const getSessionSummary = async (req, res) => {
     }
 };
 
+export const getSessionSummaryv2 = async (req, res) => {
+    const { session_code } = req.params;
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        // --- PASO 1: TRAER INFO DE LA SESIÓN (MINI-QUERY RÁPIDA) ---
+        // Obtenemos el ID numérico interno para no castigar a la query grande con JOINs de texto
+        const [sessionInfo] = await pool.execute(
+            `SELECT sess.id, sess.tienda_id, t.nombre_tienda, sess.estado, sess.creado_por, u.username 
+             FROM inventario_sesiones sess
+             INNER JOIN tiendas t ON t.id = sess.tienda_id
+             INNER JOIN usuarios u ON u.id = sess.creado_por
+             WHERE sess.codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sessionInfo.length === 0) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const sessionData = sessionInfo[0];
+
+        // --- PASO 2: LISTADO COMPLETO DE LOS 10,000 REGISTROS (SIN GROUP BY) ---
+        // Al quitar el GROUP BY, te traerá cada escaneo individual (los 10,000 exactos).
+        // Traemos "1" en veces_escaneado y la cantidad normal de la fila para mantener tu compatibilidad de frontend.
+        const summaryQuery = `
+            SELECT 
+			    s.id,
+                s.sku, 
+                s.cantidad as total_cantidad,
+                s.id as ultimo_escaneo_id, 
+                1 as veces_escaneado,
+                s.seccion_id as seccion_id,
+                u.username as usuario,
+                ze.nombre_zona
+            FROM inventario_escaneos s
+            INNER JOIN usuarios u ON s.escaneado_por = u.id
+            INNER JOIN secciones_asginados sa ON sa.id = s.seccion_id
+            INNER JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+            INNER JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+            WHERE s.sesion_id = ?
+            ORDER BY s.id DESC
+        `;
+
+        const [summary] = await pool.execute(summaryQuery, [sessionData.id]);
+
+        // Retornamos la respuesta con los 10k registros íntegros
+        res.status(200).json({
+            session: sessionData,
+            products: summary
+        });
+
+    } catch (error) {
+        console.error("Error en getSessionSummary:", error);
+        res.status(500).json({ message: 'Error al obtener el resumen', error: error.message });
+    }
+};
+
 export const getStores = async (req, res) => {
     try {
         // Seleccionamos id y nombre de la tabla tiendas

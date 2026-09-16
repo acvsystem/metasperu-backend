@@ -4,6 +4,7 @@ import {
     registerScan,
     syncBulkScans,
     getSessionSummary,
+    getSessionSummaryv2,
     getSessions,
     getStores,
     getInventoryReqStore,
@@ -27,6 +28,7 @@ const router = Router();
 // --- RUTAS PARA EL ADMINISTRADOR (WEB) ---
 router.post('/create-session', verifyToken, createSession);
 router.get('/summary/:session_code', verifyToken, getSessionSummary);
+router.get('/v2/summary/:session_code', verifyToken, getSessionSummaryv2);
 router.get('/sessions', verifyToken, getSessions);
 
 // --- RUTAS PARA EL POCKET (DISPOSITIVO) ---
