@@ -96,7 +96,7 @@ export const putZonasv2 = async (req, res) => {
 
 export const putZonasSubzonas = async (req, res) => {
     const { zona_escaneo_id, zona_id } = req.body;
-
+    console.log('PUT ZONAS SUBZONAS - Request Body:', req.body);
     try {
         await pool.execute(
             'UPDATE zonas_seccion SET zona_id_fk = ? WHERE zona_escaneo_id = ?;',
