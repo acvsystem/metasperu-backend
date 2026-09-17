@@ -95,20 +95,47 @@ export const putZonasv2 = async (req, res) => {
 };
 
 export const putZonasSubzonas = async (req, res) => {
-    const { zona_escaneo_id, zona_id } = req.body;
+    const { zona_escaneo_id, zona_id, seccion_id } = req.body;
     console.log('PUT ZONAS SUBZONAS - Request Body:', req.body);
+
     try {
-        await pool.execute(
-            'UPDATE zonas_seccion SET zona_id_fk = ? WHERE zona_escaneo_id = ?;',
-            [zona_id, zona_escaneo_id]
+        // 1. Verificar si ya existe un registro con esa seccion_id
+        const [rows] = await pool.execute(
+            'SELECT zona_escaneo_id FROM zonas_seccion WHERE seccion_id_fk = ? LIMIT 1',
+            [seccion_id]
         );
 
-        res.status(200).json({ message: 'Zona actualizada correctamente' });
+        if (rows.length > 0) {
+            // Existe → hacemos UPDATE
+            await pool.execute(
+                'UPDATE zonas_seccion SET zona_id_fk = ? WHERE seccion_id_fk = ?',
+                [zona_id, seccion_id]
+            );
+
+            return res.status(200).json({
+                message: 'Zona actualizada correctamente',
+                action: 'updated'
+            });
+        } else {
+            // No existe → hacemos INSERT
+            await pool.execute(
+                'INSERT INTO zonas_seccion (zona_id_fk, seccion_id_fk) VALUES (?, ?)',
+                [zona_id, seccion_id]
+            );
+
+            return res.status(201).json({
+                message: 'Zona creada correctamente',
+                action: 'created'
+            });
+        }
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar zona', error: error.message });
+        console.error('Error en putZonasSubzonas:', error);
+        res.status(500).json({
+            message: 'Error al procesar zona',
+            error: error.message
+        });
     }
-
 };
 
 export const getZonasSubzonas = async (req, res) => {
