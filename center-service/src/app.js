@@ -139,7 +139,7 @@ cron.schedule('05 22 * * *', async () => {
       fecha_desde: fechaActual,
       fecha_hasta: fechaActual
     });
-    
+
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
     console.error('❌ [Cron Error Informe Rendimiento]:', errorMsg);
@@ -160,6 +160,22 @@ cron.schedule('0 9,12,15,18,21 * * *', async () => {
     getIO().to('grupo_tiendas').emit('py_traffic_counter_verification', {
       pedido_por: 'mismosistema'
     });
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima" // Mantiene tu zona horaria de Perú
+});
+
+cron.schedule('0 9,12,15,18,21 * * *', async () => {
+  console.log('⏰ [Cron Job] Iniciando verificacion SUNAT...');
+
+  try {
+    console.log('Iniciando tarea programada: verificacion SUNAT...');
+    executeSendVentasFTP();
 
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
@@ -193,6 +209,18 @@ const executeSendVentasFTP = async () => {
     // Asegúrate de que getIO() esté disponible en este archivo
     getIO().to('servidor_backup').emit('py_send_ventas_ftp');
     console.log(`[CRON] Señal emitida exitosamente a las 10:00 AM`);
+
+  } catch (error) {
+    console.error('[CRON ERROR] Error en ejecución programada:', error);
+  }
+};
+
+
+const executeVerificationSunat = async () => {
+  try {
+    // Asegúrate de que getIO() esté disponible en este archivo
+    getIO().to('servidor_backup').emit('py_verificacion_sunat');
+    console.log(`[CRON] Señal emitida SUNAT exitosamente`);
 
   } catch (error) {
     console.error('[CRON ERROR] Error en ejecución programada:', error);
