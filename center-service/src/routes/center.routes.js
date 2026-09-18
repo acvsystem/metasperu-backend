@@ -241,7 +241,7 @@ router.delete('/api/maintenance/:resource/:id', verifyToken, maintenanceControll
 router.get('/api/reports/informe-rendimiento', verifyToken, reportsController.infRendimiento);
 
 // ---- RUTAS NOTIFICACIONES
-router.post('/api/sunat-notification', verifyToken, storeController.callNotificationSunat);
+router.post('/api/sunat-notification', storeController.callNotificationSunat);
 
 
 export default router;
