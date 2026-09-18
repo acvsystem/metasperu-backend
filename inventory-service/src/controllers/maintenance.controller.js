@@ -285,7 +285,7 @@ export const postSectionsCountSession = async (req, res) => {
 FROM 
     secciones_asginados sa
 INNER JOIN 
-    inventario_escaneos ie ON ie.seccion_id = sa.seccion_id_fk
+     inventario_escaneos ie ON ie.seccion_id = sa.id
 WHERE 
     sa.codigo_sesion = ? AND sa.seccion_id_fk = ?
 GROUP BY 
