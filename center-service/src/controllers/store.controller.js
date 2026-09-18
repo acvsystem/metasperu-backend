@@ -278,7 +278,7 @@ export const storeController = {
             // 3. Procesar y agrupar los registros originales
             const documentosAgrupados = {};
 
-            for (const r of registrosDB) {
+            for (const r of ar_documentos) {
                 // Extraemos el 2do y 3er carácter del nro_correlativo (Ej: 'F7I1-...' -> '7I')
                 const nroCorrelativo = String(r[1] || '');
                 const codigoGrupo = nroCorrelativo.substring(1, 3);
