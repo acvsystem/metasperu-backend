@@ -258,39 +258,80 @@ export const storeController = {
     callNotificationSunat: async (req, res) => {
         const ar_documentos = (req || []).body || [];
 
+
         try {
+            // 2. Consultar la tabla de tiendas como solicitaste
+            const [tiendas] = await pool.execute('SELECT * FROM tb_lista_tienda');
 
-            const documentosAgrupados = ar_documentos.reduce((acumulador, item) => {
-                // Extrae del índice 1 al 3 (el 2do y 3er carácter -> '7I')
-                const codigoSubstring = item.nro_correlativo.substring(1, 3);
+            // Creamos un mapa (diccionario) para buscar rápido la tienda por su serie
+            // Asumiendo que la columna en la tabla se llama SERIE_TIENDA y tiene campos como DESCRIPCION y EMAIL
+            const mapTiendas = new Map();
+            tiendas.forEach(tienda => {
+                // Asegúrate de usar el nombre exacto de las columnas de tu tabla
+                mapTiendas.set(tienda.SERIE_TIENDA, {
+                    CODIGO_SERIE: tienda.SERIE_TIENDA,
+                    DESCRIPCION: tienda.DESCRIPCION,
+                    EMAIL: tienda.EMAIL
+                });
+            });
 
-                if (!acumulador[codigoSubstring]) {
-                    acumulador[codigoSubstring] = [];
+            // 3. Procesar y agrupar los registros originales
+            const documentosAgrupados = {};
+
+            for (const r of registrosDB) {
+                // Extraemos el 2do y 3er carácter del nro_correlativo (Ej: 'F7I1-...' -> '7I')
+                const nroCorrelativo = String(r[1] || '');
+                const codigoGrupo = nroCorrelativo.substring(1, 3);
+
+                // Buscamos si existe información para este código en el mapa de tiendas
+                const infoTienda = mapTiendas.get(codigoGrupo) || {
+                    CODIGO_SERIE: codigoGrupo,
+                    DESCRIPCION: 'NO ENCONTRADO',
+                    EMAIL: 'SIN EMAIL'
+                };
+
+                // Construimos el objeto con los datos solicitados y agregamos los campos de la tienda
+                const item = {
+                    'codigo_documento': r[0],
+                    'nro_correlativo': r[1],
+                    'nombre_adquiriente': r[2],
+                    'nro_documento': r[3],
+                    'observacion': r[4],
+                    'fecha_emision': r[5] && typeof r[5].isoformat === 'function' ? r[5].isoformat() : String(r[5]),
+                    'estado_sunat': r[6],
+                    'estado_comprobante': r[7],
+                    'codigo_error_sunat': r[8],
+                    // Nuevos campos agregados desde tb_lista_tienda
+                    'CODIGO_SERIE': infoTienda.CODIGO_SERIE,
+                    'DESCRIPCION': infoTienda.DESCRIPCION,
+                    'EMAIL': infoTienda.EMAIL
+                };
+
+                // Agrupamos por el código extraído
+                if (!documentosAgrupados[codigoGrupo]) {
+                    documentosAgrupados[codigoGrupo] = [];
                 }
-
-                acumulador[codigoSubstring].push(item);
-                return acumulador;
-            }, {});
+                documentosAgrupados[codigoGrupo].push(item);
+            }
 
             console.log(documentosAgrupados);
-
-/*
-            emailService.pushToEmailQueue({
-                email: ['itperu@metasperu.com'],
-                subject: `Documentos observados SUNAT - `,
-                template: 'alertaDocumentosSunar',
-                variables: {
-                    tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
-                    documentos: ar_documentos
-                }
-            });*/
+            /*
+                      emailService.pushToEmailQueue({
+                          email: ['itperu@metasperu.com'],
+                          subject: `Documentos observados SUNAT - `,
+                          template: 'alertaDocumentosSunar',
+                          variables: {
+                              tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
+                              documentos: ar_documentos
+                          }
+                      });*/
 
             res.send('RECEPCION EXITOSA..!!');
+
         } catch (error) {
-            res.status(500).json({ message: 'Error', error });
+            console.error('Error al procesar los datos:', error);
+            throw error;
         }
-
-
     }
 }
 
