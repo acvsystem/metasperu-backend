@@ -254,6 +254,43 @@ export const storeController = {
             console.error(error);
             return res.status(500).json({ error: "Error interno del servidor" });
         }
+    },
+    callNotificationSunat: async (req, res) => {
+        const ar_documentos = (req || []).body || [];
+
+        try {
+
+            const documentosAgrupados = ar_documentos.reduce((acumulador, item) => {
+                // Extrae del índice 1 al 3 (el 2do y 3er carácter -> '7I')
+                const codigoSubstring = item.nro_correlativo.substring(1, 3);
+
+                if (!acumulador[codigoSubstring]) {
+                    acumulador[codigoSubstring] = [];
+                }
+
+                acumulador[codigoSubstring].push(item);
+                return acumulador;
+            }, {});
+
+            console.log(documentosAgrupados);
+
+/*
+            emailService.pushToEmailQueue({
+                email: ['itperu@metasperu.com'],
+                subject: `Documentos observados SUNAT - `,
+                template: 'alertaDocumentosSunar',
+                variables: {
+                    tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
+                    documentos: ar_documentos
+                }
+            });*/
+
+            res.send('RECEPCION EXITOSA..!!');
+        } catch (error) {
+            res.status(500).json({ message: 'Error', error });
+        }
+
+
     }
 }
 

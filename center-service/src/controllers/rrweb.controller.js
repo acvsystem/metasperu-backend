@@ -167,7 +167,7 @@ export const rrwebController = {
                     event_count, started_at, ended_at, last_event_at
                 FROM tb_rrweb_sessions
                 ORDER BY started_at DESC
-                LIMIT 100
+                LIMIT 500
             `);
 
             res.json(sessions);

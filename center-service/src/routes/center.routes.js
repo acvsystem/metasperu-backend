@@ -240,4 +240,8 @@ router.delete('/api/maintenance/:resource/:id', verifyToken, maintenanceControll
 // --- RUTAS INFORMES
 router.get('/api/reports/informe-rendimiento', verifyToken, reportsController.infRendimiento);
 
+// ---- RUTAS NOTIFICACIONES
+router.post('/api/sunat-notification', verifyToken, storeController.callNotificationSunat);
+
+
 export default router;

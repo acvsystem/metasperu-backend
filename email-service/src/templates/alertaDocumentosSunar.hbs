@@ -119,10 +119,10 @@
                     <tbody>
                         {{#each documentos}}
                         <tr>
-                            <td><strong>{{this.id}}</strong><br><span
+                            <td><strong>{{this.nro_correlativo}}</strong><br><span
                                     style="font-size: 11px; color: #a0aec0;">{{this.tipo}}</span></td>
-                            <td>{{this.fecha}}</td>
-                            <td><span class="status-badge">PENDIENTE</span></td>
+                            <td>{{this.fecha_emision}}</td>
+                            <td><span class="status-badge">{{this.estado_sunat}}</span></td>
                         </tr>
                         {{/each}}
                     </tbody>
