@@ -170,7 +170,7 @@ cron.schedule('0 9,12,15,18,21 * * *', async () => {
   timezone: "America/Lima" // Mantiene tu zona horaria de Perú
 });
 
-cron.schedule('3 9,12,15,17,21 * * *', async () => {
+cron.schedule('6 9,12,15,17,21 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando verificacion SUNAT...');
 
   try {
