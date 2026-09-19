@@ -292,15 +292,15 @@ export const storeController = {
 
                 // Construimos el objeto con los datos solicitados y agregamos los campos de la tienda
                 const item = {
-                    'codigo_documento': r[0],
-                    'nro_correlativo': r[1],
-                    'nombre_adquiriente': r[2],
-                    'nro_documento': r[3],
-                    'observacion': r[4],
-                    'fecha_emision': r[5] && typeof r[5].isoformat === 'function' ? r[5].isoformat() : String(r[5]),
-                    'estado_sunat': r[6],
-                    'estado_comprobante': r[7],
-                    'codigo_error_sunat': r[8],
+                    'codigo_documento': r.codigo_documento,
+                    'nro_correlativo': r.nro_correlativo,
+                    'nombre_adquiriente': r.nombre_adquiriente,
+                    'nro_documento': r.nro_documento,
+                    'observacion': r.observacion,
+                    'fecha_emision': r.fecha_emision && typeof r.fecha_emision.isoformat === 'function' ? r[5].isoformat() : String(r.fecha_emision),
+                    'estado_sunat': r.estado_sunat,
+                    'estado_comprobante': r.estado_comprobante,
+                    'codigo_error_sunat': r.codigo_error_sunat,
                     // Nuevos campos agregados desde tb_lista_tienda
                     'CODIGO_SERIE': infoTienda.CODIGO_SERIE,
                     'DESCRIPCION': infoTienda.DESCRIPCION,
