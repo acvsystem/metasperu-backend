@@ -280,7 +280,7 @@ export const storeController = {
 
             for (const r of ar_documentos) {
                 // Extraemos el 2do y 3er carácter del nro_correlativo (Ej: 'F7I1-...' -> '7I')
-                const nroCorrelativo = String(r.codigo_documento || '');
+                const nroCorrelativo = String(r.nro_correlativo || '');
                 const codigoGrupo = nroCorrelativo.substring(1, 3);
 
                 // Buscamos si existe información para este código en el mapa de tiendas
