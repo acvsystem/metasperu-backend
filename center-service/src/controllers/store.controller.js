@@ -258,16 +258,13 @@ export const storeController = {
     callNotificationSunat: async (req, res) => {
         const ar_documentos = (req || []).body || [];
 
-
         try {
-            // 2. Consultar la tabla de tiendas como solicitaste
+            // 1. Consultar la tabla de tiendas
             const [tiendas] = await pool.execute('SELECT * FROM tb_lista_tienda');
 
-            // Creamos un mapa (diccionario) para buscar rápido la tienda por su serie
-            // Asumiendo que la columna en la tabla se llama SERIE_TIENDA y tiene campos como DESCRIPCION y EMAIL
+            // Creamos un mapa para buscar rápido la tienda por su serie
             const mapTiendas = new Map();
             tiendas.forEach(tienda => {
-                // Asegúrate de usar el nombre exacto de las columnas de tu tabla
                 mapTiendas.set(tienda.SERIE_TIENDA, {
                     CODIGO_SERIE: tienda.SERIE_TIENDA,
                     DESCRIPCION: tienda.DESCRIPCION,
@@ -275,7 +272,7 @@ export const storeController = {
                 });
             });
 
-            // 3. Procesar y agrupar los registros originales
+            // 2. Procesar y agrupar los registros originales
             const documentosAgrupados = {};
 
             for (const r of ar_documentos) {
@@ -290,18 +287,18 @@ export const storeController = {
                     EMAIL: 'SIN EMAIL'
                 };
 
-                // Construimos el objeto con los datos solicitados y agregamos los campos de la tienda
+                // Construimos el objeto con los datos solicitados
                 const item = {
                     'codigo_documento': r.codigo_documento,
                     'nro_correlativo': r.nro_correlativo,
                     'nombre_adquiriente': r.nombre_adquiriente,
                     'nro_documento': r.nro_documento,
                     'observacion': r.observacion,
-                    'fecha_emision': r.fecha_emision && typeof r.fecha_emision.isoformat === 'function' ? r[5].isoformat() : String(r.fecha_emision),
+                    'fecha_emision': r.fecha_emision ? String(r.fecha_emision) : '',
                     'estado_sunat': r.estado_sunat,
                     'estado_comprobante': r.estado_comprobante,
                     'codigo_error_sunat': r.codigo_error_sunat,
-                    // Nuevos campos agregados desde tb_lista_tienda
+                    // Campos agregados desde tb_lista_tienda
                     'CODIGO_SERIE': infoTienda.CODIGO_SERIE,
                     'DESCRIPCION': infoTienda.DESCRIPCION,
                     'EMAIL': infoTienda.EMAIL
@@ -314,17 +311,23 @@ export const storeController = {
                 documentosAgrupados[codigoGrupo].push(item);
             }
 
-            console.log(documentosAgrupados);
-            /*
-                      emailService.pushToEmailQueue({
-                          email: ['itperu@metasperu.com'],
-                          subject: `Documentos observados SUNAT - `,
-                          template: 'alertaDocumentosSunar',
-                          variables: {
-                              tienda: storeDescription.DESCRIPCION, // Esta es la variable {{tienda}}
-                              documentos: ar_documentos
-                          }
-                      });*/
+            // 3. Enviar un correo separado por cada tienda/grupo utilizando un bucle
+            for (const [codigoGrupo, documentosTienda] of Object.entries(documentosAgrupados)) {
+                const tiendaInfo = documentosTienda[0]; // Obtenemos los datos de la tienda del primer documento del grupo
+
+                // Filtramos los emails para evitar enviar a "SIN EMAIL"
+                const correosDestino = [tiendaInfo.EMAIL, 'itperu@metasperu.com'].filter(email => email && email !== 'SIN EMAIL');
+
+                await emailService.pushToEmailQueue({
+                    email: correosDestino,
+                    subject: `Documentos observados SUNAT - ${tiendaInfo.DESCRIPCION}`,
+                    template: 'alertaDocumentosSunar',
+                    variables: {
+                        tienda: tiendaInfo.DESCRIPCION, // Variable {{tienda}} para la plantilla
+                        documentos: documentosTienda   // Lista de documentos específicos de esta tienda
+                    }
+                });
+            }
 
             res.send('RECEPCION EXITOSA..!!');
 
