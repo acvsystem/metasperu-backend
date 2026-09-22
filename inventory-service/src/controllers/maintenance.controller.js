@@ -256,7 +256,7 @@ export const putSecitons = async (req, res) => {
 };
 
 export const importConteoSession = async (req, res) => {
-    const { session_code, items, replace = false } = req.body;
+    const { session_code, items } = req.body;
     const userId = req.user?.id;
 
     if (!session_code) {
