@@ -257,7 +257,7 @@ export const putSecitons = async (req, res) => {
 
 export const importConteoSession = async (req, res) => {
     const { session_code, items } = req.body;
-    const userId = req.user?.id;
+    const userIdToken = req.user?.id;
 
     if (!session_code) {
         return res.status(400).json({ message: 'Falta session_code' });
@@ -278,6 +278,7 @@ export const importConteoSession = async (req, res) => {
     try {
         await connection.beginTransaction();
 
+        // 1. Validar sesión
         const [sessionRows] = await connection.execute(
             `SELECT id, codigo_sesion, estado
              FROM inventario_sesiones
@@ -291,24 +292,93 @@ export const importConteoSession = async (req, res) => {
         }
 
         const sesionId = sessionRows[0].id;
-        /*
-                if (replace === true || replace === 'true' || replace === 1) {
-                    await connection.execute(
-                        `DELETE FROM inventario_escaneos WHERE sesion_id = ?`,
-                        [sesionId]
-                    );
-                }
-        */
+
+        // 2. Subzonas de ESTA sesión: nombre_seccion → id (secciones_asginados)
+        const [seccionesRows] = await connection.execute(
+            `SELECT id, nombre_seccion
+             FROM secciones_asginados
+             WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        const seccionByName = new Map();
+        for (const s of seccionesRows) {
+            const key = (s.nombre_seccion || '').toString().trim().toUpperCase();
+            if (key) seccionByName.set(key, s.id);
+        }
+
+        // 3. Usuarios: username → id
+        const [usuariosRows] = await connection.execute(
+            `SELECT id, username FROM usuarios`
+        );
+
+        const userByName = new Map();
+        for (const u of usuariosRows) {
+            const key = (u.username || '').toString().trim().toUpperCase();
+            if (key) userByName.set(key, u.id);
+        }
+
+        // 4. Armar filas
         const values = [];
         const errores = [];
+        const fechaAhora = new Date(); // siempre fecha de hoy
 
         for (let i = 0; i < items.length; i++) {
             const item = items[i] || {};
-            const sku = (item.sku ?? item.cCodigoBarra ?? item.codigo_barra ?? '').toString().trim();
+
+            const sku = (item.sku ?? item.cCodigoBarra ?? item.codigo_barra ?? '')
+                .toString()
+                .trim();
+
             const cantidad = Number(item.cantidad ?? item.quantity ?? item.qty ?? 0);
-            const seccionId = item.seccion_id ?? item.seccionId ?? null;
-            const escaneadoPor = item.escaneado_por ?? item.user_id ?? userId ?? null;
-            let fecha = item.fecha_escaneo || item.scanned_at || item.fecha || null;
+
+            // subzona (nombre) → seccion_id
+            const subzonaNombre = (
+                item.subzona ??
+                item.nombre_seccion ??
+                item.seccion ??
+                ''
+            )
+                .toString()
+                .trim()
+                .toUpperCase();
+
+            let seccionId = null;
+            if (subzonaNombre) {
+                seccionId = seccionByName.get(subzonaNombre) ?? null;
+                if (seccionId == null) {
+                    errores.push({
+                        index: i,
+                        sku,
+                        error: `Subzona no encontrada en la sesión: "${subzonaNombre}"`
+                    });
+                    continue;
+                }
+            }
+
+            // usuario (username) → escaneado_por
+            const usuarioNombre = (
+                item.usuario ??
+                item.username ??
+                ''
+            )
+                .toString()
+                .trim()
+                .toUpperCase();
+
+            let escaneadoPor = userIdToken ?? null;
+            if (usuarioNombre) {
+                const uid = userByName.get(usuarioNombre);
+                if (uid == null) {
+                    errores.push({
+                        index: i,
+                        sku,
+                        error: `Usuario no encontrado: "${usuarioNombre}"`
+                    });
+                    continue;
+                }
+                escaneadoPor = uid;
+            }
 
             if (!sku) {
                 errores.push({ index: i, error: 'sku vacío' });
@@ -319,20 +389,12 @@ export const importConteoSession = async (req, res) => {
                 continue;
             }
 
-            if (fecha && !(fecha instanceof Date)) {
-                const parsed = new Date(fecha);
-                fecha = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-            }
-            if (!fecha) {
-                fecha = new Date();
-            }
-
             values.push([
                 sesionId,
                 sku,
                 cantidad,
                 escaneadoPor,
-                fecha,
+                fechaAhora,
                 seccionId
             ]);
         }
@@ -345,6 +407,7 @@ export const importConteoSession = async (req, res) => {
             });
         }
 
+        // 5. Insert masivo por lotes
         const BATCH = 1000;
         let insertados = 0;
 
@@ -377,7 +440,6 @@ export const importConteoSession = async (req, res) => {
             sesion_id: sesionId,
             insertados,
             omitidos: errores.length,
-            reemplazado: !!(replace === true || replace === 'true' || replace === 1),
             errores: errores.slice(0, 50)
         });
 
