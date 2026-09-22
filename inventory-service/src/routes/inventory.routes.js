@@ -19,7 +19,7 @@ import {
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
-import { getZonasSubzonas, delZonas, delZonaEscaneos, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
+import { getZonasSubzonas, delZonas, delZonaEscaneos, importStoreSession, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 
@@ -58,7 +58,7 @@ router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 router.post('/api/v1/seccion/count/session', verifyToken, postSectionsCountSession);
 router.post('/api/v1/seccion/group/session', verifyToken, postSectionsGroupSession);
 router.post('/api/delete/zona/escaneo', verifyToken, delZonaEscaneos);
-
+router.post('/api/import/store/sesion', verifyToken, importStoreSession);
 
 router.get('/api/v2/zonas/subzonas', verifyToken, getZonasSubzonas);
 router.put('/api/v2/zonas/subzonas', verifyToken, putZonasSubzonas);

@@ -255,6 +255,98 @@ export const putSecitons = async (req, res) => {
 
 };
 
+export const importStoreSession = async (req, res) => {
+    const { sessionCode, items } = req.body;
+
+    // Validaciones
+    if (!sessionCode) {
+        return res.status(400).json({ message: 'Falta el sessionCode' });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'No se recibieron items para importar' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const sql = `
+            INSERT INTO inventario_store (
+                cSessionCode,
+                codigo_sesion,
+                cCodigoTienda,
+                cCodigoArticulo,
+                cReferencia,
+                cCodigoBarra,
+                cCodigoBarra2,
+                cCodigoBarra3,
+                cDescripcion,
+                cDepartamento,
+                cSeccion,
+                cFamilia,
+                cSubFamilia,
+                cTalla,
+                cColor,
+                cEsencia,
+                cStyleDescription,
+                cStock,
+                cTemporada,
+                cConteo,
+                cTotalConteo,
+                checking
+            ) VALUES ?
+        `;
+
+        // Preparar los valores
+        const values = items.map(item => [
+            sessionCode,                          // cSessionCode
+            sessionCode,                          // codigo_sesion
+            item.cCodigoTienda || null,
+            item.cCodigoArticulo || null,
+            item.cReferencia || null,
+            item.cCodigoBarra || null,
+            item.cCodigoBarra2 || null,
+            item.cCodigoBarra3 || null,
+            item.cDescripcion || null,
+            item.cDepartamento || null,
+            item.cSeccion || null,
+            item.cFamilia || null,
+            item.cSubFamilia || null,
+            item.cTalla || null,
+            item.cColor || null,
+            item.cEsencia || null,
+            item.cStyleDescription || null,
+            Number(item.cStock) || 0,
+            item.cTemporada || '',
+            Number(item.cConteo) || 0,
+            Number(item.cTotalConteo) || 0,
+            item.checking ?? 0
+        ]);
+
+        const [result] = await connection.query(sql, [values]);
+
+        await connection.commit();
+
+        res.status(201).json({
+            message: 'Inventario importado correctamente',
+            insertedRows: result.affectedRows,
+            sessionCode
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al importar inventario:', error);
+        res.status(500).json({
+            message: 'Error al importar el inventario',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+};
+
 export const delZonaEscaneos = async (req, res) => {
     const { session_code, seccion_id } = req.body;
 
