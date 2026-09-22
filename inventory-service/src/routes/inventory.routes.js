@@ -19,7 +19,7 @@ import {
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
-import { getZonasSubzonas, delZonas, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
+import { getZonasSubzonas, delZonas, delZonaEscaneos, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 
