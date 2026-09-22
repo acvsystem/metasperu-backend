@@ -256,10 +256,10 @@ export const putSecitons = async (req, res) => {
 };
 
 export const importConteoSession = async (req, res) => {
-    const { session_code, items } = req.body;
+    const { sessionCode, items } = req.body;
     const userIdToken = req.user?.id;
 
-    if (!session_code) {
+    if (!sessionCode) {
         return res.status(400).json({ message: 'Falta session_code' });
     }
 
