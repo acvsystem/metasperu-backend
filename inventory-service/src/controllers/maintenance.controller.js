@@ -256,16 +256,32 @@ export const putSecitons = async (req, res) => {
 };
 
 export const delZonaEscaneos = async (req, res) => {
-    const { sesion_id, seccion_id } = req.body;
+    const { session_code, seccion_id } = req.body;
 
     // Validación básica
-    if (!sesion_id || !seccion_id) {
+    if (!session_code || !seccion_id) {
         return res.status(400).json({
-            message: 'Faltan sesion_id o seccion_id'
+            message: 'Faltan session_code o seccion_id'
         });
     }
 
     try {
+        // 1. Buscar el id de la sesión a partir del código
+        const [sesiones] = await pool.execute(
+            `SELECT id FROM inventario_sesiones 
+             WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sesiones.length === 0) {
+            return res.status(404).json({
+                message: 'No se encontró ninguna sesión con ese código'
+            });
+        }
+
+        const sesion_id = sesiones[0].id;
+
+        // 2. Eliminar los registros de escaneos
         const [result] = await pool.execute(
             `DELETE FROM inventario_escaneos 
              WHERE sesion_id = ? AND seccion_id = ?`,
@@ -274,7 +290,8 @@ export const delZonaEscaneos = async (req, res) => {
 
         res.status(200).json({
             message: 'Registros eliminados correctamente',
-            affectedRows: result.affectedRows
+            affectedRows: result.affectedRows,
+            sesion_id: sesion_id
         });
 
     } catch (error) {

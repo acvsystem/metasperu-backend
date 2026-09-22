@@ -57,7 +57,7 @@ router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 router.post('/api/v1/seccion/count/session', verifyToken, postSectionsCountSession);
 router.post('/api/v1/seccion/group/session', verifyToken, postSectionsGroupSession);
-router.post('/api/delete/zona', verifyToken, delZonaEscaneos);
+router.post('/api/delete/zona/escaneo', verifyToken, delZonaEscaneos);
 
 
 router.get('/api/v2/zonas/subzonas', verifyToken, getZonasSubzonas);
