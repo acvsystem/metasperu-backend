@@ -48,6 +48,7 @@ router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
 router.put('/ended-session', verifyToken, updateEndedSession);
 router.put('/estart-session', verifyToken, updateStartSession);
 router.put('/checked/row/inv', verifyToken, updateCheckedRow);
+//router.put('/import/extra/store', verifyToken, impExtraStore);
 
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);
@@ -56,6 +57,8 @@ router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 router.post('/api/v1/seccion/count/session', verifyToken, postSectionsCountSession);
 router.post('/api/v1/seccion/group/session', verifyToken, postSectionsGroupSession);
+router.post('/api/delete/zona', verifyToken, delZonaEscaneos);
+
 
 router.get('/api/v2/zonas/subzonas', verifyToken, getZonasSubzonas);
 router.put('/api/v2/zonas/subzonas', verifyToken, putZonasSubzonas);

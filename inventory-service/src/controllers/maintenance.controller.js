@@ -255,6 +255,36 @@ export const putSecitons = async (req, res) => {
 
 };
 
+export const delZonaEscaneos = async (req, res) => {
+    const { sesion_id, seccion_id } = req.body;
+
+    // Validación básica
+    if (!sesion_id || !seccion_id) {
+        return res.status(400).json({
+            message: 'Faltan sesion_id o seccion_id'
+        });
+    }
+
+    try {
+        const [result] = await pool.execute(
+            `DELETE FROM inventario_escaneos 
+             WHERE sesion_id = ? AND seccion_id = ?`,
+            [sesion_id, seccion_id]
+        );
+
+        res.status(200).json({
+            message: 'Registros eliminados correctamente',
+            affectedRows: result.affectedRows
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Error al eliminar los registros',
+            error: error.message
+        });
+    }
+};
 
 export const delSecitons = async (req, res) => {
     const { seccion_id } = req.params;
