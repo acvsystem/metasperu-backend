@@ -255,6 +255,144 @@ export const putSecitons = async (req, res) => {
 
 };
 
+export const importConteoSession = async (req, res) => {
+    const { session_code, items, replace = false } = req.body;
+    const userId = req.user?.id;
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'Falta session_code' });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'No se recibieron items para importar' });
+    }
+
+    if (items.length > 50000) {
+        return res.status(400).json({
+            message: 'Máximo 50.000 registros por importación. Divide el archivo.'
+        });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [sessionRows] = await connection.execute(
+            `SELECT id, codigo_sesion, estado
+             FROM inventario_sesiones
+             WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sessionRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        const sesionId = sessionRows[0].id;
+        /*
+                if (replace === true || replace === 'true' || replace === 1) {
+                    await connection.execute(
+                        `DELETE FROM inventario_escaneos WHERE sesion_id = ?`,
+                        [sesionId]
+                    );
+                }
+        */
+        const values = [];
+        const errores = [];
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i] || {};
+            const sku = (item.sku ?? item.cCodigoBarra ?? item.codigo_barra ?? '').toString().trim();
+            const cantidad = Number(item.cantidad ?? item.quantity ?? item.qty ?? 0);
+            const seccionId = item.seccion_id ?? item.seccionId ?? null;
+            const escaneadoPor = item.escaneado_por ?? item.user_id ?? userId ?? null;
+            let fecha = item.fecha_escaneo || item.scanned_at || item.fecha || null;
+
+            if (!sku) {
+                errores.push({ index: i, error: 'sku vacío' });
+                continue;
+            }
+            if (!Number.isFinite(cantidad) || cantidad <= 0) {
+                errores.push({ index: i, sku, error: 'cantidad inválida' });
+                continue;
+            }
+
+            if (fecha && !(fecha instanceof Date)) {
+                const parsed = new Date(fecha);
+                fecha = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+            }
+            if (!fecha) {
+                fecha = new Date();
+            }
+
+            values.push([
+                sesionId,
+                sku,
+                cantidad,
+                escaneadoPor,
+                fecha,
+                seccionId
+            ]);
+        }
+
+        if (values.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({
+                message: 'Ningún item válido para importar',
+                errores
+            });
+        }
+
+        const BATCH = 1000;
+        let insertados = 0;
+
+        for (let i = 0; i < values.length; i += BATCH) {
+            const batch = values.slice(i, i + BATCH);
+            await connection.query(
+                `INSERT INTO inventario_escaneos
+                    (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo, seccion_id)
+                 VALUES ?`,
+                [batch]
+            );
+            insertados += batch.length;
+        }
+
+        await connection.commit();
+
+        try {
+            getIO().to(session_code).emit('update_totals', {
+                count: insertados,
+                source: 'import_conteo',
+                last_scans: items.slice(-5)
+            });
+        } catch (socketErr) {
+            console.warn('Socket emit falló (import ok):', socketErr.message);
+        }
+
+        return res.status(200).json({
+            message: 'Importación de conteo exitosa',
+            session_code,
+            sesion_id: sesionId,
+            insertados,
+            omitidos: errores.length,
+            reemplazado: !!(replace === true || replace === 'true' || replace === 1),
+            errores: errores.slice(0, 50)
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error en importConteoSession:', error);
+        return res.status(500).json({
+            message: 'Error al importar conteo',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+};
+
 export const importStoreSession = async (req, res) => {
     const { sessionCode, items } = req.body;
 
