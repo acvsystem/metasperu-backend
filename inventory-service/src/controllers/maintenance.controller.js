@@ -330,7 +330,7 @@ export const importStoreSession = async (req, res) => {
         await connection.commit();
 
         res.status(201).json({
-            message: 'Inventario importado correctamente',
+            message: `Inventario importado correctamente - ${result.affectedRows} registros`,
             insertedRows: result.affectedRows,
             sessionCode
         });
