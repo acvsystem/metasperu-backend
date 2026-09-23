@@ -1,15 +1,81 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
-
-import Redis from 'ioredis';
-
-// Inicializamos la conexión (Reutiliza la instancia que ya tienes configurada)
-const redis = new Redis({
-    host: '127.0.0.1',
-    port: 6379
-});
+import { lockStore as redis } from '../utils/lock-store.js';
 
 /** MANTENIMIENTO SECCION */
+
+const normalizeName = (value = '') => value.toString().trim().toUpperCase();
+
+const buildRangeNames = ({ prefix, start, end }) => {
+    const normalizedPrefix = normalizeName(prefix).replace(/\s+/g, '');
+    const startNumber = Number.parseInt(start, 10);
+    const endNumber = Number.parseInt(end, 10);
+
+    if (!normalizedPrefix || !/^[A-Z]+$/.test(normalizedPrefix)) {
+        throw new Error('La letra/prefijo del rango es requerido y solo debe contener letras.');
+    }
+
+    if (!Number.isFinite(startNumber) || !Number.isFinite(endNumber) || startNumber <= 0 || endNumber <= 0) {
+        throw new Error('El inicio y fin del rango deben ser números positivos.');
+    }
+
+    if (startNumber > endNumber) {
+        throw new Error('El inicio del rango no puede ser mayor al fin.');
+    }
+
+    if ((endNumber - startNumber) > 1000) {
+        throw new Error('El rango máximo permitido es de 1001 subzonas por operación.');
+    }
+
+    return Array.from({ length: endNumber - startNumber + 1 }, (_, index) => `${normalizedPrefix}${startNumber + index}`);
+};
+
+const getSectionNamesFromBody = (body = {}) => {
+    if (Array.isArray(body.sections) && body.sections.length) {
+        return [...new Set(body.sections.map(normalizeName).filter(Boolean))];
+    }
+
+    if (body.mode === 'range') {
+        return buildRangeNames(body);
+    }
+
+    const singleName = normalizeName(body.nombre_seccion || body.name);
+    return singleName ? [singleName] : [];
+};
+
+const ensureSectionsExist = async (connection, names = []) => {
+    const uniqueNames = [...new Set(names.map(normalizeName).filter(Boolean))];
+    if (!uniqueNames.length) return { sections: [], createdCount: 0 };
+
+    const [existingRows] = await connection.query(
+        `SELECT seccion_id, nombre_seccion
+         FROM secciones_escaneos
+         WHERE UPPER(nombre_seccion) IN (?)`,
+        [uniqueNames]
+    );
+
+    const existingNames = new Set(existingRows.map((row) => normalizeName(row.nombre_seccion)));
+    const missingNames = uniqueNames.filter((name) => !existingNames.has(name));
+
+    if (missingNames.length) {
+        await connection.query(
+            `INSERT INTO secciones_escaneos (nombre_seccion) VALUES ?`,
+            [missingNames.map((name) => [name])]
+        );
+    }
+
+    const [sectionRows] = await connection.query(
+        `SELECT seccion_id, nombre_seccion
+         FROM secciones_escaneos
+         WHERE UPPER(nombre_seccion) IN (?)`,
+        [uniqueNames]
+    );
+
+    return {
+        sections: sectionRows,
+        createdCount: missingNames.length
+    };
+};
 
 export const getZonasv2 = async (req, res) => {
     try {
@@ -217,6 +283,110 @@ export const postSections = async (req, res) => {
         }
 
         res.status(500).json({ message: 'Error al registrar seccion', error: error.message });
+    }
+};
+
+export const postSectionsBulk = async (req, res) => {
+    let sectionNames = [];
+
+    try {
+        sectionNames = getSectionNamesFromBody(req.body);
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
+    }
+
+    if (!sectionNames.length) {
+        return res.status(400).json({ message: 'Debe indicar una subzona o un rango válido.' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+        const result = await ensureSectionsExist(connection, sectionNames);
+        await connection.commit();
+
+        return res.status(200).json({
+            message: `Subzonas procesadas correctamente. Creadas: ${result.createdCount}. Existentes: ${sectionNames.length - result.createdCount}.`,
+            total: sectionNames.length,
+            created: result.createdCount,
+            existing: sectionNames.length - result.createdCount,
+            sections: result.sections
+        });
+    } catch (error) {
+        await connection.rollback();
+        return res.status(500).json({ message: 'Error al registrar subzonas', error: error.message });
+    } finally {
+        connection.release();
+    }
+};
+
+export const assignSectionsRangeToSession = async (req, res) => {
+    const sessionCode = normalizeName(req.body?.session_code || req.body?.codigo_sesion);
+    let sectionNames = [];
+
+    if (!sessionCode) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        sectionNames = getSectionNamesFromBody(req.body);
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
+    }
+
+    if (!sectionNames.length) {
+        return res.status(400).json({ message: 'Debe indicar una subzona o un rango válido.' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [sessionRows] = await connection.execute(
+            `SELECT id, codigo_sesion FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [sessionCode]
+        );
+
+        if (!sessionRows.length) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const { sections, createdCount } = await ensureSectionsExist(connection, sectionNames);
+        const [assignedRows] = await connection.execute(
+            `SELECT seccion_id_fk
+             FROM secciones_asginados
+             WHERE codigo_sesion = ?`,
+            [sessionCode]
+        );
+        const assignedIds = new Set(assignedRows.map((row) => Number(row.seccion_id_fk)));
+        const rowsToInsert = sections
+            .filter((section) => !assignedIds.has(Number(section.seccion_id)))
+            .map((section) => [sessionCode, section.seccion_id, section.nombre_seccion]);
+
+        if (rowsToInsert.length) {
+            await connection.query(
+                `INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES ?`,
+                [rowsToInsert]
+            );
+        }
+
+        await connection.commit();
+
+        return res.status(200).json({
+            message: `Subzonas asignadas correctamente. Asignadas: ${rowsToInsert.length}. Ya asignadas: ${sections.length - rowsToInsert.length}.`,
+            total: sectionNames.length,
+            created: createdCount,
+            assigned: rowsToInsert.length,
+            alreadyAssigned: sections.length - rowsToInsert.length
+        });
+    } catch (error) {
+        await connection.rollback();
+        return res.status(500).json({ message: 'Error al asignar subzonas a la sesión', error: error.message });
+    } finally {
+        connection.release();
     }
 };
 
@@ -525,13 +695,25 @@ export const importStoreSession = async (req, res) => {
             item.checking ?? 0
         ]);
 
-        const [result] = await connection.query(sql, [values]);
+        const BATCH = 1000;
+        let insertedRows = 0;
+
+        for (let i = 0; i < values.length; i += BATCH) {
+            const batch = values.slice(i, i + BATCH);
+            const [result] = await connection.query(sql, [batch]);
+            insertedRows += result.affectedRows || batch.length;
+        }
+
+        await connection.execute(
+            `UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
+            [sessionCode]
+        );
 
         await connection.commit();
 
         res.status(201).json({
-            message: `Inventario importado correctamente - ${result.affectedRows} registros`,
-            insertedRows: result.affectedRows,
+            message: `Inventario importado correctamente - ${insertedRows} registros`,
+            insertedRows,
             sessionCode
         });
 

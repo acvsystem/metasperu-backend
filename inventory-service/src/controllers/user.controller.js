@@ -1,13 +1,6 @@
 import bcrypt from 'bcrypt';
 import { pool } from '../config/db.js';
-
-import Redis from 'ioredis';
-
-// Inicializamos la conexión (Reutiliza la instancia que ya tienes configurada)
-const redis = new Redis({
-    host: '127.0.0.1',
-    port: 6379
-});
+import { lockStore as redis } from '../utils/lock-store.js';
 
 
 export const userController = {

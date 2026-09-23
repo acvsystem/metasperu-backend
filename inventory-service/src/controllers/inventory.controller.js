@@ -1,14 +1,329 @@
 import { pool } from '../config/db.js';
 import { getIO } from '../config/socket.js';
-import Redis from 'ioredis';
 import crypto from 'crypto'; // Módulo nativo de Node.js para generar el Hash
+import { lockStore as redis } from '../utils/lock-store.js';
 
-// Inicializamos la conexión a tu Redis local
-const redis = new Redis({
-    host: '127.0.0.1',
-    port: 6379,
-    // Si tu Redis tuviera contraseña, agregarías: password: 'tu_password'
-});
+const parsePositiveInt = (value, fallback, max = 1000) => {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return Math.min(parsed, max);
+};
+
+const buildPagination = (query, defaultPageSize = 100, maxPageSize = 1000) => {
+    const page = parsePositiveInt(query.page, 1, Number.MAX_SAFE_INTEGER);
+    const pageSize = parsePositiveInt(query.pageSize, defaultPageSize, maxPageSize);
+    const offset = (page - 1) * pageSize;
+    return { page, pageSize, offset };
+};
+
+const hasPagination = (query) => query.page !== undefined || query.pageSize !== undefined;
+
+const sectionColumnKey = (name = '') => name.toString().trim().replace(/\s+/g, '_').toLowerCase();
+
+const escapeCsv = (value) => {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    return /[",\r\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+const sendCsv = (res, fileName, rows, columns) => {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    res.write('\uFEFF');
+    res.write(columns.map((column) => escapeCsv(column.header)).join(';') + '\n');
+
+    rows.forEach((row) => {
+        res.write(columns.map((column) => escapeCsv(row[column.key])).join(';') + '\n');
+    });
+
+    res.end();
+};
+
+const buildConteoFilters = (query) => {
+    const where = [];
+    const params = [];
+
+    const filters = [
+        { key: 'sku', sql: 's.sku', exact: true },
+        { key: 'user', sql: 'u.username' },
+        { key: 'usuario', sql: 'u.username' },
+        { key: 'nombre_zona', sql: 'ze.nombre_zona' },
+        { key: 'zona', sql: 'ze.nombre_zona' },
+        { key: 'section_name', sql: 'sa.nombre_seccion', exact: true },
+        { key: 'subzona', sql: 'sa.nombre_seccion', exact: true }
+    ];
+
+    filters.forEach(({ key, sql, exact }) => {
+        const value = query[key];
+        if (value === undefined || value === null || String(value).trim() === '') return;
+
+        if (exact) {
+            where.push(`UPPER(TRIM(${sql})) = ?`);
+            params.push(String(value).trim().toUpperCase());
+        } else {
+            where.push(`${sql} LIKE ?`);
+            params.push(`%${String(value).trim()}%`);
+        }
+    });
+
+    const cantidad = query.total_cantidad ?? query.cantidad;
+    if (cantidad !== undefined && cantidad !== null && String(cantidad).trim() !== '') {
+        where.push('s.cantidad = ?');
+        params.push(Number(cantidad));
+    }
+
+    return { where, params };
+};
+
+const normalizeFilterValues = (value) => {
+    if (Array.isArray(value)) return value;
+    if (value === undefined || value === null || String(value).trim() === '') return [];
+    return [value];
+};
+
+const sessionsWithSyncedStoreTotals = new Set();
+
+const buildInventoryFilters = (query) => {
+    const where = [];
+    const params = [];
+    let usesScanTotals = false;
+
+    const filters = [
+        'cCodigoBarra',
+        'cCodigoBarra2',
+        'cCodigoBarra3',
+        'cReferencia',
+        'cDescripcion',
+        'cDepartamento',
+        'cSeccion',
+        'cFamilia',
+        'cSubFamilia',
+        'cTalla',
+        'cColor',
+        'cEsencia',
+        'cStyleDescription',
+        'cStyleDesc'
+    ];
+
+    filters.forEach((field) => {
+        const value = query[field];
+        if (value === undefined || value === null || String(value).trim() === '') return;
+
+        const column = field === 'cStyleDesc' ? 'cStyleDescription' : field;
+        where.push(`st.${column} LIKE ?`);
+        params.push(`%${String(value).trim()}%`);
+    });
+
+    const scanTotalSql = 'COALESCE(st.cConteo, 0)';
+    const diffSql = 'COALESCE(st.cTotalConteo, 0)';
+
+    const conteoValue = query.cConteo;
+    if (conteoValue !== undefined && conteoValue !== null && String(conteoValue).trim() !== '') {
+        where.push(`${scanTotalSql} = ?`);
+        params.push(Number(conteoValue));
+        usesScanTotals = true;
+    }
+
+    const totalConteoValues = normalizeFilterValues(query.cTotalConteo);
+    if (totalConteoValues.length) {
+        const totalConteoWhere = [];
+        usesScanTotals = true;
+
+        totalConteoValues.forEach((rawValue) => {
+            const value = String(rawValue || '').trim().toLowerCase();
+            const numericValue = Number(rawValue);
+
+            if (value === 'positivo') {
+                totalConteoWhere.push(`${diffSql} > 0`);
+            } else if (value === 'negativo') {
+                totalConteoWhere.push(`${diffSql} < 0`);
+            } else if (value === 'cero sin escaneo') {
+                totalConteoWhere.push(`(${diffSql} = 0 AND ${scanTotalSql} = 0)`);
+            } else if (value === 'cero con escaneo' || value === 'cero escaneo') {
+                totalConteoWhere.push(`(${diffSql} = 0 AND ${scanTotalSql} > 0)`);
+            } else if (Number.isFinite(numericValue)) {
+                totalConteoWhere.push(`${diffSql} = ?`);
+                params.push(numericValue);
+            }
+        });
+
+        if (totalConteoWhere.length) {
+            where.push(`(${totalConteoWhere.join(' OR ')})`);
+        }
+    }
+
+    const numericFilters = ['cStock'];
+    numericFilters.forEach((field) => {
+        const value = query[field];
+        if (value === undefined || value === null || String(value).trim() === '') return;
+
+        where.push(`st.${field} = ?`);
+        params.push(Number(value));
+    });
+
+    return { where, params, usesScanTotals };
+};
+
+const syncStoreScanTotals = async (sessionId, sessionCode) => {
+    if (!sessionId || !sessionCode || sessionsWithSyncedStoreTotals.has(sessionCode)) return;
+
+    await pool.execute(
+        `UPDATE inventario_store st
+         LEFT JOIN (
+            SELECT
+                product_codes.id,
+                COALESCE(SUM(scan_by_sku.total_conteo), 0) AS scan_total
+            FROM (
+                SELECT id, cCodigoBarra AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra IS NOT NULL
+                  AND cCodigoBarra <> ''
+                UNION ALL
+                SELECT id, cCodigoBarra2 AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra2 IS NOT NULL
+                  AND cCodigoBarra2 <> ''
+                UNION ALL
+                SELECT id, cCodigoBarra3 AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra3 IS NOT NULL
+                  AND cCodigoBarra3 <> ''
+            ) product_codes
+            LEFT JOIN (
+                SELECT sku, SUM(cantidad) AS total_conteo
+                FROM inventario_escaneos
+                WHERE sesion_id = ?
+                GROUP BY sku
+            ) scan_by_sku
+                ON scan_by_sku.sku = product_codes.sku
+            GROUP BY product_codes.id
+         ) totals ON totals.id = st.id
+         SET
+            st.cConteo = COALESCE(totals.scan_total, 0),
+            st.cTotalConteo = COALESCE(totals.scan_total, 0) - ABS(COALESCE(st.cStock, 0))
+         WHERE st.cSessionCode = ?`,
+        [sessionCode, sessionCode, sessionCode, sessionId, sessionCode]
+    );
+
+    sessionsWithSyncedStoreTotals.add(sessionCode);
+};
+
+const areaCaseSql = (sectionAlias = 'sa') => `
+    CASE
+        WHEN LOWER(REPLACE(TRIM(${sectionAlias}.nombre_seccion), ' ', '_')) = 'tester' THEN 'Tester'
+        WHEN LOWER(REPLACE(TRIM(${sectionAlias}.nombre_seccion), ' ', '_')) = 'reconteo' THEN 'Reconteo'
+        WHEN LOWER(REPLACE(TRIM(${sectionAlias}.nombre_seccion), ' ', '_')) IN ('otros', 'otras_zonas') THEN 'Otros'
+        WHEN LOWER(REPLACE(TRIM(${sectionAlias}.nombre_seccion), ' ', '_')) = 'ac' THEN 'Venta'
+        WHEN LOWER(REPLACE(TRIM(${sectionAlias}.nombre_seccion), ' ', '_')) = 'defectuoso' THEN 'Defectuoso'
+        WHEN UPPER(LEFT(TRIM(${sectionAlias}.nombre_seccion), 1)) = 'A' THEN 'Almacén'
+        WHEN UPPER(LEFT(TRIM(${sectionAlias}.nombre_seccion), 1)) IN ('M', 'P', 'G') THEN 'Venta'
+        ELSE 'Otros'
+    END
+`;
+
+const attachSectionTotalsToInventoryRows = async (sessionId, inventoryRows = []) => {
+    if (!sessionId || inventoryRows.length === 0) return inventoryRows;
+
+    const codeToRows = new Map();
+
+    inventoryRows.forEach((row) => {
+        [row.cCodigoBarra, row.cCodigoBarra2, row.cCodigoBarra3]
+            .filter(Boolean)
+            .forEach((code) => {
+                const key = String(code);
+                if (!codeToRows.has(key)) codeToRows.set(key, []);
+                codeToRows.get(key).push(row);
+            });
+    });
+
+    const codes = [...codeToRows.keys()];
+    if (codes.length === 0) return inventoryRows;
+
+    const BATCH = 3000;
+
+    for (let i = 0; i < codes.length; i += BATCH) {
+        const batchCodes = codes.slice(i, i + BATCH);
+
+        const [sectionRows] = await pool.query(
+            `SELECT
+                es.sku,
+                sa.nombre_seccion,
+                COALESCE(SUM(es.cantidad), 0) AS total_cantidad
+             FROM inventario_escaneos es
+             LEFT JOIN secciones_asginados sa ON sa.id = es.seccion_id
+             WHERE es.sesion_id = ? AND es.sku IN (?)
+             GROUP BY es.sku, sa.nombre_seccion`,
+            [sessionId, batchCodes]
+        );
+
+        sectionRows.forEach((sectionRow) => {
+            const key = sectionColumnKey(sectionRow.nombre_seccion || 'DESCONOCIDO');
+            const rows = codeToRows.get(String(sectionRow.sku)) || [];
+
+            rows.forEach((row) => {
+                if (key) {
+                    row[key] = Number(row[key] || 0) + Number(sectionRow.total_cantidad || 0);
+                }
+            });
+        });
+    }
+
+    return inventoryRows;
+};
+
+const attachScanTotalsToInventoryRows = async (sessionId, inventoryRows = []) => {
+    if (!sessionId || inventoryRows.length === 0) return inventoryRows;
+
+    const codeToRows = new Map();
+
+    inventoryRows.forEach((row) => {
+        [row.cCodigoBarra, row.cCodigoBarra2, row.cCodigoBarra3]
+            .filter(Boolean)
+            .forEach((code) => {
+                const key = String(code);
+                if (!codeToRows.has(key)) codeToRows.set(key, []);
+                codeToRows.get(key).push(row);
+            });
+    });
+
+    const codes = [...codeToRows.keys()];
+    if (codes.length === 0) return inventoryRows;
+
+    const rowTotals = new Map(inventoryRows.map((row) => [row.id, 0]));
+
+    const BATCH = 3000;
+
+    for (let i = 0; i < codes.length; i += BATCH) {
+        const batchCodes = codes.slice(i, i + BATCH);
+
+        const [scanRows] = await pool.query(
+            `SELECT sku, COALESCE(SUM(cantidad), 0) AS total_conteo
+             FROM inventario_escaneos
+             WHERE sesion_id = ? AND sku IN (?)
+             GROUP BY sku`,
+            [sessionId, batchCodes]
+        );
+
+        scanRows.forEach((scanRow) => {
+            const rows = codeToRows.get(String(scanRow.sku)) || [];
+            rows.forEach((row) => {
+                rowTotals.set(row.id, (rowTotals.get(row.id) || 0) + Number(scanRow.total_conteo || 0));
+            });
+        });
+    }
+
+    inventoryRows.forEach((row) => {
+        const total = rowTotals.get(row.id) || Number(row.cConteo || 0);
+        row.cConteo = total;
+        row.cTotalConteo = total - Math.abs(Number(row.cStock || 0));
+    });
+
+    return inventoryRows;
+};
 
 export const createSession = async (req, res) => {
     const { tienda_id, assigned_section } = req.body;
@@ -278,6 +593,8 @@ export const getSessionSummary = async (req, res) => {
 
 export const getSessionSummaryv2 = async (req, res) => {
     const { session_code } = req.params;
+    const paginated = hasPagination(req.query);
+    const { page, pageSize, offset } = buildPagination(req.query, 100, 1000);
 
     if (!session_code) {
         return res.status(400).json({ message: 'El código de sesión es requerido.' });
@@ -300,10 +617,81 @@ export const getSessionSummaryv2 = async (req, res) => {
         }
 
         const sessionData = sessionInfo[0];
+        const { where: filterWhere, params: filterParams } = buildConteoFilters(req.query);
+        const filterSql = filterWhere.length ? ` AND ${filterWhere.join(' AND ')}` : '';
 
-        // --- PASO 2: LISTADO COMPLETO DE LOS 10,000 REGISTROS (SIN GROUP BY) ---
-        // Al quitar el GROUP BY, te traerá cada escaneo individual (los 10,000 exactos).
-        // Traemos "1" en veces_escaneado y la cantidad normal de la fila para mantener tu compatibilidad de frontend.
+        const [totalsRows] = await pool.execute(
+            `SELECT 
+                COUNT(*) AS total_rows,
+                COUNT(DISTINCT s.sku) AS unique_skus,
+                COALESCE(SUM(s.cantidad), 0) AS total_unidades
+             FROM inventario_escaneos s
+             INNER JOIN usuarios u ON s.escaneado_por = u.id
+             LEFT JOIN secciones_asginados sa ON sa.id = s.seccion_id
+             LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+             LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+             WHERE s.sesion_id = ? ${filterSql}`,
+            [sessionData.id, ...filterParams]
+        );
+
+        const totals = {
+            total_rows: Number(totalsRows[0]?.total_rows || 0),
+            unique_skus: Number(totalsRows[0]?.unique_skus || 0),
+            total_unidades: Number(totalsRows[0]?.total_unidades || 0),
+            total_stock: 0,
+            total_diferencia: 0
+        };
+
+        if (filterWhere.length) {
+            const [filteredStockRows] = await pool.execute(
+                `SELECT COALESCE(SUM(ABS(matched_scans.cStock)), 0) AS total_stock
+                 FROM (
+                    SELECT DISTINCT filtered_scans.scan_id, product_codes.id, product_codes.cStock
+                    FROM (
+                        SELECT s.id AS scan_id, s.sku AS raw_sku, TRIM(LEADING '0' FROM TRIM(s.sku)) AS sku
+                        FROM inventario_escaneos s
+                        INNER JOIN usuarios u ON s.escaneado_por = u.id
+                        LEFT JOIN secciones_asginados sa ON sa.id = s.seccion_id
+                        LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+                        LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+                        WHERE s.sesion_id = ? ${filterSql}
+                    ) filtered_scans
+                    INNER JOIN (
+                        SELECT st.id, st.cStock, TRIM(LEADING '0' FROM TRIM(st.cCodigoBarra)) AS sku
+                        FROM inventario_store st
+                        WHERE st.cSessionCode = ?
+                          AND st.cCodigoBarra IS NOT NULL
+                          AND TRIM(st.cCodigoBarra) <> ''
+                        UNION ALL
+                        SELECT st.id, st.cStock, TRIM(LEADING '0' FROM TRIM(st.cCodigoBarra2)) AS sku
+                        FROM inventario_store st
+                        WHERE st.cSessionCode = ?
+                          AND st.cCodigoBarra2 IS NOT NULL
+                          AND TRIM(st.cCodigoBarra2) <> ''
+                        UNION ALL
+                        SELECT st.id, st.cStock, TRIM(LEADING '0' FROM TRIM(st.cCodigoBarra3)) AS sku
+                        FROM inventario_store st
+                        WHERE st.cSessionCode = ?
+                          AND st.cCodigoBarra3 IS NOT NULL
+                          AND TRIM(st.cCodigoBarra3) <> ''
+                    ) product_codes ON product_codes.sku = filtered_scans.sku
+                 ) matched_scans`,
+                [sessionData.id, ...filterParams, session_code, session_code, session_code]
+            );
+
+            totals.total_stock = Number(filteredStockRows[0]?.total_stock || 0);
+        } else {
+            const [stockRows] = await pool.execute(
+                `SELECT COALESCE(SUM(cStock), 0) AS total_stock
+                 FROM inventario_store
+                 WHERE cSessionCode = ?`,
+                [session_code]
+            );
+            totals.total_stock = Number(stockRows[0]?.total_stock || 0);
+        }
+
+        totals.total_diferencia = totals.total_unidades - totals.total_stock;
+
         const summaryQuery = `
             SELECT 
 			    s.id,
@@ -316,19 +704,26 @@ export const getSessionSummaryv2 = async (req, res) => {
                 ze.nombre_zona
             FROM inventario_escaneos s
             INNER JOIN usuarios u ON s.escaneado_por = u.id
-            INNER JOIN secciones_asginados sa ON sa.id = s.seccion_id
-            INNER JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
-            INNER JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
-            WHERE s.sesion_id = ?
+            LEFT JOIN secciones_asginados sa ON sa.id = s.seccion_id
+            LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+            LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+            WHERE s.sesion_id = ? ${filterSql}
             ORDER BY s.id DESC
+            ${paginated ? `LIMIT ${pageSize} OFFSET ${offset}` : ''}
         `;
 
-        const [summary] = await pool.execute(summaryQuery, [sessionData.id]);
+        const [summary] = await pool.execute(summaryQuery, [sessionData.id, ...filterParams]);
 
-        // Retornamos la respuesta con los 10k registros íntegros
         res.status(200).json({
             session: sessionData,
-            products: summary
+            products: summary,
+            totals,
+            pagination: paginated ? {
+                page,
+                pageSize,
+                totalRows: totals.total_rows,
+                totalPages: Math.ceil(totals.total_rows / pageSize)
+            } : undefined
         });
 
     } catch (error) {
@@ -389,6 +784,11 @@ export const getActiveSessions = async (req, res) => {
 
 export const getInventoryReqStore = async (req, res) => {
     const { session_code, serie_store } = req.query;
+    const paginated = hasPagination(req.query);
+    const summaryOnly = req.query.summaryOnly === 'true' || req.query.summaryOnly === true;
+    const includeFilterOptions = req.query.includeFilterOptions === 'true' || req.query.includeFilterOptions === true;
+    const skipSectionTotals = req.query.skipSectionTotals === 'true' || req.query.skipSectionTotals === true;
+    const { page, pageSize, offset } = buildPagination(req.query, 100, 1000);
     let objResponse = { success: true };
     console.log('getInventoryReqStore - Parámetros recibidos:', { session_code, serie_store });
     if (!session_code || !serie_store) {
@@ -398,25 +798,146 @@ export const getInventoryReqStore = async (req, res) => {
     try {
         // OPTIMIZACIÓN 1: Traemos SOLO la columna necesaria en lugar de SELECT *
         const [sesionRows] = await pool.execute(
-            `SELECT inventario_registrado FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            `SELECT id, inventario_registrado FROM inventario_sesiones WHERE codigo_sesion = ?`,
             [session_code]
         );
 
         // Una forma mucho más limpia y segura de validar si el registro existe en JS
         const sesion = sesionRows[0];
+        const sessionId = sesion?.id;
         const invExist = sesion?.inventario_registrado || 0;
 
         console.log('getInventoryReqStore - Existencia:', invExist);
 
         if (sesionRows.length > 0 && invExist) {
-            // OPTIMIZACIÓN 2: Esta query ahora volará gracias al índice 'idx_inv_store_session'
-            const [inventario_store] = await pool.execute(
-                `SELECT * FROM inventario_store WHERE cSessionCode = ?`,
-                [session_code]
-            );
+            const { where: inventoryWhere, params: inventoryParams, usesScanTotals } = buildInventoryFilters(req.query);
+            const inventoryWhereSql = inventoryWhere.length ? ` AND ${inventoryWhere.join(' AND ')}` : '';
+            const hasInventoryFilters = inventoryWhere.length > 0;
+
+            if (usesScanTotals || hasInventoryFilters) {
+                await syncStoreScanTotals(sessionId, session_code);
+            }
+
+            let stockSummaryRows;
+            let totalConteo = 0;
+
+            if (!hasInventoryFilters) {
+                [stockSummaryRows] = await pool.execute(
+                    `SELECT
+                        COUNT(*) AS total_rows,
+                        COALESCE(SUM(st.cStock), 0) AS total_stock
+                     FROM inventario_store st
+                     WHERE st.cSessionCode = ?`,
+                    [session_code]
+                );
+
+                const [scanSummaryRows] = await pool.execute(
+                    `SELECT COALESCE(SUM(es.cantidad), 0) AS total_conteo
+                     FROM inventario_escaneos es
+                     WHERE es.sesion_id = ?`,
+                    [sessionId]
+                );
+                totalConteo = Number(scanSummaryRows[0]?.total_conteo || 0);
+            } else {
+                [stockSummaryRows] = await pool.execute(
+                    `SELECT
+                        COUNT(*) AS total_rows,
+                        COALESCE(SUM(ABS(st.cStock)), 0) AS total_stock,
+                        COALESCE(SUM(st.cConteo), 0) AS total_conteo
+                     FROM inventario_store st
+                     WHERE st.cSessionCode = ? ${inventoryWhereSql}`,
+                    [session_code, ...inventoryParams]
+                );
+                totalConteo = Number(stockSummaryRows[0]?.total_conteo || 0);
+            }
+
+            const totalStock = Number(stockSummaryRows[0]?.total_stock || 0);
 
             objResponse['codigo_sesion'] = session_code;
-            objResponse['inventario'] = inventario_store;
+            objResponse['summary'] = {
+                total_rows: Number(stockSummaryRows[0]?.total_rows || 0),
+                total_stock: totalStock,
+                total_conteo: totalConteo,
+                total_diferencia: totalConteo - totalStock
+            };
+
+            if (includeFilterOptions) {
+                const [sectionOptions] = await pool.execute(
+                    `SELECT id, seccion_id_fk, nombre_seccion
+                     FROM secciones_asginados
+                     WHERE codigo_sesion = ?
+                     ORDER BY nombre_seccion ASC`,
+                    [session_code]
+                );
+
+                const [filterRows] = await pool.execute(
+                    `SELECT 'cDepartamento' AS field_name, cDepartamento AS field_value
+                     FROM inventario_store
+                     WHERE cSessionCode = ? AND cDepartamento IS NOT NULL AND cDepartamento <> ''
+                     GROUP BY cDepartamento
+                     UNION ALL
+                     SELECT 'cSeccion' AS field_name, cSeccion AS field_value
+                     FROM inventario_store
+                     WHERE cSessionCode = ? AND cSeccion IS NOT NULL AND cSeccion <> ''
+                     GROUP BY cSeccion
+                     UNION ALL
+                     SELECT 'cFamilia' AS field_name, cFamilia AS field_value
+                     FROM inventario_store
+                     WHERE cSessionCode = ? AND cFamilia IS NOT NULL AND cFamilia <> ''
+                     GROUP BY cFamilia
+                     UNION ALL
+                     SELECT 'cSubFamilia' AS field_name, cSubFamilia AS field_value
+                     FROM inventario_store
+                     WHERE cSessionCode = ? AND cSubFamilia IS NOT NULL AND cSubFamilia <> ''
+                     GROUP BY cSubFamilia`,
+                    [session_code, session_code, session_code, session_code]
+                );
+
+                const filterOptionMap = filterRows.reduce((acc, row) => {
+                    if (!acc[row.field_name]) acc[row.field_name] = [];
+                    acc[row.field_name].push(String(row.field_value).trim());
+                    return acc;
+                }, {});
+
+                objResponse['filterOptions'] = {
+                    sections: sectionOptions,
+                    cDepartamento: (filterOptionMap.cDepartamento || []).sort(),
+                    cSeccion: (filterOptionMap.cSeccion || []).sort(),
+                    cFamilia: (filterOptionMap.cFamilia || []).sort(),
+                    cSubFamilia: (filterOptionMap.cSubFamilia || []).sort()
+                };
+            }
+
+            if (!summaryOnly) {
+                const inventoryQuery = `
+                    SELECT 
+                        st.id, st.cSessionCode, st.codigo_sesion, st.cCodigoTienda, st.cCodigoArticulo, st.cReferencia,
+                        st.cCodigoBarra, st.cCodigoBarra2, st.cCodigoBarra3, st.cDescripcion, st.cDepartamento,
+                        st.cSeccion, st.cFamilia, st.cSubFamilia, st.cTalla, st.cColor, st.cEsencia,
+                        st.cStyleDescription, st.cStyleDescription AS cStyleDesc, st.cStock, st.cTemporada,
+                        COALESCE(st.cConteo, 0) AS cConteo,
+                        COALESCE(st.cTotalConteo, 0) AS cTotalConteo,
+                        st.checking
+                    FROM inventario_store st
+                    WHERE st.cSessionCode = ? ${inventoryWhereSql}
+                    ORDER BY st.id ASC
+                    ${paginated ? `LIMIT ${pageSize} OFFSET ${offset}` : ''}
+                `;
+
+                const [inventario_store] = await pool.execute(inventoryQuery, [session_code, ...inventoryParams]);
+                await attachScanTotalsToInventoryRows(sessionId, inventario_store);
+                if (!skipSectionTotals) {
+                    await attachSectionTotalsToInventoryRows(sessionId, inventario_store);
+                }
+
+                objResponse['inventario'] = inventario_store;
+                objResponse['pagination'] = paginated ? {
+                    page,
+                    pageSize,
+                    totalRows: objResponse['summary'].total_rows,
+                    totalPages: Math.ceil(objResponse['summary'].total_rows / pageSize)
+                } : undefined;
+            }
         } else {
             // Si no existe, disparamos el Socket de la Pocket/Tienda de forma normal
             getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
@@ -430,10 +951,372 @@ export const getInventoryReqStore = async (req, res) => {
     }
 };
 
+export const exportSessionSummaryCsv = async (req, res) => {
+    const { session_code } = req.params;
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        const [sessionInfo] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sessionInfo.length === 0) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const { where: filterWhere, params: filterParams } = buildConteoFilters(req.query);
+        const filterSql = filterWhere.length ? ` AND ${filterWhere.join(' AND ')}` : '';
+
+        const [rows] = await pool.execute(
+            `SELECT 
+                s.sku AS CODBARRAS,
+                u.username AS USUARIO,
+                ze.nombre_zona AS ZONA,
+                sa.nombre_seccion AS SUBZONA,
+                s.cantidad AS UNIDADES
+             FROM inventario_escaneos s
+             INNER JOIN usuarios u ON s.escaneado_por = u.id
+             LEFT JOIN secciones_asginados sa ON sa.id = s.seccion_id
+             LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+             LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+             WHERE s.sesion_id = ? ${filterSql}
+             ORDER BY s.id DESC`,
+            [sessionInfo[0].id, ...filterParams]
+        );
+
+        return sendCsv(res, `conteo_${session_code}.csv`, rows, [
+            { key: 'CODBARRAS', header: 'CODBARRAS' },
+            { key: 'USUARIO', header: 'USUARIO' },
+            { key: 'ZONA', header: 'ZONA' },
+            { key: 'SUBZONA', header: 'SUBZONA' },
+            { key: 'UNIDADES', header: 'UNIDADES' }
+        ]);
+    } catch (error) {
+        console.error('Error en exportSessionSummaryCsv:', error);
+        return res.status(500).json({ message: 'Error al exportar conteo', error: error.message });
+    }
+};
+
+export const getSessionStatistics = async (req, res) => {
+    const { session_code } = req.params;
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        const [sessionInfo] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        const sessionId = sessionInfo[0]?.id;
+        if (!sessionId) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const [byUser] = await pool.execute(
+            `SELECT
+                COALESCE(NULLIF(TRIM(u.username), ''), 'SIN USUARIO') AS label,
+                COALESCE(SUM(s.cantidad), 0) AS value
+             FROM inventario_escaneos s
+             LEFT JOIN usuarios u ON u.id = s.escaneado_por
+             WHERE s.sesion_id = ?
+             GROUP BY label
+             ORDER BY value DESC`,
+            [sessionId]
+        );
+
+        const [bySection] = await pool.execute(
+            `SELECT
+                COALESCE(NULLIF(TRIM(sa.nombre_seccion), ''), 'DESCONOCIDO') AS label,
+                COALESCE(SUM(s.cantidad), 0) AS value
+             FROM inventario_escaneos s
+             LEFT JOIN secciones_asginados sa ON sa.id = s.seccion_id
+             WHERE s.sesion_id = ?
+             GROUP BY label
+             ORDER BY value DESC`,
+            [sessionId]
+        );
+
+        return res.status(200).json({ byUser, bySection });
+    } catch (error) {
+        console.error('Error en getSessionStatistics:', error);
+        return res.status(500).json({ message: 'Error al obtener estadísticas', error: error.message });
+    }
+};
+
+export const exportInventoryStoreCsv = async (req, res) => {
+    const { session_code, serie_store } = req.query;
+
+    if (!session_code || !serie_store) {
+        return res.status(400).json({ error: "Faltan parámetros requeridos: session_code y serie_store" });
+    }
+
+    try {
+        const [sesionRows] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sesionRows.length === 0) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const sessionId = sesionRows[0].id;
+        const { where: inventoryWhere, params: inventoryParams, usesScanTotals } = buildInventoryFilters(req.query);
+        const inventoryWhereSql = inventoryWhere.length ? ` AND ${inventoryWhere.join(' AND ')}` : '';
+
+        if (usesScanTotals) {
+            await syncStoreScanTotals(sessionId, session_code);
+        }
+
+        const [rows] = await pool.execute(
+            `SELECT 
+                st.id, st.cCodigoBarra, st.cCodigoBarra2, st.cCodigoBarra3, st.cReferencia,
+                st.cDescripcion, st.cDepartamento, st.cSeccion, st.cFamilia, st.cSubFamilia,
+                st.cTalla, st.cColor, st.cEsencia, st.cStyleDescription AS cStyleDesc,
+                st.cStock,
+                COALESCE(st.cConteo, 0) AS cConteo,
+                COALESCE(st.cTotalConteo, 0) AS cTotalConteo
+             FROM inventario_store st
+             WHERE st.cSessionCode = ? ${inventoryWhereSql}
+             ORDER BY st.id ASC`,
+            [session_code, ...inventoryParams]
+        );
+
+        await attachScanTotalsToInventoryRows(sessionId, rows);
+        await attachSectionTotalsToInventoryRows(sessionId, rows);
+
+        const sectionColumns = [...new Set(
+            Object.keys(rows.reduce((acc, row) => ({ ...acc, ...row }), {}))
+                .filter((key) => ![
+                    'id', 'cCodigoBarra', 'cCodigoBarra2', 'cCodigoBarra3', 'cReferencia',
+                    'cDescripcion', 'cDepartamento', 'cSeccion', 'cFamilia', 'cSubFamilia',
+                    'cTalla', 'cColor', 'cEsencia', 'cStyleDesc', 'cStock', 'cConteo', 'cTotalConteo'
+                ].includes(key))
+        )].sort();
+
+        const columns = [
+            { key: 'cCodigoBarra', header: 'CODIGOBARRAS' },
+            { key: 'cCodigoBarra2', header: 'CODIGOBARRAS2' },
+            { key: 'cCodigoBarra3', header: 'CODIGOBARRAS3' },
+            { key: 'cReferencia', header: 'REFERENCIA' },
+            { key: 'cDescripcion', header: 'DESCRIPCION' },
+            { key: 'cDepartamento', header: 'DEPARTAMENTO' },
+            { key: 'cSeccion', header: 'SECCION' },
+            { key: 'cFamilia', header: 'FAMILIA' },
+            { key: 'cSubFamilia', header: 'SUBFAMILIA' },
+            { key: 'cTalla', header: 'TALLA' },
+            { key: 'cColor', header: 'COLOR' },
+            { key: 'cEsencia', header: 'ESENCIA' },
+            { key: 'cStyleDesc', header: 'STYLEDESCRIPTION' },
+            { key: 'cStock', header: 'STOCK' },
+            { key: 'cConteo', header: 'CONTEO' },
+            { key: 'cTotalConteo', header: 'DIFERENCIA' },
+            ...sectionColumns.map((key) => ({ key, header: key.toUpperCase() }))
+        ];
+
+        return sendCsv(res, `cruce_inventario_${session_code}.csv`, rows, columns);
+    } catch (error) {
+        console.error('Error en exportInventoryStoreCsv:', error);
+        return res.status(500).json({ message: 'Error al exportar inventario', error: error.message });
+    }
+};
+
+export const getProductsWithoutDisplay = async (req, res) => {
+    const { session_code, sourceArea = 'Almacén', targetArea = 'Venta' } = req.query;
+    const { page, pageSize, offset } = buildPagination(req.query, 100, 1000);
+
+    if (!session_code) {
+        return res.status(400).json({ error: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        const [sesionRows] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        if (sesionRows.length === 0) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const sessionId = sesionRows[0].id;
+        const areaSql = areaCaseSql('sa');
+        const areaTotalsSql = `
+            SELECT
+                product_codes.id,
+                SUM(CASE WHEN scan_area.area = ? THEN scan_area.total_conteo ELSE 0 END) AS source_qty,
+                SUM(CASE WHEN scan_area.area = ? THEN scan_area.total_conteo ELSE 0 END) AS target_qty
+            FROM (
+                SELECT id, cCodigoBarra AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra IS NOT NULL
+                  AND cCodigoBarra <> ''
+                UNION ALL
+                SELECT id, cCodigoBarra2 AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra2 IS NOT NULL
+                  AND cCodigoBarra2 <> ''
+                UNION ALL
+                SELECT id, cCodigoBarra3 AS sku
+                FROM inventario_store
+                WHERE cSessionCode = ?
+                  AND cCodigoBarra3 IS NOT NULL
+                  AND cCodigoBarra3 <> ''
+            ) product_codes
+            INNER JOIN (
+                SELECT
+                    es.sku,
+                    ${areaSql} AS area,
+                    SUM(es.cantidad) AS total_conteo
+                FROM inventario_escaneos es
+                LEFT JOIN secciones_asginados sa ON sa.id = es.seccion_id
+                WHERE es.sesion_id = ?
+                GROUP BY es.sku, area
+            ) scan_area ON scan_area.sku = product_codes.sku
+            GROUP BY product_codes.id
+        `;
+
+        const areaParams = [
+            sourceArea,
+            targetArea,
+            session_code,
+            session_code,
+            session_code,
+            sessionId
+        ];
+
+        const [countRows] = await pool.execute(
+            `SELECT COUNT(*) AS total_rows
+             FROM inventario_store st
+             INNER JOIN (${areaTotalsSql}) area_totals ON area_totals.id = st.id
+             WHERE st.cSessionCode = ?
+               AND COALESCE(area_totals.source_qty, 0) > 0
+               AND COALESCE(area_totals.target_qty, 0) = 0`,
+            [...areaParams, session_code]
+        );
+
+        const [rows] = await pool.execute(
+            `SELECT
+                st.id,
+                st.cCodigoTienda,
+                st.cCodigoArticulo,
+                st.cCodigoBarra,
+                st.cCodigoBarra2,
+                st.cCodigoBarra3,
+                st.cReferencia,
+                st.cDescripcion,
+                st.cDepartamento,
+                st.cSeccion,
+                st.cFamilia,
+                st.cSubFamilia,
+                st.cTemporada,
+                st.cTalla,
+                st.cColor,
+                st.cStock,
+                COALESCE(area_totals.source_qty, 0) AS source_qty,
+                COALESCE(area_totals.target_qty, 0) AS target_qty
+             FROM inventario_store st
+             INNER JOIN (${areaTotalsSql}) area_totals ON area_totals.id = st.id
+             WHERE st.cSessionCode = ?
+               AND COALESCE(area_totals.source_qty, 0) > 0
+               AND COALESCE(area_totals.target_qty, 0) = 0
+             ORDER BY st.id ASC
+             LIMIT ${pageSize} OFFSET ${offset}`,
+            [...areaParams, session_code]
+        );
+
+        return res.status(200).json({
+            success: true,
+            sourceArea,
+            targetArea,
+            products: rows,
+            pagination: {
+                page,
+                pageSize,
+                totalRows: Number(countRows[0]?.total_rows || 0),
+                totalPages: Math.ceil(Number(countRows[0]?.total_rows || 0) / pageSize)
+            }
+        });
+    } catch (error) {
+        console.error('Error en getProductsWithoutDisplay:', error);
+        return res.status(500).json({ message: 'Error al obtener productos sin exhibir', error: error.message });
+    }
+};
+
+export const getInventoryStoreStatistics = async (req, res) => {
+    const { session_code } = req.query;
+    const allowedFields = new Set(['cDepartamento', 'cSeccion', 'cFamilia', 'cSubFamilia']);
+    const statField = allowedFields.has(req.query.statField) ? req.query.statField : 'cDepartamento';
+
+    if (!session_code) {
+        return res.status(400).json({ error: 'Falta parámetro requerido: session_code' });
+    }
+
+    try {
+        const [sessionRows] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        const sessionId = sessionRows[0]?.id;
+        if (!sessionId) {
+            return res.status(404).json({ error: 'Sesión no encontrada.' });
+        }
+
+        await syncStoreScanTotals(sessionId, session_code);
+
+        const [byField] = await pool.query(
+            `SELECT
+                COALESCE(NULLIF(TRIM(st.${statField}), ''), 'Otros') AS label,
+                COALESCE(SUM(ABS(COALESCE(st.cTotalConteo, 0))), 0) AS value,
+                COALESCE(SUM(COALESCE(st.cTotalConteo, 0)), 0) AS signed_value
+             FROM inventario_store st
+             WHERE st.cSessionCode = ?
+             GROUP BY label
+             HAVING value > 0
+             ORDER BY value DESC
+             LIMIT 50`,
+            [session_code]
+        );
+
+        const areaSql = areaCaseSql('sa');
+        const [byArea] = await pool.execute(
+            `SELECT
+                area AS label,
+                COALESCE(SUM(total_conteo), 0) AS value
+             FROM (
+                SELECT
+                    ${areaSql} AS area,
+                    es.cantidad AS total_conteo
+                FROM inventario_escaneos es
+                LEFT JOIN secciones_asginados sa ON sa.id = es.seccion_id
+                WHERE es.sesion_id = ?
+             ) grouped_scans
+             GROUP BY area
+             HAVING value > 0
+             ORDER BY value DESC`,
+            [sessionId]
+        );
+
+        return res.status(200).json({ byField, byArea, statField });
+    } catch (error) {
+        console.error('Error en getInventoryStoreStatistics:', error);
+        return res.status(500).json({ error: 'Error interno del servidor', details: error.message });
+    }
+};
+
 export const postInventoryResStore = async (req, res) => {
     try {
         const dataBody = req.body;
-        console.log('postInventoryResStore - Datos recibidos:', dataBody);
 
         if (!dataBody || dataBody.length === 0) {
             return res.status(400).json({ message: "El cuerpo de la petición está vacío" });
@@ -442,10 +1325,7 @@ export const postInventoryResStore = async (req, res) => {
         const sessionCode = dataBody[0]['cSessionCode'];
         console.log("Sesión:", sessionCode);
 
-        // 1. Preparamos un arreglo con todas las promesas de inserción
-        const insertPromises = dataBody.map((d) => {
-            // Reemplazamos cualquier 'undefined' por 'null' (o strings vacíos / ceros)
-            const valores = [
+        const values = dataBody.map((d) => [
                 d.cSessionCode ?? null,
                 d.cCodigoTienda ?? null,
                 d.cCodigoArticulo ?? null,
@@ -466,18 +1346,20 @@ export const postInventoryResStore = async (req, res) => {
                 d.cStyleDesc ?? '',
                 d.cCodigoBarra2 ?? null,
                 d.cCodigoBarra3 ?? null
-            ];
+        ]);
 
-            // Retornamos la promesa de ejecución (NO usamos await aquí dentro)
-            return pool.execute(
+        const BATCH = 1000;
+        let insertedRows = 0;
+
+        for (let i = 0; i < values.length; i += BATCH) {
+            const batch = values.slice(i, i + BATCH);
+            const [result] = await pool.query(
                 `INSERT INTO inventario_store (cSessionCode, cCodigoTienda, cCodigoArticulo, cReferencia, cCodigoBarra, cDescripcion, cDepartamento, cSeccion, cFamilia, cSubFamilia, cTalla, cColor, cStock, cTemporada, cConteo, cTotalConteo, cEsencia, cStyleDescription, cCodigoBarra2, cCodigoBarra3) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-                valores
+                 VALUES ?`,
+                [batch]
             );
-        });
-
-        // 2. Esperamos a que TODAS las inserciones terminen correctamente
-        await Promise.all(insertPromises);
+            insertedRows += result.affectedRows || batch.length;
+        }
 
         // 3. Actualizamos el estado de la sesión
         await pool.execute(
@@ -485,12 +1367,17 @@ export const postInventoryResStore = async (req, res) => {
             [sessionCode]
         );
 
-        // 4. Emitimos evento de WebSocket
-        getIO().to(sessionCode).emit('res_inv_store', dataBody);
+        // 4. Emitimos un evento liviano; no reenviamos 100k filas al navegador.
+        getIO().to(sessionCode).emit('res_inv_store', {
+            sessionCode,
+            insertedRows,
+            refresh: true
+        });
 
         // 5. IMPORTANTE: Responder a la petición HTTP para que no se quede colgada
         return res.status(200).json({
-            message: "Inventario registrado y sesión actualizada correctamente"
+            message: "Inventario registrado y sesión actualizada correctamente",
+            insertedRows
         });
 
     } catch (error) {
@@ -542,7 +1429,11 @@ export const getInventoryResStore = async (req, res) => {
     const dataBody = req.body;
     if (dataBody) {
         console.log(dataBody[0]['cSessionCode']);
-        getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', dataBody);
+        getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', {
+            sessionCode: dataBody[0]['cSessionCode'],
+            insertedRows: dataBody.length,
+            refresh: true
+        });
     }
 }
 

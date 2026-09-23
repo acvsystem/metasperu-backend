@@ -5,9 +5,14 @@ import {
     syncBulkScans,
     getSessionSummary,
     getSessionSummaryv2,
+    getSessionStatistics,
+    exportSessionSummaryCsv,
     getSessions,
     getStores,
     getInventoryReqStore,
+    getInventoryStoreStatistics,
+    exportInventoryStoreCsv,
+    getProductsWithoutDisplay,
     postInventoryResStore,
     getAssignedSection,
     getPocketScan,
@@ -19,7 +24,7 @@ import {
 } from '../controllers/inventory.controller.js';
 
 import { userController } from '../controllers/user.controller.js';
-import { getZonasSubzonas, delZonas, delZonaEscaneos, importConteoSession, importStoreSession, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
+import { getZonasSubzonas, delZonas, delZonaEscaneos, importConteoSession, importStoreSession, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, postSectionsBulk, assignSectionsRangeToSession, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { storeController } from '../controllers/store.controller.js';
 
@@ -28,7 +33,9 @@ const router = Router();
 // --- RUTAS PARA EL ADMINISTRADOR (WEB) ---
 router.post('/create-session', verifyToken, createSession);
 router.get('/summary/:session_code', verifyToken, getSessionSummary);
+router.get('/v2/summary/:session_code/statistics', verifyToken, getSessionStatistics);
 router.get('/v2/summary/:session_code', verifyToken, getSessionSummaryv2);
+router.get('/v2/summary/:session_code/export/csv', verifyToken, exportSessionSummaryCsv);
 router.get('/sessions', verifyToken, getSessions);
 
 // --- RUTAS PARA EL POCKET (DISPOSITIVO) ---
@@ -42,6 +49,9 @@ router.get('/pocket/scan/:session_code', verifyToken, getPocketScan);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);
+router.get('/request/store/statistics', verifyToken, getInventoryStoreStatistics);
+router.get('/request/store/export/csv', verifyToken, exportInventoryStoreCsv);
+router.get('/request/store/products-without-display', verifyToken, getProductsWithoutDisplay);
 router.post('/response/store', postInventoryResStore);
 router.post('/response/store/import', postInventoryImport);
 router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);
@@ -53,6 +63,8 @@ router.put('/checked/row/inv', verifyToken, updateCheckedRow);
 // --- RUTAS PARA MANTENIMIENTO
 router.get('/api/v1/seccion', verifyToken, getSections);
 router.post('/api/v1/seccion', verifyToken, postSections);
+router.post('/api/v1/seccion/bulk', verifyToken, postSectionsBulk);
+router.post('/api/v1/seccion/session/bulk', verifyToken, assignSectionsRangeToSession);
 router.put('/api/v1/seccion', verifyToken, putSecitons);
 router.delete('/api/v1/seccion/:seccion_id', verifyToken, delSecitons);
 router.post('/api/v1/seccion/count/session', verifyToken, postSectionsCountSession);
