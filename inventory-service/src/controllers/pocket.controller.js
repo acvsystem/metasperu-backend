@@ -37,14 +37,21 @@ export async function getPocketPerformance(req, res) {
             COALESCE(SUM(t.active_seconds), 0) AS active_seconds,
             COUNT(CASE WHEN t.previous_section IS NULL OR t.previous_section <> t.seccion_id THEN 1 END) AS visits`;
         const [users] = await pool.query(`${cte} SELECT t.user_id, COALESCE(u.username, CONCAT('Usuario ', t.user_id)) AS username,
-            COUNT(DISTINCT t.seccion_id) AS sections, ${metrics}
+            COUNT(DISTINCT t.seccion_id) AS subzones_count, ${metrics}
             FROM timed t LEFT JOIN usuarios u ON u.id = t.user_id GROUP BY t.user_id, u.username ORDER BY scans DESC`, [session.id]);
         const requestedUser = Number(req.query.userId || users[0]?.user_id || 0);
         if (!Number.isSafeInteger(requestedUser) || requestedUser < 0) return res.status(400).json({ message: 'Usuario invalido.' });
         const [sections] = requestedUser ? await pool.query(`${cte} SELECT t.seccion_id,
-            COALESCE(sa.nombre_seccion, 'Sin seccion') AS section_name, ${metrics}
-            FROM timed t LEFT JOIN secciones_asginados sa ON sa.id = t.seccion_id
-            WHERE t.user_id = ? GROUP BY t.seccion_id, sa.nombre_seccion ORDER BY first_scan`, [session.id, requestedUser]) : [[]];
+            sa.seccion_id_fk AS subzone_id,
+            COALESCE(ze.nombre_zona, 'Sin zona') AS zone_name,
+            COALESCE(sa.nombre_seccion, 'Sin subzona') AS subzone_name, ${metrics}
+            FROM timed t
+            LEFT JOIN secciones_asginados sa ON sa.id = t.seccion_id
+            LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+            LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+            WHERE t.user_id = ?
+            GROUP BY t.seccion_id, sa.seccion_id_fk, ze.nombre_zona, sa.nombre_seccion
+            ORDER BY first_scan`, [session.id, requestedUser]) : [[]];
         res.json({ users, sections, selectedUserId: requestedUser, inactivitySeconds: 300 });
     } catch (error) {
         console.error('Pocket performance:', error.message);
