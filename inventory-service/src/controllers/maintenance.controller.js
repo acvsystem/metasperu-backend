@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getIO } from '../config/socket.js';
+import { getIO, trackSocketEmit } from '../config/socket.js';
 import { lockStore as redis } from '../utils/lock-store.js';
 
 /** MANTENIMIENTO SECCION */
@@ -595,6 +595,7 @@ export const importConteoSession = async (req, res) => {
         await connection.commit();
 
         try {
+            trackSocketEmit('update_totals', { target: session_code, count: insertados, source: 'import_conteo' });
             getIO().to(session_code).emit('update_totals', {
                 count: insertados,
                 source: 'import_conteo',

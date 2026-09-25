@@ -1,10 +1,13 @@
 import { pool } from '../config/db.js';
-import { getIO } from '../config/socket.js';
+import { getIO, trackSocketEmit } from '../config/socket.js';
 import { createPocketSync } from '../services/pocket-sync.js';
 
-const sync = createPocketSync(pool, (code, scans) => getIO().to(code).emit('update_totals', {
-    count: scans.length, last_scans: scans.slice(-5)
-}));
+const sync = createPocketSync(pool, (code, scans) => {
+    trackSocketEmit('update_totals', { target: code, count: scans.length, source: 'pocket_sync' });
+    getIO().to(code).emit('update_totals', {
+        count: scans.length, last_scans: scans.slice(-5)
+    });
+});
 
 export async function syncBulkScans(req, res) {
     try {

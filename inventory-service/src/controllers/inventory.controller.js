@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { getIO } from '../config/socket.js';
+import { getIO, trackSocketEmit } from '../config/socket.js';
 import crypto from 'crypto'; // Módulo nativo de Node.js para generar el Hash
 import { lockStore as redis } from '../utils/lock-store.js';
 
@@ -872,6 +872,7 @@ export const getInventoryReqStore = async (req, res) => {
             }
         } else {
             // Si no existe, disparamos el Socket de la Pocket/Tienda de forma normal
+            trackSocketEmit('req_inv_store', { target: serie_store, session_code, serie: serie_store });
             getIO().to(serie_store).emit('req_inv_store', { session_code: session_code, serie: serie_store });
         }
 
@@ -1300,6 +1301,7 @@ export const postInventoryResStore = async (req, res) => {
         );
 
         // 4. Emitimos un evento liviano; no reenviamos 100k filas al navegador.
+        trackSocketEmit('res_inv_store', { target: sessionCode, sessionCode, insertedRows, refresh: true });
         getIO().to(sessionCode).emit('res_inv_store', {
             sessionCode,
             insertedRows,
@@ -1361,6 +1363,7 @@ export const getInventoryResStore = async (req, res) => {
     const dataBody = req.body;
     if (dataBody) {
         console.log(dataBody[0]['cSessionCode']);
+        trackSocketEmit('res_inv_store', { target: dataBody[0]['cSessionCode'], sessionCode: dataBody[0]['cSessionCode'], insertedRows: dataBody.length, refresh: true });
         getIO().to(dataBody[0]['cSessionCode']).emit('res_inv_store', {
             sessionCode: dataBody[0]['cSessionCode'],
             insertedRows: dataBody.length,
