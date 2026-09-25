@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
+import { pool } from './db.js';
 
 let io;
 const JWT_SECRET = 'una_clave_muy_segura_y_larga_123456';
@@ -9,6 +10,14 @@ const recentEvents = [];
 const eventCounts = new Map();
 const socketStartedAt = Date.now();
 let monitorInterval;
+
+const canUseMonitor = (role) => ['administrador'].includes(String(role || '').toLowerCase());
+
+const getUserRole = async (userId) => {
+    if (!userId) return '';
+    const [[user]] = await pool.query('SELECT role FROM usuarios WHERE id = ? AND estado = 1', [userId]);
+    return user?.role || '';
+};
 
 const pushRecentEvent = (event) => {
     const entry = { ts: new Date().toISOString(), ...event };
@@ -74,8 +83,6 @@ export const initSocket = (server) => {
                 if (user?.id) {
                     socket.data.user = user;
                     socket.join(`user:${user.id}`);
-                    const role = String(user.role || '').toLowerCase();
-                    if (['administrador', 'auditor'].includes(role)) socket.join(adminMonitorRoom);
                     logger.info('socket_authenticated', { socket_id: socket.id, user_id: user.id, role: user.role || null });
                 }
             } catch {
@@ -97,12 +104,24 @@ export const initSocket = (server) => {
             emitMonitorStats();
         });
 
-        socket.on('subscribe_socket_monitor', () => {
-            const role = String(socket.data.user?.role || '').toLowerCase();
-            if (!['administrador', 'auditor'].includes(role)) {
-                logger.warn('socket_monitor_denied', { socket_id: socket.id, user_id: socket.data.user?.id || null });
+        socket.on('subscribe_socket_monitor', async () => {
+            const userId = socket.data.user?.id || null;
+            let role = socket.data.user?.role || '';
+            try {
+                role = role || await getUserRole(userId);
+            } catch (error) {
+                logger.warn('socket_monitor_role_lookup_failed', { socket_id: socket.id, user_id: userId, error: error.message });
+            }
+            if (!canUseMonitor(role)) {
+                logger.warn('socket_monitor_denied', { socket_id: socket.id, user_id: userId, role: role || null });
+                socket.emit('socket_monitor_stats', {
+                    denied: true,
+                    message: 'Solo el administrador puede ver el monitor de sockets.',
+                    generated_at: new Date().toISOString()
+                });
                 return;
             }
+            socket.data.user = { ...socket.data.user, role };
             socket.join(adminMonitorRoom);
             socket.emit('socket_monitor_stats', statsSnapshot());
         });
