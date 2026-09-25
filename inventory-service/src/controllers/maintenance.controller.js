@@ -795,7 +795,12 @@ export const delSecitons = async (req, res) => {
 };
 
 export const postSectionsCountSession = async (req, res) => {
-    const { session_code, seccion_id } = req.body;
+    const { session_code, seccion_id } = req.body || {};
+    const sectionId = Number(seccion_id);
+    if (typeof session_code !== 'string' || !session_code.trim() ||
+        !Number.isSafeInteger(sectionId) || sectionId <= 0) {
+        return res.status(400).json({ message: 'Indique una sesion y una seccion validas.' });
+    }
 
     try {
         const [rows] = await pool.execute(
@@ -812,7 +817,7 @@ WHERE
 GROUP BY 
     sa.seccion_id_fk, 
     sa.nombre_seccion;`,
-            [session_code, seccion_id]
+            [session_code.trim(), sectionId]
         );
 
         res.json(rows);

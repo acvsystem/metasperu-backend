@@ -440,75 +440,7 @@ export const registerScan = async (req, res) => {
     }
 };
 
-export const syncBulkScans = async (req, res) => {
-    const { session_code, scans } = req.body; // 'scans' es un array de objetos
-    const userId = req.user.id;
-
-    if (!scans || scans.length === 0) {
-        return res.status(400).json({ error: 'No se proporcionaron datos para escanear.' });
-    }
-
-    // --- ARQUITECTURA DE DEDUPLICACIÓN (REDIS LOCK) ---
-    // 1. Convertimos el array de escaneos a un string único y generamos su Hash MD5
-    const scansString = JSON.stringify(scans);
-    const scansHash = crypto.createHash('md5').update(scansString).digest('hex');
-
-    // 2. Creamos la clave de bloqueo única para esta ráfaga
-    const lockKey = `lock:sync:${session_code}:${scansHash}`;
-
-
-    try {
-        // 3. Intentamos adquirir el bloqueo atómico en Redis.
-        // 'NX' = Solo si no existe. 'EX' 5 = Expira automáticamente en 5 segundos.
-        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 5);
-        console.log(lockAcquired);
-        if (!lockAcquired) {
-            // Si otra petición idéntica ya tomó el candado en este mismo milisegundo, la descartamos.
-            console.warn(`[DEDUPLICACIÓN] Petición duplicada bloqueada para la sesión: ${session_code}`);
-            return res.status(429).json({
-                error: 'Esta solicitud ya está siendo procesada. Evitando registros duplicados.'
-            });
-        }
-
-        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
-        const [session] = await pool.execute(
-            'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
-            [session_code]
-        );
-
-        if (session.length === 0) {
-            // Si la sesión no es válida, liberamos el candado inmediatamente para no bloquear futuros envíos buenos
-            await redis.del(lockKey);
-            return res.status(500).json({ error: 'Sesión no válida o finalizada' });
-        }
-
-        const sessionId = session[0].id;
-
-        // Preparamos los datos para una sola inserción masiva (optimización SQL)
-        const values = scans.map(s => [sessionId, s.sku, s.quantity, userId, s.scanned_at, s.seccion_id]);
-
-        await pool.query(
-            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por, fecha_escaneo, seccion_id) VALUES ?',
-            [values]
-        );
-
-        // Notificamos al Dashboard que llegaron nuevos datos
-        getIO().to(session_code).emit('update_totals', {
-            count: scans.length,
-            last_scans: scans.slice(-5) // enviamos los últimos 5 para previsualización
-        });
-
-        console.log(`[EXITO] Guardados ${scans.length} escaneos para la sesión ${session_code}`);
-        res.status(200).json({ message: 'Sincronización exitosa' });
-
-    } catch (error) {
-        // Si el proceso truena a mitad de camino por culpa de la base de datos o socket, 
-        // borramos el candado de Redis para que la app móvil/malla pueda reintentar de inmediato.
-        await redis.del(lockKey);
-        console.error('Error crítico en syncBulkScans:', error);
-        res.status(500).json({ error: error.message });
-    }
-};
+export { syncBulkScans } from './pocket.controller.js';
 
 
 export const getAssignedSection = async (req, res) => {
@@ -1444,6 +1376,25 @@ export const getPocketScan = async (req, res) => {
         const userId = req.user.id;
 
         const [promiseSession] = await pool.execute('SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?', [session_code]);
+        if (!promiseSession.length) return res.status(404).json({ message: 'Sesion no encontrada' });
+        if (req.query.page !== undefined) {
+            const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+            const pageSize = Math.min(100, Math.max(1, Number.parseInt(req.query.pageSize, 10) || 20));
+            const search = String(req.query.search || '').trim().slice(0, 100);
+            const params = [promiseSession[0].id, userId];
+            let where = 'ie.sesion_id = ? AND ie.escaneado_por = ?';
+            if (search) {
+                where += ' AND (ie.sku LIKE ? OR sa.nombre_seccion LIKE ?)';
+                params.push(`%${search}%`, `%${search}%`);
+            }
+            const from = 'FROM inventario_escaneos ie LEFT JOIN secciones_asginados sa ON sa.id = ie.seccion_id';
+            const [[count]] = await pool.query(`SELECT COUNT(*) AS total ${from} WHERE ${where}`, params);
+            const [items] = await pool.query(`SELECT ie.id, ie.sku, ie.cantidad AS quantity,
+                ie.fecha_escaneo AS scanned_at, ie.seccion_id, sa.nombre_seccion AS section_name,
+                1 AS synced ${from} WHERE ${where} ORDER BY ie.id DESC LIMIT ? OFFSET ?`,
+                [...params, pageSize, (page - 1) * pageSize]);
+            return res.json({ items, total: Number(count.total) });
+        }
 
         const [promisePocketScan] = await pool.execute(`SELECT cantidad as quantity,fecha_escaneo as scanned_at,seccion_id,codigo_sesion as session_code,sku,estado as synced FROM 
                 inventario_escaneos ie

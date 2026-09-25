@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { getPocketPerformance } from '../controllers/pocket.controller.js';
 import {
     createSession,
     registerScan,
@@ -26,11 +27,16 @@ import {
 import { userController } from '../controllers/user.controller.js';
 import { getZonasSubzonas, delZonas, delZonaEscaneos, importConteoSession, importStoreSession, putZonasSubzonas, getZonasv2, putZonasv2, postZonasv2, getSections, postSections, postSectionsBulk, assignSectionsRangeToSession, putSecitons, delSecitons, postSectionsCountSession, postSectionsGroupSession } from '../controllers/maintenance.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import * as chatController from '../controllers/chat.controller.js';
 import { storeController } from '../controllers/store.controller.js';
 
 const router = Router();
 
 // --- RUTAS PARA EL ADMINISTRADOR (WEB) ---
+router.get('/chat/contacts', verifyToken, chatController.contacts);
+router.get('/chat/:id/messages', verifyToken, chatController.messages);
+router.post('/chat/:id/messages', verifyToken, chatController.send);
+router.post('/chat/:id/read', verifyToken, chatController.read);
 router.post('/create-session', verifyToken, createSession);
 router.get('/summary/:session_code', verifyToken, getSessionSummary);
 router.get('/v2/summary/:session_code/statistics', verifyToken, getSessionStatistics);
@@ -46,6 +52,7 @@ router.post('/scan', verifyToken, registerScan);
 router.post('/sync-bulk', verifyToken, syncBulkScans);
 router.get('/stores', verifyToken, getStores);
 router.get('/pocket/scan/:session_code', verifyToken, getPocketScan);
+router.get('/pocket/performance/:session_code', verifyToken, getPocketPerformance);
 
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get('/request/store', verifyToken, getInventoryReqStore);

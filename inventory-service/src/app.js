@@ -28,7 +28,7 @@ app.use('/s3/inventory', inventoryRoutes);
 
 const PORT = 3001;
 httpServer.listen(PORT, () => {
-    console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });
 
 

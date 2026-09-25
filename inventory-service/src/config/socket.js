@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
 let io;
+const JWT_SECRET = 'una_clave_muy_segura_y_larga_123456';
 
 export const initSocket = (server) => {
     io = new Server(server, {
@@ -13,6 +15,21 @@ export const initSocket = (server) => {
 
     io.on('connection', (socket) => {
         console.log('Cliente conectado:', socket.id);
+
+        const token = socket.handshake.auth?.token;
+        if (typeof token === 'string' && token.trim()) {
+            try {
+                const user = jwt.verify(token, JWT_SECRET);
+                if (user?.id) {
+                    socket.data.user = user;
+                    socket.join(`user:${user.id}`);
+                    console.log(`Socket ${socket.id} se unió al chat del usuario: ${user.id}`);
+                }
+            } catch {
+                console.warn(`Socket ${socket.id} no pudo autenticarse para chat`);
+            }
+        }
+
         // --- ESTO ES LO QUE FALTA ---
         socket.on('join_session', (sessionCode) => {
 
@@ -29,6 +46,11 @@ export const initSocket = (server) => {
     });
 
     return io;
+};
+
+export const emitToUser = (userId, event, payload) => {
+    if (!io || !userId) return;
+    io.to(`user:${userId}`).emit(event, payload);
 };
 
 export const getIO = () => {
