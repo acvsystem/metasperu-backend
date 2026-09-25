@@ -19,23 +19,19 @@ export const login = async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, rol: user.rol },
-            'una_clave_muy_segura_y_larga_123456',
-            { expiresIn: '8h' }
+            'una_clave_muy_segura_y_larga_123456'
+            // Sin expiresIn → el token no expira
         );
 
-        // --- CAMBIO AQUÍ ---
-        // Ya no dependemos de la cookie, pero puedes dejarla si quieres soporte híbrido.
-        // Importante: En producción 'secure' debe ser true.
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: true, // Forzar true si usas HTTPS/Cloudflare
-            sameSite: 'none',
-            maxAge: 8 * 60 * 60 * 1000
+            secure: true,
+            sameSite: 'none'
+            // Sin maxAge → la cookie no expira automáticamente
         });
 
-        // ENVIAR EL TOKEN EN EL JSON
         res.json({
-            token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
+            token: token,
             user: { id: user.id, username: user.username, role: user.role }
         });
 
@@ -82,23 +78,19 @@ export const loginCenter = async (req, res) => {
 
         const token = jwt.sign(
             { id: user.ID_LOGIN, rol: user.NIVEL },
-            'una_clave_muy_segura_y_larga_123456',
-            { expiresIn: '8h' }
+            'una_clave_muy_segura_y_larga_123456'
+            // Sin expiresIn → el token no expira
         );
 
-        // --- CAMBIO AQUÍ ---
-        // Ya no dependemos de la cookie, pero puedes dejarla si quieres soporte híbrido.
-        // Importante: En producción 'secure' debe ser true.
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: true, // Forzar true si usas HTTPS/Cloudflare
-            sameSite: 'none',
-            maxAge: 8 * 60 * 60 * 1000
+            secure: true,
+            sameSite: 'none'
+            // Sin maxAge → la cookie no expira automáticamente
         });
 
-        // ENVIAR EL TOKEN EN EL JSON
         res.json({
-            token: token, // <--- ESTO ES LO QUE LEERÁ ANGULAR
+            token: token,
             user: { username: user.USUARIO, role: user.NIVEL, dafault_page: user.DEAFULT_PAGE, email: user.EMAIL, old_code_store: user.OLD_CODE_STORE, code_store: user.CODE_STORE, unid_servicio: user.UNID_SERVICIO },
             menu: rows.map(r => ({ nombre: r.NOMBRE_MENU, ruta: r.RUTA }))
         });
