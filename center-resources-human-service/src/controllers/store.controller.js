@@ -29,8 +29,8 @@ const normalizarFechaReferencia = (fechaRef) => {
         return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
     }
 
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(raw)) {
-        const [dia, mes, anio] = raw.split('-');
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(raw)) {
+        const [dia, mes, anio] = raw.split(/[-/]/);
         return `${anio}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
     }
 
@@ -64,10 +64,12 @@ export const storeController = {
 
         try {
             const requestId = Math.random().toString(36).substring(2, 10).toUpperCase();
+            const fechaDesdeNormalizada = normalizarFechaReferencia(fecha_desde);
+            const fechaHastaNormalizada = normalizarFechaReferencia(fecha_hasta);
             const payload = {
                 request_id: requestId,
-                fecha_desde,
-                fecha_hasta,
+                fecha_desde: fechaDesdeNormalizada,
+                fecha_hasta: fechaHastaNormalizada,
                 documento: documento || null,
                 socketId: socketId || null
             };
@@ -99,8 +101,8 @@ export const storeController = {
             return res.status(200).json({
                 success: true,
                 request_id: response.request_id || requestId,
-                fecha_desde,
-                fecha_hasta,
+                fecha_desde: fechaDesdeNormalizada,
+                fecha_hasta: fechaHastaNormalizada,
                 count: response.count || 0,
                 data: resParse || []
             });

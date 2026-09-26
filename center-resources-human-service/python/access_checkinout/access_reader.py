@@ -43,17 +43,27 @@ class AccessConfigurationError(RuntimeError):
 
 def parse_datetime(value: str, *, end_of_day: bool = False) -> datetime:
     value = value.strip()
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d",
+        "%d-%m-%Y %H:%M:%S",
+        "%d/%m/%Y %H:%M:%S",
+        "%d-%m-%Y",
+        "%d/%m/%Y",
+    ):
         try:
             parsed = datetime.strptime(value, fmt)
-            if fmt == "%Y-%m-%d":
+            if fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
                 if end_of_day:
                     return parsed.replace(hour=23, minute=59, second=59)
                 return parsed.replace(hour=0, minute=0, second=0)
             return parsed
         except ValueError:
             pass
-    raise ValueError("Formato de fecha invalido. Usa YYYY-MM-DD o YYYY-MM-DD HH:MM:SS.")
+    raise ValueError(
+        "Formato de fecha invalido. Usa YYYY-MM-DD, DD-MM-YYYY o DD/MM/YYYY."
+    )
 
 
 def connect() -> pyodbc.Connection:
