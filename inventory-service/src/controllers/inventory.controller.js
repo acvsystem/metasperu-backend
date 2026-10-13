@@ -108,6 +108,22 @@ const buildRevisionFilters = (query) => {
         params.push(`%${String(value).trim()}%`);
     });
 
+    const rawPrefix = query.rangeLetter ?? query.rango_letra ?? query.letra;
+    const rawStart = query.rangeStart ?? query.rango_inicio ?? query.desde;
+    const rawEnd = query.rangeEnd ?? query.rango_fin ?? query.hasta;
+    const prefix = String(rawPrefix ?? '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const start = Number.parseInt(rawStart, 10);
+    const end = Number.parseInt(rawEnd, 10);
+
+    if (prefix && Number.isFinite(start) && Number.isFinite(end)) {
+        const min = Math.min(start, end);
+        const max = Math.max(start, end);
+        where.push(`UPPER(TRIM(sa.nombre_seccion)) REGEXP ?`);
+        params.push(`^${prefix}[0-9]+$`);
+        where.push(`CAST(SUBSTRING(UPPER(TRIM(sa.nombre_seccion)), ? + 1) AS UNSIGNED) BETWEEN ? AND ?`);
+        params.push(prefix.length, min, max);
+    }
+
     return { where, params };
 };
 
