@@ -14,6 +14,7 @@ import {
     getInventoryStoreStatistics,
     exportInventoryStoreCsv,
     getProductsWithoutDisplay,
+    getUnscannedSections,
     postInventoryResStore,
     getAssignedSection,
     getPocketScan,
@@ -59,6 +60,7 @@ router.get('/request/store', verifyToken, getInventoryReqStore);
 router.get('/request/store/statistics', verifyToken, getInventoryStoreStatistics);
 router.get('/request/store/export/csv', verifyToken, exportInventoryStoreCsv);
 router.get('/request/store/products-without-display', verifyToken, getProductsWithoutDisplay);
+router.get('/revision/unscanned-sections/:session_code', verifyToken, getUnscannedSections);
 router.post('/response/store', postInventoryResStore);
 router.post('/response/store/import', postInventoryImport);
 router.get('/section/assigned/:session_code', verifyToken, getAssignedSection);

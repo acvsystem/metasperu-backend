@@ -76,13 +76,46 @@ const buildConteoFilters = (query) => {
     return { where, params };
 };
 
+const buildRevisionFilters = (query) => {
+    const where = [];
+    const params = [];
+
+    const filters = [
+        { key: 'zona', sql: 'ze.nombre_zona' },
+        { key: 'nombre_zona', sql: 'ze.nombre_zona' },
+        { key: 'subzona', sql: 'sa.nombre_seccion', exact: true },
+        { key: 'nombre_seccion', sql: 'sa.nombre_seccion', exact: true },
+        { key: 'seccion_id_fk', sql: 'sa.seccion_id_fk', numeric: true }
+    ];
+
+    filters.forEach(({ key, sql, exact, numeric }) => {
+        const value = query[key];
+        if (value === undefined || value === null || String(value).trim() === '') return;
+
+        if (numeric) {
+            where.push(`${sql} = ?`);
+            params.push(Number(value));
+            return;
+        }
+
+        if (exact) {
+            where.push(`UPPER(TRIM(${sql})) = ?`);
+            params.push(String(value).trim().toUpperCase());
+            return;
+        }
+
+        where.push(`${sql} LIKE ?`);
+        params.push(`%${String(value).trim()}%`);
+    });
+
+    return { where, params };
+};
+
 const normalizeFilterValues = (value) => {
     if (Array.isArray(value)) return value;
     if (value === undefined || value === null || String(value).trim() === '') return [];
     return [value];
 };
-
-const sessionsWithSyncedStoreTotals = new Set();
 
 const buildInventoryFilters = (query) => {
     const where = [];
@@ -166,7 +199,7 @@ const buildInventoryFilters = (query) => {
 };
 
 const syncStoreScanTotals = async (sessionId, sessionCode) => {
-    if (!sessionId || !sessionCode || sessionsWithSyncedStoreTotals.has(sessionCode)) return;
+    if (!sessionId || !sessionCode) return;
 
     await pool.execute(
         `UPDATE inventario_store st
@@ -209,7 +242,6 @@ const syncStoreScanTotals = async (sessionId, sessionCode) => {
         [sessionCode, sessionCode, sessionCode, sessionId, sessionCode]
     );
 
-    sessionsWithSyncedStoreTotals.add(sessionCode);
 };
 
 const areaCaseSql = (sectionAlias = 'sa') => `
@@ -746,9 +778,7 @@ export const getInventoryReqStore = async (req, res) => {
             const inventoryWhereSql = inventoryWhere.length ? ` AND ${inventoryWhere.join(' AND ')}` : '';
             const hasInventoryFilters = inventoryWhere.length > 0;
 
-            if (usesScanTotals || hasInventoryFilters) {
-                await syncStoreScanTotals(sessionId, session_code);
-            }
+            await syncStoreScanTotals(sessionId, session_code);
 
             let stockSummaryRows;
             let totalConteo = 0;
@@ -881,6 +911,94 @@ export const getInventoryReqStore = async (req, res) => {
     } catch (error) {
         console.error("Error en getInventoryReqStore:", error);
         return res.status(500).json({ error: "Error interno del servidor", details: error.message });
+    }
+};
+
+export const getUnscannedSections = async (req, res) => {
+    const { session_code } = req.params;
+    const { page, pageSize, offset } = buildPagination(req.query, 10, 500);
+
+    if (!session_code) {
+        return res.status(400).json({ message: 'El código de sesión es requerido.' });
+    }
+
+    try {
+        const [sessionRows] = await pool.execute(
+            `SELECT id FROM inventario_sesiones WHERE codigo_sesion = ?`,
+            [session_code]
+        );
+
+        const sessionId = sessionRows[0]?.id;
+        if (!sessionId) {
+            return res.status(404).json({ message: 'Sesión no encontrada.' });
+        }
+
+        const { where, params } = buildRevisionFilters(req.query);
+        const filterSql = where.length ? ` AND ${where.join(' AND ')}` : '';
+        const baseParams = [sessionId, session_code, ...params];
+
+        const [countRows] = await pool.execute(
+            `SELECT COUNT(DISTINCT sa.id) AS total_rows
+             FROM secciones_asginados sa
+             LEFT JOIN (
+                SELECT seccion_id, COUNT(*) AS escaneos
+                FROM inventario_escaneos
+                WHERE sesion_id = ?
+                GROUP BY seccion_id
+             ) scan_totals ON scan_totals.seccion_id = sa.id
+             LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+             LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+             WHERE sa.codigo_sesion = ?
+               AND scan_totals.seccion_id IS NULL
+               ${filterSql}`,
+            baseParams
+        );
+
+        const totalRows = Number(countRows[0]?.total_rows || 0);
+
+        const [items] = await pool.execute(
+            `SELECT
+                sa.id,
+                sa.seccion_id_fk,
+                sa.nombre_seccion AS subzona,
+                COALESCE(GROUP_CONCAT(DISTINCT ze.nombre_zona ORDER BY ze.nombre_zona SEPARATOR ', '), 'Sin zona') AS zona,
+                0 AS escaneos,
+                0 AS unidades
+             FROM secciones_asginados sa
+             LEFT JOIN (
+                SELECT seccion_id, COUNT(*) AS escaneos
+                FROM inventario_escaneos
+                WHERE sesion_id = ?
+                GROUP BY seccion_id
+             ) scan_totals ON scan_totals.seccion_id = sa.id
+             LEFT JOIN zonas_seccion zs ON zs.seccion_id_fk = sa.seccion_id_fk
+             LEFT JOIN zonas_escaneos ze ON ze.zona_id = zs.zona_id_fk
+             WHERE sa.codigo_sesion = ?
+               AND scan_totals.seccion_id IS NULL
+               ${filterSql}
+             GROUP BY sa.id, sa.seccion_id_fk, sa.nombre_seccion
+             ORDER BY zona ASC, sa.nombre_seccion ASC
+             LIMIT ${pageSize} OFFSET ${offset}`,
+            baseParams
+        );
+
+        return res.status(200).json({
+            success: true,
+            session_code,
+            items,
+            summary: {
+                total_pending_sections: totalRows
+            },
+            pagination: {
+                page,
+                pageSize,
+                totalRows,
+                totalPages: Math.ceil(totalRows / pageSize)
+            }
+        });
+    } catch (error) {
+        console.error('Error en getUnscannedSections:', error);
+        return res.status(500).json({ message: 'Error al cargar subzonas sin escaneo', error: error.message });
     }
 };
 
