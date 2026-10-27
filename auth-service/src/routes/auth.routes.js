@@ -1,7 +1,14 @@
 // src/routes/auth.routes.js
 import { Router } from 'express';
-import { login, loginCenter, logout, checkSession, checkSessionCenter, logoutCenter } from '../controllers/auth.controller.js';
-import { verifyToken } from '../middlewares/auth.middleware.js';
+import {
+  login,
+  loginCenter,
+  logout,
+  checkSession,
+  checkSessionCenter,
+  logoutCenter,
+} from '../controllers/auth.controller.js';
+import { verifyToken, verifyCenterToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -12,7 +19,7 @@ router.post('/logout', verifyToken, logout);
 
 // Ruta publica center-service
 router.post('/center/login', loginCenter);
-router.get('/center/check-session', verifyToken, checkSessionCenter);
-router.post('/center/logout', verifyToken, logoutCenter);
+router.get('/center/check-session', verifyCenterToken, checkSessionCenter);
+router.post('/center/logout', verifyCenterToken, logoutCenter);
 
 export default router;

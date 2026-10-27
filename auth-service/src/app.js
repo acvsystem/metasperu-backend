@@ -1,30 +1,79 @@
-
+import 'dotenv/config';
 import express from 'express';
-import { createServer } from 'http';
+import { createServer } from 'node:http';
 import cookieParser from 'cookie-parser';
-import { initSocket } from './config/socket.js'; // 1. Importar primero
 import cors from 'cors';
-import { pool } from './config/db.js';
-//import { createApiLogger } from '../../shared/api-log.middleware.js';
+import helmet from 'helmet';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { origins } from './config/security.js';
+import routes from './routes/auth.routes.js';
 
-const app = express();
-const httpServer = createServer(app);
+export function createApp() {
+  const app = express();
+  const hops = Number(process.env.TRUST_PROXY_HOPS || 0);
+  if (!Number.isInteger(hops) || hops < 0 || hops > 5) throw Error('TRUST_PROXY_HOPS inválido.');
+  app.set('trust proxy', hops);
+  app.disable('x-powered-by');
+  app.use(helmet());
+  app.use(cors({ origin: origins.cors, credentials: true }));
+  app.use(origins.protect);
+  app.use(cookieParser());
+  app.use(express.json({ limit: '16kb' }));
+  app.use(express.urlencoded({ extended: false, limit: '16kb' }));
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
+  // Single-process guard. A shared gateway limiter is required when scaling workers.
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 1200,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      message: { message: 'Demasiadas solicitudes. Intente en unos minutos.' },
+    }),
+  );
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: (req) =>
+      ipKeyGenerator(req.ip) +
+      ':' +
+      createHash('sha256')
+        .update(
+          String(req.body?.username || '')
+            .trim()
+            .toLowerCase(),
+        )
+        .digest('hex'),
+    message: { message: 'Demasiados intentos de ingreso. Intente en 15 minutos.' },
+  });
+  const loginIpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { message: 'Demasiados intentos desde esta red. Intente más tarde.' },
+  });
+  app.use(['/s2/auth/login', '/s2/auth/center/login'], loginIpLimiter, loginLimiter);
+  app.use('/s2/auth', routes);
+  app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    res
+      .status(error.type === 'entity.too.large' ? 413 : error instanceof SyntaxError ? 400 : 500)
+      .json({ message: 'No se pudo procesar la solicitud.' });
+  });
+  return app;
+}
 
-initSocket(httpServer);
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const server = createServer(createApp());
 
-app.use(cors({
-  origin: (origin, callback) => callback(null, true), // Permite cualquier origen
-  credentials: true
-}));
-app.use(express.json());
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
-//app.use(createApiLogger({ pool, serviceName: 'auth-service' }));
-
-import authRoutes from './routes/auth.routes.js';
-app.use('/s2/auth', authRoutes);
-
-const PORT = 3000;
-httpServer.listen(PORT, () => {
-    console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
-});
+  server.listen(Number(process.env.PORT || 3000), () => console.log('auth-service iniciado.'));
+}

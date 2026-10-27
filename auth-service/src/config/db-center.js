@@ -1,25 +1,32 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import { getIO } from './socket.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // Creamos el pool de conexiones
-export const poolCenter = mysql.createPool({
-    host: process.env.DB_HOST || '192.168.0.9',
-    user: process.env.DB_USER || 'dbserver',
-    password: process.env.DB_PASSWORD || 'J4s0nd34d$$',
-    database: process.env.DB_NAME || 'bd_metasperu',
-    waitForConnections: true,
-    connectionLimit: 10, // Máximo de conexiones simultáneas
-    queueLimit: 0
-});
-
-// Verificación inicial de conexión
-try {
-    const connection = await poolCenter.getConnection();
-    console.log('✅ Conectado a la base de datos MySQL');
-    connection.release();
-} catch (error) {
-    console.error('❌ Error de conexión a la base de datos:', error.message);
-}
+const configured = [
+  'CENTER_DB_HOST',
+  'CENTER_DB_USER',
+  'CENTER_DB_PASSWORD',
+  'CENTER_DB_NAME',
+].every((key) => !!process.env[key]);
+export const poolCenter = configured
+  ? mysql.createPool({
+      host: process.env.CENTER_DB_HOST,
+      port: Number(process.env.CENTER_DB_PORT || 3306),
+      user: process.env.CENTER_DB_USER,
+      password: process.env.CENTER_DB_PASSWORD,
+      database: process.env.CENTER_DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10, // Máximo de conexiones simultáneas
+      queueLimit: 0,
+    })
+  : {
+      query: async () => {
+        throw new Error('Configure las credenciales del servicio Center.');
+      },
+      getConnection: async () => {
+        throw new Error('Configure las credenciales del servicio Center.');
+      },
+      end: async () => {},
+    };
