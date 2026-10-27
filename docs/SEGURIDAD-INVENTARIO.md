@@ -37,13 +37,15 @@ El bearer sigue admitido para consumidores HTTP autenticados y pruebas; el front
 
 ## Validación realizada
 
-- `inventory-service`: 18 pruebas unitarias/HTTP/sockets, todas pasan; no conectan a DB real.
+- `inventory-service`: 19 pruebas unitarias/HTTP/sockets, todas pasan; no conectan a DB real.
 - `auth-service`: 3 pruebas HTTP, todas pasan: usuario inactivo, validación, cookie, cierre/revocación y límite de intentos.
 - MySQL 8.4 aislado en Docker, sin montar datos existentes: migración repetible; rollback de cabecera cuando fallan secciones; rollback después de 1000 filas importadas; dos importaciones simultáneas guardan 120 filas una sola vez; fallo de auditoría revierte la cantidad; revocación persistente.
 - Controlador HTTP real + MySQL: tres páginas 50/50/20, 120 IDs distintos. Login real de auth-service reconocido por inventory-service; cambio de rol produce 403 y logout produce 401 en el otro servicio.
 - `npm audit`: cero hallazgos en auth-service e inventory-service con los lockfiles actualizados, sin `--force`. Son auditorías de avisos conocidos, no una garantía de ausencia de vulnerabilidades.
 
 La integración Docker usa `test/mysql-schema.sql`, un esquema mínimo de prueba, no una copia ni una certificación del esquema de producción. El runner `test/mysql.integration.mjs` exige un contenedor llamado `inventory-security-qa-20261026` con etiqueta `codex.task=inventory-security-qa`, base vacía `inventory_qa` y un archivo local de entorno como argumento. No ejecutarlo sobre otro destino.
+
+Revisión QA independiente posterior: la consulta POST `/api/v1/seccion/count/session` es de lectura y debe funcionar para Pocket y auditor, además del administrador. Se corrigió la restricción excesiva, validando pertenencia de sección y sesión activa para Pocket. La prueba reproduce el 403 anterior y verifica que no se habilite administración de usuarios. Los botones de escritura se muestran según el rol verificado, conservando el control obligatorio del servidor.
 
 ## Pendientes que impiden considerar cerrada toda la seguridad
 

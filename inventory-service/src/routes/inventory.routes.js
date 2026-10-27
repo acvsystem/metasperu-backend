@@ -212,7 +212,7 @@ router.delete(
 router.post(
   '/api/v1/seccion/count/session',
   verifyToken,
-  requireRoles('administrador'),
+  requireRoles('administrador', 'auditor', 'pocket'),
   postSectionsCountSession,
 );
 router.post(

@@ -715,12 +715,22 @@ export const delSecitons = async (req, res) => {
 export const postSectionsCountSession = async (req, res) => {
     const { session_code, seccion_id } = req.body || {};
     const sectionId = Number(seccion_id);
-    if (typeof session_code !== 'string' || !session_code.trim() ||
+    if (typeof session_code !== 'string' || !/^[A-Z0-9]{4,32}$/i.test(session_code.trim()) ||
         !Number.isSafeInteger(sectionId) || sectionId <= 0) {
         return res.status(400).json({ message: 'Indique una sesion y una seccion validas.' });
     }
 
     try {
+        const code = session_code.trim().toUpperCase();
+        const [[section]] = await pool.execute(
+            `SELECT sa.id, s.estado FROM secciones_asginados sa
+             INNER JOIN inventario_sesiones s ON s.codigo_sesion = sa.codigo_sesion
+             WHERE sa.codigo_sesion = ? AND sa.seccion_id_fk = ? LIMIT 1`, [code, sectionId]
+        );
+        if (!section) return res.status(404).json({ message: 'La sección no pertenece a esta sesión.' });
+        if (req.user.role === 'pocket' && section.estado !== 'ACTIVO') {
+            return res.status(409).json({ message: 'La sesión está finalizada.' });
+        }
         const [rows] = await pool.execute(
             `SELECT 
     sa.seccion_id_fk, 
@@ -735,7 +745,7 @@ WHERE
 GROUP BY 
     sa.seccion_id_fk, 
     sa.nombre_seccion;`,
-            [session_code.trim(), sectionId]
+            [code, sectionId]
         );
 
         res.json(rows);

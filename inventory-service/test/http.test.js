@@ -76,6 +76,27 @@ test('cross-origin cookie actions are blocked and API responses have security he
   assert.equal(response.headers.get('access-control-allow-origin'), null);
   assert.equal(response.headers.get('x-powered-by'), null);
 });
+
+test('Pocket and auditor can read section counts without acquiring administration rights', async () => {
+  const previous = pool.execute;
+  pool.execute = async (sql, params) => {
+    if (sql.includes('SELECT sa.id, s.estado')) return [[{ id: 11, estado: params[0] === 'CLOSED' ? 'FINALIZADO' : 'ACTIVO' }]];
+    assert.ok(sql.trim().startsWith('SELECT'));
+    return [[{ seccion_id_fk: 1, nombre_seccion: 'A1', total_cantidad: 7 }]];
+  };
+  try {
+    for (role of ['pocket', 'auditor', 'administrador']) {
+      const res = await fetch(base + '/api/v1/seccion/count/session', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ session_code: 'ABC123', seccion_id: 1 }) });
+      assert.equal(res.status, 200, role);
+      assert.equal((await res.json())[0].total_cantidad, 7);
+    }
+    role = 'pocket';
+    const closed = await fetch(base + '/api/v1/seccion/count/session', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ session_code: 'CLOSED', seccion_id: 1 }) });
+    assert.equal(closed.status, 409);
+    const admin = await fetch(base + '/api/v1/user', { headers: { Authorization: `Bearer ${token}` } });
+    assert.equal(admin.status, 403);
+  } finally { role = 'administrador'; pool.execute = previous; }
+});
 test('actual stock controller returns 120 rows across three 50-row pages without losing total', async () => {
   const all = Array.from({ length: 120 }, (_, i) => ({
     id: i + 1,
