@@ -1,5 +1,11 @@
 # Seguridad del inventario y migración coordinada
 
+## Verificación de acceso local del 27 de octubre de 2026
+
+Se recuperaron los datos de conexión de los `.env` locales ausentes desde el historial local, sin mostrar sus valores ni volverlos a versionar. Se generó una clave de sesión nueva compartida entre autenticación e inventario y se levantaron las APIs en 3000 y 3001. La base configurada es remota: ejecutar servicios locales no implica usar una base de pruebas.
+
+La consulta de esquema detectó que faltaba `inventory_auth_sessions`. Se aplicó exclusivamente el primer `CREATE TABLE IF NOT EXISTS` de `inventory-service/sql/security.sql` para esa tabla; no se aplicaron los otros CREATE ni el ALTER del archivo. El login real desde `http://localhost:4700` cargó las 38 sesiones de inventario y conservó la sesión después de recargar. Las demás migraciones siguen pendientes.
+
 Cambios locales del 26 de octubre de 2026. No se desplegaron servicios ni se modificó la base de datos de producción. El cambio previo del usuario en `center-inventory-service/src/routes/inventory.routes.js` queda fuera de esta entrega.
 
 ## Cambios aplicados
