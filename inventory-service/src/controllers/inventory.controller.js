@@ -1,3 +1,4 @@
+import { createSession as createSessionOperation, editCount, importStock } from '../services/inventory-operations.js';
 import { pool } from '../config/db.js';
 import { getIO, trackSocketEmit } from '../config/socket.js';
 import crypto from 'crypto'; // Módulo nativo de Node.js para generar el Hash
@@ -374,118 +375,20 @@ const attachScanTotalsToInventoryRows = async (sessionId, inventoryRows = []) =>
 };
 
 export const createSession = async (req, res) => {
-    const { tienda_id, assigned_section } = req.body;
-    const userId = req.user.id;
-
-    // --- ARQUITECTURA DE DEDUPLICACIÓN (CREATE SESSION LOCK) ---
-    // Bloqueamos por la combinación de Tienda y Usuario creador.
-    // Evita que el mismo usuario abra múltiples sesiones en la misma tienda en el mismo instante.
-    const lockKey = `lock:session:create:${tienda_id}:${userId}`;
-
-    try {
-        // Ponemos un bloqueo de 4 segundos. Tiempo suficiente para resolver múltiples inserts
-        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 4);
-
-        if (!lockAcquired) {
-            console.warn(`[DEDUPLICACIÓN] Intento de creación de sesión duplicada bloqueado para usuario ${userId} en tienda ${tienda_id}`);
-            return res.status(429).json({
-                message: 'Ya se está procesando una solicitud de creación de sesión. Por favor, espere.'
-            });
-        }
-
-        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
-        const sessionCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-        const [result] = await pool.execute(
-            'INSERT INTO inventario_sesiones (codigo_sesion, tienda_id, estado, creado_por) VALUES (?, ?, ?, ?)',
-            [sessionCode, tienda_id, 'ACTIVO', userId]
-        );
-
-        if (assigned_section && assigned_section.length > 0) {
-            // Nota de optimización: Podrías cambiar esto luego a un solo INSERT masivo, 
-            // pero mantenemos tus promesas actuales ejecutándose de forma segura.
-            const insertPromises = assigned_section.map((section) => {
-                return pool.execute(
-                    'INSERT INTO secciones_asginados (codigo_sesion, seccion_id_fk, nombre_seccion) VALUES (?, ?, ?)',
-                    [
-                        sessionCode,
-                        section.seccion_id || null,
-                        section.nombre_seccion || 'Sin Nombre'
-                    ]
-                );
-            });
-
-            await Promise.all(insertPromises);
-        }
-
-        // --- ¡LIBERACIÓN EXITOSA! ---
-        // Como todo salió bien y las inserciones terminaron, borramos el bloqueo.
-        await redis.del(lockKey);
-
-        res.status(201).json({
-            id: result.insertId,
-            session_code: sessionCode,
-            message: 'Sesión de inventario iniciada'
-        });
-
-    } catch (error) {
-        // Si la base de datos falla (por ejemplo, timeout en Promise.all), 
-        // limpiamos Redis para permitir que el usuario lo intente de nuevo de forma manual.
-        await redis.del(lockKey);
-        console.error("Error en createSession:", error);
-        res.status(500).json({ message: 'Error al crear sesión', error: error.message });
-    }
+  try {
+    res.status(201).json(await createSessionOperation(pool, req.body, req.user.id));
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.status ? error.message : 'No se pudo crear la sesión.' });
+  }
 };
 
+// Legacy entry point uses the same durable, idempotent upload contract as Pocket.
 export const registerScan = async (req, res) => {
-    const { session_code, sku, quantity = 1 } = req.body;
-    const scannedBy = req.user.id;
-
-    const lockKey = `lock:scan:${session_code}:${sku}:${quantity}:${scannedBy}`;
-    console.log(lockKey);
-    try {
-        // Ponemos un bloqueo de respaldo muy corto (500 milisegundos)
-        // PX indica milisegundos en lugar de segundos (EX)
-        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'PX', 500);
-
-        if (!lockAcquired) {
-            console.warn(`[DEDUPLICACIÓN] Clon de ráfaga bloqueado para SKU: ${sku}`);
-            return res.status(429).json({ message: 'Evitando duplicidad por ráfaga.' });
-        }
-
-        // 1. Validar Sesión
-        const [session] = await pool.execute(
-            'SELECT id FROM inventario_sesiones WHERE codigo_sesion = ? AND estado = "ACTIVO"',
-            [session_code]
-        );
-
-        if (session.length === 0) {
-            await redis.del(lockKey); // Liberar si falla
-            return res.status(404).json({ message: 'Sesión no encontrada' });
-        }
-
-        const sessionId = session[0].id;
-
-        // 2. Insertar en MySQL
-        await pool.execute(
-            'INSERT INTO inventario_escaneos (sesion_id, sku, cantidad, escaneado_por) VALUES (?, ?, ?, ?)',
-            [sessionId, sku, quantity, scannedBy]
-        );
-
-        // --- ¡EL TRUCO AQUÍ! ---
-        // Como MySQL ya terminó de guardar, borramos el candado de inmediato.
-        // El espacio queda libre para el siguiente pistoleo en el próximo milisegundo.
-        await redis.del(lockKey);
-
-        // 3. Socket.io
-        req.io.to(session_code).emit('new-scan-received', { sku, quantity, scanned_at: new Date() });
-
-        res.status(200).json({ message: 'Producto registrado correctamente' });
-
-    } catch (error) {
-        await redis.del(lockKey); // Liberar siempre en caso de error
-        res.status(500).json({ message: 'Error', error: error.message });
-    }
+  const { syncBulkScans } = await import('./pocket.controller.js');
+  req.body = { session_code: req.body?.session_code, scans: [req.body] };
+  return syncBulkScans(req, res);
 };
 
 export { syncBulkScans } from './pocket.controller.js';
@@ -510,7 +413,7 @@ export const getAssignedSection = async (req, res) => {
 
     } catch (error) {
         console.error("Error en getAssignedSection:", error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 };
 
@@ -567,7 +470,7 @@ export const getSessionSummary = async (req, res) => {
 
     } catch (error) {
         console.error("Error en getSessionSummary:", error);
-        res.status(500).json({ message: 'Error al obtener el resumen', error: error.message });
+        res.status(500).json({ message: 'Error al obtener el resumen' });
     }
 };
 
@@ -708,7 +611,7 @@ export const getSessionSummaryv2 = async (req, res) => {
 
     } catch (error) {
         console.error("Error en getSessionSummary:", error);
-        res.status(500).json({ message: 'Error al obtener el resumen', error: error.message });
+        res.status(500).json({ message: 'Error al obtener el resumen' });
     }
 };
 
@@ -719,7 +622,7 @@ export const getStores = async (req, res) => {
 
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 };
 
@@ -736,8 +639,7 @@ export const getSessions = async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({
-            message: 'Error al obtener las sesiones',
-            error: error.message
+            message: 'Error al obtener las sesiones'
         });
     }
 };
@@ -757,7 +659,7 @@ export const getActiveSessions = async (req, res) => {
         );
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 };
 
@@ -794,7 +696,7 @@ export const getInventoryReqStore = async (req, res) => {
             const inventoryWhereSql = inventoryWhere.length ? ` AND ${inventoryWhere.join(' AND ')}` : '';
             const hasInventoryFilters = inventoryWhere.length > 0;
 
-            await syncStoreScanTotals(sessionId, session_code);
+            if (hasInventoryFilters) await syncStoreScanTotals(sessionId, session_code);
 
             let stockSummaryRows;
             let totalConteo = 0;
@@ -926,7 +828,7 @@ export const getInventoryReqStore = async (req, res) => {
 
     } catch (error) {
         console.error("Error en getInventoryReqStore:", error);
-        return res.status(500).json({ error: "Error interno del servidor", details: error.message });
+        return res.status(500).json({ error: "Error interno del servidor" });
     }
 };
 
@@ -1014,7 +916,7 @@ export const getUnscannedSections = async (req, res) => {
         });
     } catch (error) {
         console.error('Error en getUnscannedSections:', error);
-        return res.status(500).json({ message: 'Error al cargar subzonas sin escaneo', error: error.message });
+        return res.status(500).json({ message: 'Error al cargar subzonas sin escaneo' });
     }
 };
 
@@ -1064,7 +966,7 @@ export const exportSessionSummaryCsv = async (req, res) => {
         ]);
     } catch (error) {
         console.error('Error en exportSessionSummaryCsv:', error);
-        return res.status(500).json({ message: 'Error al exportar conteo', error: error.message });
+        return res.status(500).json({ message: 'Error al exportar conteo' });
     }
 };
 
@@ -1113,7 +1015,7 @@ export const getSessionStatistics = async (req, res) => {
         return res.status(200).json({ byUser, bySection });
     } catch (error) {
         console.error('Error en getSessionStatistics:', error);
-        return res.status(500).json({ message: 'Error al obtener estadísticas', error: error.message });
+        return res.status(500).json({ message: 'Error al obtener estadísticas' });
     }
 };
 
@@ -1191,7 +1093,7 @@ export const exportInventoryStoreCsv = async (req, res) => {
         return sendCsv(res, `cruce_inventario_${session_code}.csv`, rows, columns);
     } catch (error) {
         console.error('Error en exportInventoryStoreCsv:', error);
-        return res.status(500).json({ message: 'Error al exportar inventario', error: error.message });
+        return res.status(500).json({ message: 'Error al exportar inventario' });
     }
 };
 
@@ -1315,7 +1217,7 @@ export const getProductsWithoutDisplay = async (req, res) => {
         });
     } catch (error) {
         console.error('Error en getProductsWithoutDisplay:', error);
-        return res.status(500).json({ message: 'Error al obtener productos sin exhibir', error: error.message });
+        return res.status(500).json({ message: 'Error al obtener productos sin exhibir' });
     }
 };
 
@@ -1377,121 +1279,30 @@ export const getInventoryStoreStatistics = async (req, res) => {
         return res.status(200).json({ byField, byArea, statField });
     } catch (error) {
         console.error('Error en getInventoryStoreStatistics:', error);
-        return res.status(500).json({ error: 'Error interno del servidor', details: error.message });
+        return res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
 export const postInventoryResStore = async (req, res) => {
-    try {
-        const dataBody = req.body;
-
-        if (!dataBody || dataBody.length === 0) {
-            return res.status(400).json({ message: "El cuerpo de la petición está vacío" });
-        }
-
-        const sessionCode = dataBody[0]['cSessionCode'];
-        console.log("Sesión:", sessionCode);
-
-        const values = dataBody.map((d) => [
-                d.cSessionCode ?? null,
-                d.cCodigoTienda ?? null,
-                d.cCodigoArticulo ?? null,
-                d.cReferencia ?? null,
-                d.cCodigoBarra ?? null,
-                d.cDescripcion ?? null,
-                d.cDepartamento ?? null,
-                d.cSeccion ?? null,
-                d.cFamilia ?? null,
-                d.cSubFamilia ?? null,
-                d.cTalla ?? null,
-                d.cColor ?? null,
-                d.cStock ?? 0,
-                d.cTemporada ?? '',
-                d.cConteo ?? 0,
-                d.cTotalConteo ?? 0,
-                d.cEsencia ?? '',
-                d.cStyleDesc ?? '',
-                d.cCodigoBarra2 ?? null,
-                d.cCodigoBarra3 ?? null
-        ]);
-
-        const BATCH = 1000;
-        let insertedRows = 0;
-
-        for (let i = 0; i < values.length; i += BATCH) {
-            const batch = values.slice(i, i + BATCH);
-            const [result] = await pool.query(
-                `INSERT INTO inventario_store (cSessionCode, cCodigoTienda, cCodigoArticulo, cReferencia, cCodigoBarra, cDescripcion, cDepartamento, cSeccion, cFamilia, cSubFamilia, cTalla, cColor, cStock, cTemporada, cConteo, cTotalConteo, cEsencia, cStyleDescription, cCodigoBarra2, cCodigoBarra3) 
-                 VALUES ?`,
-                [batch]
-            );
-            insertedRows += result.affectedRows || batch.length;
-        }
-
-        // 3. Actualizamos el estado de la sesión
-        await pool.execute(
-            `UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
-            [sessionCode]
-        );
-
-        // 4. Emitimos un evento liviano; no reenviamos 100k filas al navegador.
-        trackSocketEmit('res_inv_store', { target: sessionCode, sessionCode, insertedRows, refresh: true });
-        getIO().to(sessionCode).emit('res_inv_store', {
-            sessionCode,
-            insertedRows,
-            refresh: true
-        });
-
-        // 5. IMPORTANTE: Responder a la petición HTTP para que no se quede colgada
-        return res.status(200).json({
-            message: "Inventario registrado y sesión actualizada correctamente",
-            insertedRows
-        });
-
-    } catch (error) {
-        // Si hay CUALQUIER error en la BD, entra aquí, no crashea la app, y se le avisa al cliente
-        console.error("Error al registrar inventario:", error);
-        return res.status(500).json({ error: error.message });
+  try {
+    const result = await importStock(pool, req.body, req.importScope || {});
+    if (!result.duplicate) {
+      try {
+        getIO()
+          .to(result.sessionCode)
+          .emit('res_inv_store', { ...result, refresh: true });
+      } catch (error) {
+        console.warn('Importación confirmada; notificación pendiente.');
+      }
     }
-}
-
-export const postInventoryImport = async (req, res) => {
-
-    try {
-        const dataBody = req.body;
-        let mensaje = 'Inventario Registrado';
-        if (dataBody) {
-            console.log(dataBody[0]['cSessionCode']);
-
-            const [getSesion] = await pool.execute(`SELECT * FROM inventario_sesiones WHERE codigo_sesion = ?`, [session_code]);
-            const invExist = ((getSesion || [])[0] || {}).inventario_registrado || 0;
-
-            if (!invExist) {
-                const data = await dataBody.map(async (d) => {
-                    await pool.execute(
-                        `INSERT INTO inventario_store (cSessionCode,cCodigoTienda,cCodigoArticulo,cReferencia,cCodigoBarra,cDescripcion,cDepartamento,
-             cSeccion,cFamilia,cSubFamilia,cTalla,cColor,cStock,cTemporada,cConteo,cTotalConteo,cEsencia,cStyleDescription,cCodigoBarra2,cCodigoBarra3) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-                        [d.cSessionCode, d.cCodigoTienda, d.cCodigoArticulo, d.cReferencia, d.cCodigoBarra, d.cDescripcion, d.cDepartamento,
-                        d.cSeccion, d.cFamilia, d.cSubFamilia, d.cTalla, d.cColor, d.cStock, (d || {}).cTemporada || '', d.cConteo, d.cTotalConteo, (d || {}).cEsencia || '', (d || {}).cStyleDesc || '', (d || {}).cCodigoBarra2 || null, (d || {}).cCodigoBarra3 || null]
-                    );
-                });
-
-                const sesion = await pool.execute(`UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
-                    [dataBody[0]['cSessionCode']]
-                );
-
-                Promise.all(data, sesion);
-            } else {
-                mensaje = 'Esta sesion ya tiene un inventario registrado.'
-            }
-
-            res.json({ message: mensaje });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Error en las consultas', error });
-    }
-
-}
+    res.json(result);
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.status ? error.message : 'No se pudo importar el inventario.' });
+  }
+};
+export const postInventoryImport = postInventoryResStore;
 
 export const getInventoryResStore = async (req, res) => {
     const dataBody = req.body;
@@ -1540,7 +1351,7 @@ export const getPocketScan = async (req, res) => {
 
         res.json(promisePocketScan);
     } catch (error) {
-        res.status(500).json({ message: 'Error en las consultas', error });
+        res.status(500).json({ message: 'Error en las consultas' });
     }
 }
 
@@ -1588,7 +1399,7 @@ export const updateEndedSession = async (req, res) => {
     } catch (error) {
         // Si el motor de base de datos falla, limpiamos Redis para no dejar la sesión "congelada"
         await redis.del(lockKey);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 };
 
@@ -1635,56 +1446,19 @@ export const updateStartSession = async (req, res) => {
     } catch (error) {
         // En caso de un fallo en el motor de base de datos, limpiamos el lock para permitir reintentos manuales
         await redis.del(lockKey);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 }
 
 
 export const updateConteoPocket = async (req, res) => {
-    const { id, cantidad } = req.body;
-
-    if (!id || cantidad === undefined) {
-        return res.status(400).json({ message: 'El ID del escaneo y la cantidad son requeridos.' });
-    }
-
-    // --- ARQUITECTURA DE DEDUPLICACIÓN (UPDATE COUNT LOCK) ---
-    // Bloqueamos por el ID del registro de escaneo específico para evitar colisiones en el mismo segundo
-    const lockKey = `lock:scan:update:${id}`;
-
-    try {
-        // Ponemos un bloqueo ultracorto de 3 segundos
-        const lockAcquired = await redis.set(lockKey, 'PROCESSING', 'NX', 'EX', 3);
-
-        if (!lockAcquired) {
-            console.warn(`[DEDUPLICACIÓN] Intento duplicado de actualizar conteo bloqueado para el ID: ${id}`);
-            return res.status(429).json({
-                message: 'Ya se está procesando una actualización para este registro. Por favor, espere.'
-            });
-        }
-
-        // --- TU LÓGICA DE NEGOCIO ORIGINAL ---
-        const [result] = await pool.execute(
-            'UPDATE inventario_escaneos SET cantidad = ? WHERE id = ?',
-            [cantidad, id]
-        );
-
-        // Validación preventiva: Si el ID enviado no existía en la BD
-        if (result.affectedRows === 0) {
-            await redis.del(lockKey);
-            return res.status(404).json({ message: 'No se encontró el registro de escaneo especificado.' });
-        }
-
-        // --- ¡LIBERACIÓN EXITOSA! ---
-        // Como MySQL aplicó el cambio con éxito, borramos el candado de inmediato
-        await redis.del(lockKey);
-
-        res.json({ message: 'Conteo actualizado correctamente' });
-
-    } catch (error) {
-        // En caso de que falle la base de datos, limpiamos el lock para permitir reintentos legítimos
-        await redis.del(lockKey);
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    res.json(await editCount(pool, req.body, req.user));
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.status ? error.message : 'No se pudo actualizar el conteo.' });
+  }
 };
 
 export const updateCheckedRow = async (req, res) => {
@@ -1730,7 +1504,7 @@ export const updateCheckedRow = async (req, res) => {
     } catch (error) {
         // En caso de error en la base de datos, limpiamos Redis para permitir reintentos normales
         await redis.del(lockKey);
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'No se pudo completar la operación.' });
     }
 };
 

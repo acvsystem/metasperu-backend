@@ -10,11 +10,17 @@ export const userController = {
             const [rows] = await pool.execute('SELECT id, username, perfilname, role, estado FROM usuarios');
             res.json(rows);
         } catch (error) {
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: 'No se pudo completar la operación.' });
         }
     },
     createUser: async (req, res) => {
         const { username, password, perfilname, role } = req.body;
+        if (!['administrador', 'auditor', 'pocket'].includes(role) || typeof username !== 'string' || !username.trim() || username.length > 100 ||
+            typeof perfilname !== 'string' || !perfilname.trim() || perfilname.length > 255 ||
+            (password !== undefined && (typeof password !== 'string' || Buffer.byteLength(password) > 72 || (password !== '' && password.length < 10)))) {
+            return res.status(400).json({ message: 'Usuario, nombre, rol o contraseña inválidos. Use al menos 10 caracteres en la contraseña.' });
+        }
+
 
         if (!username || !password || !perfilname || !role) {
             return res.status(400).json({ message: 'Todos los campos son requeridos.' });
@@ -37,7 +43,7 @@ export const userController = {
 
             // --- TU LÓGICA DE NEGOCIO OPTIMIZADA ---
             // 1. Encriptar contraseña (Operación costosa para el CPU, ahora protegida)
-            const salt = await bcrypt.genSalt(10);
+            const salt = await bcrypt.genSalt(12);
             const hashedPassword = await bcrypt.hash(password, salt);
 
             // 2. Insertar en la base de datos
@@ -66,13 +72,20 @@ export const userController = {
             }
 
             console.error("Error en createUser:", error);
-            return res.status(500).json({ message: 'Error al crear usuario', error: error.message });
+            return res.status(500).json({ message: 'Error al crear usuario' });
         }
     },
 
     // ACTUALIZAR
     updateUser: async (req, res) => {
         const { id, username, perfilname, role, password } = req.body;
+        if (!['administrador', 'auditor', 'pocket'].includes(role) || typeof username !== 'string' || !username.trim() || username.length > 100 ||
+            typeof perfilname !== 'string' || !perfilname.trim() || perfilname.length > 255 ||
+            (password !== undefined && (typeof password !== 'string' || Buffer.byteLength(password) > 72 || (password !== '' && password.length < 10)))) {
+            return res.status(400).json({ message: 'Usuario, nombre, rol o contraseña inválidos. Use al menos 10 caracteres en la contraseña.' });
+        }
+
+        if (!Number.isSafeInteger(Number(id)) || Number(id) <= 0) return res.status(400).json({ message: 'ID inválido.' });
 
         try {
             let query = 'UPDATE usuarios SET username = ?, perfilname = ?, role = ?';
@@ -80,7 +93,7 @@ export const userController = {
 
             // Si el usuario envió una nueva contraseña, la encriptamos
             if (password && password.trim() !== "") {
-                const salt = await bcrypt.genSalt(10);
+                const salt = await bcrypt.genSalt(12);
                 const hashedPassword = await bcrypt.hash(password, salt);
                 query += ', password = ?';
                 params.push(hashedPassword);
@@ -92,7 +105,7 @@ export const userController = {
             await pool.execute(query, params);
             res.json({ message: 'Usuario actualizado' });
         } catch (error) {
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: 'No se pudo completar la operación.' });
         }
     },
 
@@ -103,7 +116,7 @@ export const userController = {
             await pool.execute('DELETE FROM usuarios WHERE id = ?', [id]);
             res.json({ message: 'Usuario eliminado' });
         } catch (error) {
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: 'No se pudo completar la operación.' });
         }
     }
 };

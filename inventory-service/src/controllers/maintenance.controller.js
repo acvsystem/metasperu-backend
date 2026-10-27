@@ -1,3 +1,4 @@
+import { importStock } from '../services/inventory-operations.js';
 import { pool } from '../config/db.js';
 import { getIO, trackSocketEmit } from '../config/socket.js';
 import { lockStore as redis } from '../utils/lock-store.js';
@@ -86,8 +87,7 @@ export const getZonasv2 = async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({
-            message: 'Error al obtener las zonas',
-            error: error.message
+            message: 'Error al obtener las zonas'
         });
     }
 };
@@ -138,7 +138,7 @@ export const postZonasv2 = async (req, res) => {
             return res.status(400).json({ message: `La zona '${nombre_zona}' ya está registrada.` });
         }
 
-        res.status(500).json({ message: 'Error al registrar zona', error: error.message });
+        res.status(500).json({ message: 'Error al registrar zona' });
     }
 };
 
@@ -155,7 +155,7 @@ export const putZonasv2 = async (req, res) => {
         res.status(200).json({ message: 'Zona actualizada correctamente' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar zona', error: error.message });
+        res.status(500).json({ message: 'Error al actualizar zona' });
     }
 
 };
@@ -198,8 +198,7 @@ export const putZonasSubzonas = async (req, res) => {
     } catch (error) {
         console.error('Error en putZonasSubzonas:', error);
         res.status(500).json({
-            message: 'Error al procesar zona',
-            error: error.message
+            message: 'Error al procesar zona'
         });
     }
 };
@@ -215,8 +214,7 @@ export const getZonasSubzonas = async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({
-            message: 'Error al obtener las secciones',
-            error: error.message
+            message: 'Error al obtener las secciones'
         });
     }
 };
@@ -230,8 +228,7 @@ export const getSections = async (req, res) => {
         res.json(rows);
     } catch (error) {
         res.status(500).json({
-            message: 'Error al obtener las secciones',
-            error: error.message
+            message: 'Error al obtener las secciones'
         });
     }
 };
@@ -282,7 +279,7 @@ export const postSections = async (req, res) => {
             return res.status(400).json({ message: `La sección '${nombre_seccion}' ya está registrada.` });
         }
 
-        res.status(500).json({ message: 'Error al registrar seccion', error: error.message });
+        res.status(500).json({ message: 'Error al registrar seccion' });
     }
 };
 
@@ -292,7 +289,7 @@ export const postSectionsBulk = async (req, res) => {
     try {
         sectionNames = getSectionNamesFromBody(req.body);
     } catch (error) {
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({ message: 'No se pudo completar la operación.' });
     }
 
     if (!sectionNames.length) {
@@ -315,7 +312,7 @@ export const postSectionsBulk = async (req, res) => {
         });
     } catch (error) {
         await connection.rollback();
-        return res.status(500).json({ message: 'Error al registrar subzonas', error: error.message });
+        return res.status(500).json({ message: 'Error al registrar subzonas' });
     } finally {
         connection.release();
     }
@@ -332,7 +329,7 @@ export const assignSectionsRangeToSession = async (req, res) => {
     try {
         sectionNames = getSectionNamesFromBody(req.body);
     } catch (error) {
-        return res.status(400).json({ message: error.message });
+        return res.status(400).json({ message: 'No se pudo completar la operación.' });
     }
 
     if (!sectionNames.length) {
@@ -384,7 +381,7 @@ export const assignSectionsRangeToSession = async (req, res) => {
         });
     } catch (error) {
         await connection.rollback();
-        return res.status(500).json({ message: 'Error al asignar subzonas a la sesión', error: error.message });
+        return res.status(500).json({ message: 'Error al asignar subzonas a la sesión' });
     } finally {
         connection.release();
     }
@@ -402,7 +399,7 @@ export const delZonas = async (req, res) => {
         res.status(200).json({ message: 'Zona eliminada correctamente' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al eliminar zona', error: error.message });
+        res.status(500).json({ message: 'Error al eliminar zona' });
     }
 
 };
@@ -420,7 +417,7 @@ export const putSecitons = async (req, res) => {
         res.status(200).json({ message: 'Seccion actualizada correctamente' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar seccion', error: error.message });
+        res.status(500).json({ message: 'Error al actualizar seccion' });
     }
 
 };
@@ -452,7 +449,7 @@ export const importConteoSession = async (req, res) => {
         const [sessionRows] = await connection.execute(
             `SELECT id, codigo_sesion, estado
              FROM inventario_sesiones
-             WHERE codigo_sesion = ?`,
+             WHERE codigo_sesion = ? FOR UPDATE`,
             [session_code]
         );
 
@@ -461,6 +458,10 @@ export const importConteoSession = async (req, res) => {
             return res.status(404).json({ message: 'Sesión no encontrada' });
         }
 
+        if (sessionRows[0].estado !== 'ACTIVO') {
+            await connection.rollback();
+            return res.status(409).json({ message: 'La sesión está finalizada.' });
+        }
         const sesionId = sessionRows[0].id;
 
         // 2. Subzonas de ESTA sesión: nombre_seccion → id (secciones_asginados)
@@ -554,7 +555,7 @@ export const importConteoSession = async (req, res) => {
                 errores.push({ index: i, error: 'sku vacío' });
                 continue;
             }
-            if (!Number.isFinite(cantidad) || cantidad <= 0) {
+            if (!Number.isSafeInteger(cantidad) || cantidad <= 0 || cantidad > 999999999) {
                 errores.push({ index: i, sku, error: 'cantidad inválida' });
                 continue;
             }
@@ -618,8 +619,7 @@ export const importConteoSession = async (req, res) => {
         await connection.rollback();
         console.error('Error en importConteoSession:', error);
         return res.status(500).json({
-            message: 'Error al importar conteo',
-            error: error.message
+            message: 'Error al importar conteo'
         });
     } finally {
         connection.release();
@@ -627,107 +627,25 @@ export const importConteoSession = async (req, res) => {
 };
 
 export const importStoreSession = async (req, res) => {
-    const { sessionCode, items } = req.body;
-
-    // Validaciones
-    if (!sessionCode) {
-        return res.status(400).json({ message: 'Falta el sessionCode' });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ message: 'No se recibieron items para importar' });
-    }
-
-    const connection = await pool.getConnection();
-
-    try {
-        await connection.beginTransaction();
-
-        const sql = `
-            INSERT INTO inventario_store (
-                cSessionCode,
-                codigo_sesion,
-                cCodigoTienda,
-                cCodigoArticulo,
-                cReferencia,
-                cCodigoBarra,
-                cCodigoBarra2,
-                cCodigoBarra3,
-                cDescripcion,
-                cDepartamento,
-                cSeccion,
-                cFamilia,
-                cSubFamilia,
-                cTalla,
-                cColor,
-                cEsencia,
-                cStyleDescription,
-                cStock,
-                cTemporada,
-                cConteo,
-                cTotalConteo,
-                checking
-            ) VALUES ?
-        `;
-
-        // Preparar los valores
-        const values = items.map(item => [
-            sessionCode,                          // cSessionCode
-            sessionCode,                          // codigo_sesion
-            item.cCodigoTienda || null,
-            item.cCodigoArticulo || null,
-            item.cReferencia || null,
-            item.cCodigoBarra || null,
-            item.cCodigoBarra2 || null,
-            item.cCodigoBarra3 || null,
-            item.cDescripcion || null,
-            item.cDepartamento || null,
-            item.cSeccion || null,
-            item.cFamilia || null,
-            item.cSubFamilia || null,
-            item.cTalla || null,
-            item.cColor || null,
-            item.cEsencia || null,
-            item.cStyleDescription || null,
-            Number(item.cStock) || 0,
-            item.cTemporada || '',
-            Number(item.cConteo) || 0,
-            Number(item.cTotalConteo) || 0,
-            item.checking ?? 0
-        ]);
-
-        const BATCH = 1000;
-        let insertedRows = 0;
-
-        for (let i = 0; i < values.length; i += BATCH) {
-            const batch = values.slice(i, i + BATCH);
-            const [result] = await connection.query(sql, [batch]);
-            insertedRows += result.affectedRows || batch.length;
-        }
-
-        await connection.execute(
-            `UPDATE inventario_sesiones SET inventario_registrado = 1 WHERE codigo_sesion = ?`,
-            [sessionCode]
-        );
-
-        await connection.commit();
-
-        res.status(201).json({
-            message: `Inventario importado correctamente - ${insertedRows} registros`,
-            insertedRows,
-            sessionCode
-        });
-
-    } catch (error) {
-        await connection.rollback();
-        console.error('Error al importar inventario:', error);
-        res.status(500).json({
-            message: 'Error al importar el inventario',
-            error: error.message
-        });
-    } finally {
-        connection.release();
-    }
+  const { sessionCode, items } = req.body || {};
+  if (!Array.isArray(items))
+    return res.status(400).json({ message: 'No se recibieron productos.' });
+  try {
+    const result = await importStock(
+      pool,
+      items.map((item) => ({ ...item, cSessionCode: sessionCode })),
+      {},
+    );
+      if (!result.duplicate) {
+        try { getIO().to(result.sessionCode).emit('res_inv_store', { ...result, refresh: true }); }
+        catch { console.warn('Importación confirmada; notificación pendiente.'); }
+      }
+    res.status(result.duplicate ? 200 : 201).json(result);
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.status ? error.message : 'No se pudo importar el inventario.' });
+  }
 };
 
 export const delZonaEscaneos = async (req, res) => {
@@ -772,8 +690,7 @@ export const delZonaEscaneos = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({
-            message: 'Error al eliminar los registros',
-            error: error.message
+            message: 'Error al eliminar los registros'
         });
     }
 };
@@ -790,7 +707,7 @@ export const delSecitons = async (req, res) => {
         res.status(200).json({ message: 'Seccion eliminada correctamente' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al eliminar seccion', error: error.message });
+        res.status(500).json({ message: 'Error al eliminar seccion' });
     }
 
 };
@@ -824,7 +741,7 @@ GROUP BY
         res.json(rows);
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al consultar', error: error.message });
+        res.status(500).json({ message: 'Error al consultar' });
     }
 
 }
@@ -853,6 +770,6 @@ GROUP BY
         res.json(rows);
 
     } catch (error) {
-        res.status(500).json({ message: 'Error al consultar', error: error.message });
+        res.status(500).json({ message: 'Error al consultar' });
     }
 }

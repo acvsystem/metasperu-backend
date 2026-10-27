@@ -9,7 +9,7 @@ export const storeController = {
             const [rows] = await pool.execute('SELECT * FROM tiendas');
             res.json(rows);
         } catch (error) {
-            res.status(500).json({ message: 'Error al obtener tiendas', error });
+            res.status(500).json({ message: 'Error al obtener tiendas' });
         }
     },
     createTienda: async (req, res) => {
@@ -59,7 +59,7 @@ export const storeController = {
                 return res.status(400).json({ message: `La tienda con la serie ${serie} ya existe en el sistema.` });
             }
 
-            res.status(500).json({ message: 'Error al crear tienda', error: error.message });
+            res.status(500).json({ message: 'Error al crear tienda' });
         }
     },
     updateTienda: async (req, res) => {
@@ -113,7 +113,7 @@ export const storeController = {
                 return res.status(400).json({ message: `La serie ${serie} ya está asignada a otra tienda.` });
             }
 
-            res.status(500).json({ message: 'Error al actualizar', error: error.message });
+            res.status(500).json({ message: 'Error al actualizar' });
         }
     },
     deleteTienda: async (req, res) => {
@@ -166,7 +166,7 @@ export const storeController = {
                 });
             }
 
-            res.status(500).json({ message: 'Error al eliminar', error: error.message });
+            res.status(500).json({ message: 'Error al eliminar' });
         }
     }
 }

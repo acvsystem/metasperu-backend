@@ -16,7 +16,7 @@ export function normalizeScans(scans) {
         const section = Number(scan.seccion_id);
         const at = new Date(scan.scanned_at);
         if (seen.has(id) || typeof scan.sku !== 'string' || !scan.sku.trim() || scan.sku.length > 255 ||
-            !Number.isSafeInteger(quantity) || quantity <= 0 || !Number.isSafeInteger(section) || section <= 0 ||
+            !Number.isSafeInteger(quantity) || quantity <= 0 || quantity > 999999999 || !Number.isSafeInteger(section) || section <= 0 ||
             !scan.scanned_at || !Number.isFinite(at.getTime())) throw fail(400, 'Escaneo invalido o identificador repetido en el lote.');
         seen.add(id);
         const payload = { sku: scan.sku.trim(), quantity, seccion_id: section, scanned_at: at.toISOString() };
