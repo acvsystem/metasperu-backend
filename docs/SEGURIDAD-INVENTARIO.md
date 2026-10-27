@@ -24,6 +24,16 @@ El bearer sigue admitido para consumidores HTTP autenticados y pruebas; el front
 
 ## Antes de desplegar
 
+### Ejecución local desde Visual Studio Code
+
+Desde `inventory-service` o `auth-service`, ejecutar una vez `npm run setup:local`. Configura ambos `.env` de desarrollo con una misma clave aleatoria de inventario de 64 caracteres, una clave distinta para el importador, orígenes locales y puertos HTTP `3000`/`3001`. Conserva los valores de conexión MySQL y no ejecuta migraciones. No imprime las claves ni las regenera si ya hay una clave compartida válida. Rechaza archivos marcados como producción o dos claves válidas contradictorias sin reemplazarlas.
+
+Ajuste local del 27/10/2026: se comprobó el arranque de ambos procesos reales y respuesta 401 sin autenticación, sin consultar MySQL. Los procesos de comprobación se cerraron para dejar disponibles los puertos. Pasan 22 pruebas de inventario, incluidas 3 del configurador, y 3 de autenticación; QA independiente verificó la conservación de claves entre comillas con caracteres de comentario.
+
+Después, usar dos terminales: `npm start` en `auth-service` y `npm start` en `inventory-service`. Los servicios locales escuchan solamente en `127.0.0.1`. `DB_PORT=3306` corresponde a MySQL; no debe confundirse con `PORT`, que es el puerto HTTP de cada API. La configuración de URLs del frontend y la migración de la base se revisan por separado: que la API arranque no certifica login ni conexión al esquema remoto.
+
+### Preparación de producción
+
 1. Respaldo y ventana coordinada de frontend, auth-service e inventory-service. Incluir `shared/inventory-security.mjs` en los artefactos: ambos servicios lo importan.
 2. En el esquema de inventario, revisar códigos duplicados con `SELECT codigo_sesion, COUNT(*) FROM inventario_sesiones GROUP BY codigo_sesion HAVING COUNT(*) > 1`. Resolverlos antes de la migración; el script no borra ni corrige datos automáticamente.
 3. Aplicar `inventory-service/sql/security.sql`. Crea sesiones de autenticación, auditoría y recibos de importación, y asegura unicidad del código de sesión. Fue ejecutado dos veces sobre MySQL 8.4 de prueba. Verificar el esquema y versión reales antes de producción; las tablas participantes deben usar InnoDB. Mantener también `sql/pocket-receipts.sql` para sincronización durable de Pocket.

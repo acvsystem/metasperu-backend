@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "setup:local": "node scripts/setup-local.mjs",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

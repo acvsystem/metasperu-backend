@@ -52,5 +52,5 @@ export function createApp() {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const server = createServer(createApp());
   initSocket(server);
-  server.listen(Number(process.env.PORT || 3001), () => console.log('inventory-service iniciado.'));
+  server.listen(Number(process.env.PORT || 3001), process.env.HOST || '0.0.0.0', () => console.log('inventory-service iniciado.'));
 }

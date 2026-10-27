@@ -75,5 +75,5 @@ export function createApp() {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const server = createServer(createApp());
 
-  server.listen(Number(process.env.PORT || 3000), () => console.log('auth-service iniciado.'));
+  server.listen(Number(process.env.PORT || 3000), process.env.HOST || '0.0.0.0', () => console.log('auth-service iniciado.'));
 }

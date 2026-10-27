@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
+    "setup:local": "node scripts/setup-local.mjs",
     "test": "node --test test/*.test.js"
   },
   "keywords": [],
