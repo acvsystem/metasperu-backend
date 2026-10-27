@@ -6,8 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { createHash } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { isProcessEntrypoint } from '../../shared/process-entrypoint.mjs';
 import { origins } from './config/security.js';
 import routes from './routes/auth.routes.js';
 
@@ -72,7 +71,7 @@ export function createApp() {
   return app;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isProcessEntrypoint(import.meta.url)) {
   const server = createServer(createApp());
 
   server.listen(Number(process.env.PORT || 3000), process.env.HOST || '0.0.0.0', () => console.log('auth-service iniciado.'));

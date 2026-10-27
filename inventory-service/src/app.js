@@ -5,8 +5,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
-import { fileURLToPath } from 'node:url';
-import { resolve } from 'node:path';
+import { isProcessEntrypoint } from '../../shared/process-entrypoint.mjs';
 import { origins } from './config/security.js';
 import { initSocket } from './config/socket.js';
 import { httpLogger } from './middleware/http-logger.middleware.js';
@@ -49,7 +48,7 @@ export function createApp() {
   return app;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isProcessEntrypoint(import.meta.url)) {
   const server = createServer(createApp());
   initSocket(server);
   server.listen(Number(process.env.PORT || 3001), process.env.HOST || '0.0.0.0', () => console.log('inventory-service iniciado.'));
