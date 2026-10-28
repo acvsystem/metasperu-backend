@@ -6,3 +6,6 @@
 **/*.pem
 **/logs/
 **/.secrets/
+
+**/__pycache__/
+**/*.pyc
