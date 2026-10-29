@@ -73,13 +73,12 @@ export async function editCount(pool, body, user) {
     !Number.isSafeInteger(id) ||
     id <= 0 ||
     body.cantidad === null ||
-    body.cantidad === '' ||
+    (typeof body.cantidad === 'string' && !body.cantidad.trim()) ||
     !['number', 'string'].includes(typeof body.cantidad) ||
     !Number.isSafeInteger(quantity) ||
-    quantity < 0 ||
-    quantity > 999999999
+    Math.abs(quantity) > 999999999
   ) {
-    throw fail(400, 'Ingrese un ID válido y una cantidad entera entre 0 y 999999999.');
+    throw fail(400, 'Ingrese un ID válido y una cantidad entera entre -999999999 y 999999999.');
   }
   return transaction(pool, async (connection) => {
     const [[scan]] = await connection.query(

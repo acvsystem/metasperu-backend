@@ -4,7 +4,7 @@ import { createSession, editCount, importStock } from '../src/services/inventory
 import { normalizeScans } from '../src/services/pocket-sync.js';
 import { randomUUID } from 'node:crypto';
 
-test('scan uploads enforce the same integer quantity limit as count editing', () => {
+test('new scan uploads still require positive integer quantities', () => {
   for (const quantity of [0, -1, 0.5, 1000000000]) {
     assert.throws(() => normalizeScans([{ client_scan_id: randomUUID(), sku: 'A', quantity, seccion_id: 1, scanned_at: new Date().toISOString() }]), { status: 400 });
   }
@@ -41,11 +41,29 @@ test('creating session rolls back header when assigning sections fails', async (
   assert.ok(!db.events.includes('commit'));
   assert.equal(db.events.at(-1), 'release');
 });
-test('count editing rejects negative, decimal, excessive, and nonnumeric values before opening database', async () => {
-  for (const cantidad of [-1, 1.5, 'no', 1000000000, null, '']) {
+test('count editing rejects fractional, out-of-range, blank and nonnumeric values before opening database', async () => {
+  for (const cantidad of [-1.5, 1.5, 'no', -1000000000, 1000000000, null, '', '  ', undefined, false]) {
     await assert.rejects(() => editCount({}, { id: 1, cantidad }, { id: 7, role: 'pocket' }), {
       status: 400,
     });
+  }
+});
+
+test('signed count edits persist their exact quantity and audit in the same transaction', async () => {
+  for (const cantidad of [-1, '-2', -3, 0, 2, 3, -999999999, 999999999]) {
+    const writes = [];
+    const db = database((sql, params) => {
+      if (sql.startsWith('SELECT'))
+        return [[{ id: 1, sesion_id: 2, escaneado_por: 7, cantidad: 8, estado: 'ACTIVO' }]];
+      writes.push({ sql, params });
+      return [{}];
+    });
+    await editCount(db, { id: 1, cantidad }, { id: 7, role: 'pocket' });
+    assert.deepEqual(writes[0].params, [Number(cantidad), 1]);
+    assert.ok(writes[1].sql.includes('INSERT INTO inventory_scan_audit'));
+    assert.deepEqual(writes[1].params, [1, 2, 7, 8, Number(cantidad)]);
+    assert.ok(db.events.includes('commit'));
+    assert.ok(!db.events.includes('rollback'));
   }
 });
 test('pocket cannot change another operator count and closed sessions cannot be edited', async () => {
@@ -56,7 +74,7 @@ test('pocket cannot change another operator count and closed sessions cannot be 
     const db = database(() => [
       [{ id: 1, sesion_id: 2, escaneado_por: owner, cantidad: 3, estado: state }],
     ]);
-    await assert.rejects(() => editCount(db, { id: 1, cantidad: 5 }, { id: 7, role: 'pocket' }), {
+    await assert.rejects(() => editCount(db, { id: 1, cantidad: -1 }, { id: 7, role: 'pocket' }), {
       status,
     });
     assert.ok(!db.events.some((s) => s.startsWith('UPDATE')));
