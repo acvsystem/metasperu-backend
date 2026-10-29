@@ -1,16 +1,17 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
+import {canReadHrStore,scheduleStorePredicate,lockBallotForDateChange} from '../../../shared/center-hr-scope.mjs';
+import {createAttendanceRequests} from '../../../shared/center-attendance-requests.mjs';
 import { getIO, requestAccessCheckinoutServer } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
 import { pool } from '../config/db.js';
 import { dev_pool } from '../config/dev_bd.js';
 import fs from 'fs/promises';
 
-const arDataAsistenciaEmpleados = [{
-    ejb: []
-}];
+const attendanceRequests=createAttendanceRequests(pool);
 
 const pushEmailQueue = (data) => {
     emailService.pushToEmailQueue(data).catch((error) => {
-        console.error('Error enviando correo a RabbitMQ:', error.message);
+        reportCenterError('center-resources-human-service.store.controller.13',undefined);
     });
 };
 
@@ -134,7 +135,7 @@ export const storeController = {
             const respuesta = await procesarYResponder(data, documento, fecha_desde, fecha_hasta);
 
             if (socket.length) {
-                getIO().to(socket).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
+                getIO().to(req.replySocketId).emit('py_works_hours_employes_response', { data: data.length ? respuesta : responseVacio });
             }
         } else {
             if (socket.length) {
@@ -144,10 +145,11 @@ export const storeController = {
                     hrWorking: decimalATiempo(item.hrWorking)
                 }));
 
-                getIO().to(socket).emit('py_asistence_employes_response', { data: resultado.length ? resultado : [] });
+                getIO().to(req.replySocketId).emit('py_asistence_employes_response', { data: resultado.length ? resultado : [] });
             }
         }
 
+        return res.json({message:"Respuesta procesada."});
     },
     postHorusWorksEmployes: async (req, res) => {
         const { serie, fecha_desde, fecha_hasta, documento, socket, isAsistencia = false } = req.body; // Asegúrate que Python envíe la marca
@@ -172,12 +174,12 @@ export const storeController = {
         }
 
         try {
-            const propertyUnique = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const propertyUnique = await attendanceRequests.begin(req.user.id,socketId);
 
             getIO().to('servidor_backup').emit('py_asistencia_empleados', { fecha, tipoConsulta, propertyUnique, socketId });
             res.status(200).json({ property: propertyUnique, message: 'Se envio la solicitud con exito' });
         } catch (error) {
-            res.status(500).json({ message: 'Error interno' });
+            res.status(error.status||500).json({ message:error.status?error.message:'Error interno' });
         }
     },
     callRegisterEmployesStore: async (req, res) => {
@@ -198,22 +200,22 @@ export const storeController = {
         }
 
         try {
-            procesarAsistenciaFinal(arDataAsistenciaEmpleados[0][`ejb`], data).then((asistencia) => {
-                arDataAsistenciaEmpleados[0][`${propertyUnique}`] = asistencia;
-                console.log("postAsistenciaEmployesStore", socketId);
-                getIO().to(socketId).emit('dashboard_refresh_empleados');
-            });
+            if(!Array.isArray(data))return res.status(422).json({message:'Listado de asistencia invalido.'});
+            const request=await attendanceRequests.context(req.replyUser.id,req.replySocketId,propertyUnique);
+            const asistencia=await procesarAsistenciaFinal(request.roster,data);
+            await attendanceRequests.complete(req.replyUser.id,req.replySocketId,propertyUnique,asistencia);
+            getIO().to(req.replySocketId).emit('dashboard_refresh_empleados',{property:propertyUnique});
 
             res.status(200).json({ message: 'Se envio la solicitud con exito' });
         } catch (error) {
-            res.status(500).json({ message: 'Error interno' });
+            res.status(error.status||500).json({ message:error.status?error.message:'Error interno' });
         }
 
     },
     postEjbRegisterEmployes: async (req, res) => {
         const { data, socketId } = req.body;
 
-        if (!data) {
+        if (!Array.isArray(data)||data.length>50000) {
             return res.status(400).json({ message: 'Data es requerido' });
         }
 
@@ -248,12 +250,10 @@ export const storeController = {
 
 
             // 3. Guardar en el almacenamiento temporal de asistencia
-            if (arDataAsistenciaEmpleados.length > 0) {
-                arDataAsistenciaEmpleados[0].ejb = empleadosUnicos;
-            }
+            await attendanceRequests.saveRoster(req.replyUser.id,empleadosUnicos);
 
             // 4. Emitir al dashboard en tiempo real
-            getIO().to(socketId.socketId).emit('dashboard_empleados_horario', datosFormateados);
+            getIO().to(req.replySocketId).emit('dashboard_empleados_horario', datosFormateados);
 
             res.status(200).json({
                 message: 'Se envío la solicitud con éxito',
@@ -261,55 +261,26 @@ export const storeController = {
             });
 
         } catch (error) {
-            console.error('Error procesando empleados EJB:', error);
+            reportCenterError('center-resources-human-service.store.controller.265',error);
             res.status(500).json({ message: 'Error interno al procesar los datos' });
         }
     },
-    postRefresAsistenciaEmpleados: (req, res) => {
-        const { property } = req.body;
-
+    postRefresAsistenciaEmpleados: async (req, res) => {
         try {
-            const response = [];
-            for (const key in arDataAsistenciaEmpleados[0]) {
-                if (key == property || key == 'ejb') {
-
-                    if (key != 'ejb') {
-                        // 1. Aplanamos el array de arrays para tener una lista única de objetos
-                        const asistenciaPlana = arDataAsistenciaEmpleados[0][key].flat().filter(item => item && item.fecha);
-
-                        // 2. Ordenamos por fecha (de la más antigua a la más reciente)
-                        asistenciaPlana.sort((a, b) => {
-                            // Convertimos las fechas a objetos Date para una comparación precisa
-                            const fechaA = new Date(a.fecha);
-                            const fechaB = new Date(b.fecha);
-
-                            // Si las fechas son iguales, podemos ordenar por hora de entrada como segundo criterio
-                            if (fechaA.getTime() === fechaB.getTime()) {
-                                return a.entrada.localeCompare(b.entrada);
-                            }
-
-                            return fechaA - fechaB;
-                        });
-
-                        response.push({ property: key, data: asistenciaPlana });
-                    } else {
-                        response.push({ property: key, data: arDataAsistenciaEmpleados[0][key].flat() });
-                    }
-
-                }
-            }
-
-            res.status(200).json({ asistencia: response });
-            delete arDataAsistenciaEmpleados[0][property];
-        } catch (error) {
-            res.status(500).json({ message: 'Error interno' });
+            const property=req.body?.property;
+            const result=await attendanceRequests.read(req.user.id,property);
+            const sorted=result.rows.flat().filter(item=>item&&item.fecha).sort((a,b)=>
+                String(a.fecha).localeCompare(String(b.fecha))||String(a.entrada||'').localeCompare(String(b.entrada||'')));
+            return res.json({asistencia:[{property,data:sorted},{property:'ejb',data:result.roster}]});
+        }catch(error){
+            return res.status(error.status||500).json({message:error.status?error.message:'No se pudo recuperar la asistencia.'});
         }
     },
     postBallotEmployesStore: async (req, res) => {
         const { codeBallot } = req.body;
-        console.log(codeBallot);
+        console.log("center-resources-human-service: evento procesado (store.controller.js:311)");
         // 1. Validación de entrada
-        if (!codeBallot) {
+        if (typeof codeBallot!=='string'||!codeBallot||codeBallot.length>80) {
             return res.status(400).json({ message: 'El código de papeleta es requerido' });
         }
 
@@ -346,6 +317,7 @@ export const storeController = {
             }
 
             const headData = rowsHead[0];
+            if(!canReadHrStore(req.user,headData.CODIGO_TIENDA))return res.status(403).json({message:'No tiene acceso a esta papeleta.'});
             const idHead = headData.ID_HEAD_PAPELETA;
 
             // 4. Consulta de Detalle
@@ -359,7 +331,7 @@ export const storeController = {
             });
 
         } catch (error) {
-            console.error(`❌ Error en papeleta ${codeBallot}:`, error.message);
+            reportCenterError('center-resources-human-service.store.controller.363',undefined);
             return res.status(500).json({
                 message: 'Error interno del servidor',
                 error: process.env.NODE_ENV === 'development' ? error.message : {}
@@ -368,6 +340,7 @@ export const storeController = {
     },
     getScheduleStore: async (req, res) => {
         try {
+            const scope=scheduleStorePredicate(req.user);
             // Realizamos un INNER JOIN para obtener el nombre de la tienda
             // H.RANGO_DIAS contiene el rango que vamos a separar para rango_1 y rango_2
             const query = `
@@ -379,11 +352,12 @@ export const storeController = {
                 T.DESCRIPCION as name
             FROM TB_HORARIO_PROPERTY H
             INNER JOIN TB_LISTA_TIENDA T ON H.CODIGO_TIENDA = T.SERIE_TIENDA OR H.CODIGO_TIENDA = T.OLD_SERIE_TIENDA
+            ${scope.sql}
             GROUP BY H.CODIGO_TIENDA, H.RANGO_DIAS, T.DESCRIPCION
             ORDER BY STR_TO_DATE(rango_1, '%d-%m-%Y') DESC;
         `;
 
-            const [rows] = await pool.query(query);
+            const [rows] = await pool.query(query,scope.values);
 
             // Mapeamos los resultados al formato exacto que solicitaste
             const responseData = rows.map(item => ({
@@ -401,7 +375,7 @@ export const storeController = {
             });
 
         } catch (error) {
-            console.error(`❌ Error al obtener horarios con nombres:`, error.message);
+            reportCenterError('center-resources-human-service.store.controller.405',undefined);
             return res.status(500).json({
                 success: false,
                 message: 'Error al procesar la lista de horarios y tiendas',
@@ -480,15 +454,7 @@ export const storeController = {
              );`,
                             [code_store, fechaIn, fechaIn]);
 
-                        console.log(`SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
-                    DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
-             FROM bd_metasperu.tb_head_papeleta 
-             WHERE ID_PAP_TIPO_PAPELETA = 7 
-             AND CODIGO_TIENDA = '${code_store}'
-             AND (
-                (FECHA_DESDE = '${fechaIn}') OR 
-                (DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') = '${fechaIn}')
-             );`);
+                        console.log("center-resources-human-service: evento procesado (store.controller.js:484)");
 
                         return paps; // Retorna el array de papeletas de este día
                     }));
@@ -624,7 +590,7 @@ export const storeController = {
             res.status(200).json(respuestaFinal);
 
         } catch (error) {
-            console.error('❌ Error:', error);
+            reportCenterError('center-resources-human-service.store.controller.628',error);
             res.status(500).json({ success: false, error: error.message });
         } finally {
             if (connection) connection.release();
@@ -671,7 +637,7 @@ export const storeController = {
                     // 2. Insertar Días
                     const mappingDias = {};
                     for (const d of item.dias) {
-                        console.log('Insertando día:', d.dia, d.fecha, d.id);
+                        console.log('Insertando día:');
                         const [resDia] = await connection.execute(
                             `INSERT INTO tb_dias_horario (ID_DIA_HORARIO, DIA, FECHA, POSITION, FECHA_NUMBER) 
                      VALUES (?, ?, ?, ?, ?)`,
@@ -760,7 +726,7 @@ export const storeController = {
 
         } catch (error) {
             if (connection) await connection.rollback();
-            console.error('❌ Error detallado:', error);
+            reportCenterError('center-resources-human-service.store.controller.764',error);
             res.status(500).json({ success: false, error: error.message });
         } finally {
             if (connection) connection.release();
@@ -847,7 +813,7 @@ export const storeController = {
                     papeletasLactancia = resultadosPapeletas.flat();
 
                 }
-                console.log(757, diasDB);
+                console.log("center-resources-human-service: evento procesado (store.controller.js:851)");
                 // Formatear dias e incluir papeletas del día
                 const diasFormateados = diasDB.map(d => {
 
@@ -973,7 +939,7 @@ export const storeController = {
             res.status(200).json(respuestaFinal);
 
         } catch (error) {
-            console.error('❌ Error:', error);
+            reportCenterError('center-resources-human-service.store.controller.977',error);
             res.status(500).json({ success: false, error: error.message });
         } finally {
             if (connection) connection.release();
@@ -984,14 +950,6 @@ export const storeController = {
         const { codigoTienda, fechaCabecera, rangoDias, datos, rango } = req.body;
 
         const n = (val) => (val === undefined || val === null ? null : val);
-
-        // RESPALDO PREVENTIVO: Guardamos un archivo local por si la DB falla catastróficamente
-        try {
-            const fileName = `./logs/backup_${codigoTienda}_${fechaCabecera}.json`;
-            await fs.writeFile(fileName, JSON.stringify(req.body, null, 2));
-        } catch (err) {
-            console.error("No se pudo crear el backup local, pero continuamos...", err);
-        }
 
         const connection = await pool.getConnection();
 
@@ -1124,7 +1082,7 @@ export const storeController = {
 
         } catch (error) {
             if (connection) await connection.rollback();
-            console.error('❌ Error al editar:', error);
+            reportCenterError('center-resources-human-service.store.controller.1120',error);
             res.status(500).json({ success: false, error: error.message });
         } finally {
             if (connection) connection.release();
@@ -1246,7 +1204,7 @@ export const storeController = {
 
         } catch (error) {
             // 4. Registro de errores en consola y respuesta al cliente
-            console.error('Error al obtener tipos de papeleta:', error);
+            reportCenterError('center-resources-human-service.store.controller.1242',error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor al recuperar los tipos de papeleta'
@@ -1359,7 +1317,7 @@ export const storeController = {
 
         } catch (error) {
             await connection.rollback();
-            console.error("Error al registrar autorización:", error);
+            reportCenterError('center-resources-human-service.store.controller.1355',error);
             res.status(500).json({
                 success: false,
                 message: "Error interno del servidor al procesar la solicitud."
@@ -1440,7 +1398,7 @@ export const storeController = {
 
             // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
             const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
-            console.log(values_hrx);
+            console.log("center-resources-human-service: evento procesado (store.controller.js:1436)");
             await connection.execute(query_hrx, values_hrx);
 
             if (result.affectedRows === 0) {
@@ -1457,7 +1415,7 @@ export const storeController = {
 
         } catch (error) {
             await connection.rollback();
-            console.error("Error en postApprovalHoursWorksEmployes:", error);
+            reportCenterError('center-resources-human-service.store.controller.1453',error);
             res.status(500).json({
                 success: false,
                 message: 'Error interno del servidor al registrar la respuesta.'
@@ -1567,7 +1525,7 @@ export const storeController = {
             res.status(200).json({ success: true, data: parseData });
 
         } catch (error) {
-            console.error("Error en getAllApprovalHoursWorksEmployes:", error);
+            reportCenterError('center-resources-human-service.store.controller.1563',error);
             res.status(500).json({ success: false, message: 'Error al consultar autorizaciones.' });
         } finally {
             // 4. PUNTO CRÍTICO: Liberar conexión siempre
@@ -1620,7 +1578,7 @@ export const storeController = {
             res.status(200).json({ success: true, data: parseData });
 
         } catch (error) {
-            console.error("Error en getAllBallotEmployesStore:", error);
+            reportCenterError('center-resources-human-service.store.controller.1616',error);
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         } finally {
             if (connection) connection.release();
@@ -1631,8 +1589,10 @@ export const storeController = {
         let connection;
         try {
             connection = await pool.getConnection();
-            let query = `UPDATE tb_head_papeleta SET FECHA_DESDE = ?, FECHA_HASTA = ?, ISUPDATE = 1 WHERE ID_HEAD_PAPELETA = ?`;
-            await connection.execute(query, [nueva_fecha, nueva_fecha, id_papeleta]);
+            await connection.beginTransaction();
+            await lockBallotForDateChange(connection,req.user,req.body);
+            const query = `UPDATE tb_head_papeleta SET FECHA_DESDE = ?, FECHA_HASTA = ?, ISUPDATE = 1 WHERE ID_HEAD_PAPELETA = ? AND CODIGO_PAPELETA=?`;
+            await connection.execute(query, [nueva_fecha, nueva_fecha, id_papeleta,codeBallot]);
 
             // 2. Consulta de Cabecera
             const headQuery = `SELECT 
@@ -1659,10 +1619,11 @@ export const storeController = {
                             FROM tb_head_papeleta h 
                             INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA
                             INNER JOIN tb_tipo_papeleta p ON h.ID_PAP_TIPO_PAPELETA = p.ID_TIPO_PAPELETA WHERE CODIGO_PAPELETA = ? LIMIT 1`;
-            const [rowsHead] = await pool.query(headQuery, [codeBallot]);
+            const [rowsHead] = await connection.query(headQuery, [codeBallot]);
 
             // 3. Verificación de existencia
             if (rowsHead.length === 0) {
+                await connection.rollback();
                 return res.status(404).json({ message: 'Papeleta no encontrada' });
             }
 
@@ -1671,7 +1632,9 @@ export const storeController = {
 
             // 4. Consulta de Detalle
             const detailQuery = `SELECT * FROM tb_detalle_papeleta WHERE DET_ID_HEAD_PAPELETA = ?`;
-            const [rowsDetail] = await pool.query(detailQuery, [idHead]);
+            const [rowsDetail] = await connection.query(detailQuery, [idHead]);
+
+            await connection.commit();
 
             res.status(200).json({
                 success: true,
@@ -1680,7 +1643,9 @@ export const storeController = {
                 detail_ballot: rowsDetail
             });
         } catch (error) {
-            console.error("Error en putUpdateDateScheduleStore:", error);
+            if(connection)await connection.rollback();
+            if(error.status)return res.status(error.status).json({success:false,message:error.message});
+            reportCenterError('center-resources-human-service.store.controller.1676',error);
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         } finally {
             if (connection) connection.release();
@@ -1798,14 +1763,14 @@ const searchPapeletaEmpleado = async (fecha, documento) => {
         return { codigoPapeleta: "", isPapeleta: false }; // Valor por defecto
 
     } catch (error) {
-        console.error("Error en searchPapeletaEmpleado:", error);
+        reportCenterError('center-resources-human-service.store.controller.1794',error);
         return { codigoPapeleta: "", isPapeleta: false };
     }
 }
 
 const searchHorarioEmpleado = async (fecha, documento) => {
     try {
-        console.log("Buscando horario para Documento:", documento, "en Fecha:", fecha);
+        console.log("Buscando horario para Documento:");
         const query = `
             SELECT RH.RANGO_HORA 
             FROM TB_DIAS_TRABAJO DT
@@ -1834,7 +1799,7 @@ const searchHorarioEmpleado = async (fecha, documento) => {
         return { rango: "", entradaOficial: "08:00" }; // Valor por defecto
 
     } catch (error) {
-        console.error("Error en searchHorarioEmpleado:", error);
+        reportCenterError('center-resources-human-service.store.controller.1830',error);
         return { rango: "", entradaOficial: "08:00" };
     }
 }
@@ -1865,7 +1830,7 @@ const searchDescansoEmpleado = async (fecha, documento) => {
         return { descanso: "" }; // Valor por defecto
 
     } catch (error) {
-        console.error("Error en searchHorarioEmpleado:", error);
+        reportCenterError('center-resources-human-service.store.controller.1861',error);
         return { rango: "", entradaOficial: "08:00" };
     }
 }
@@ -2070,7 +2035,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
     // 2. CLASIFICACIÓN INICIAL Y CÁLCULO DE MINUTOS
     listaRegistros.forEach(reg => {
         // No procesar marcaciones del día de hoy
-        console.log(1938, reg.dia, FECHA_HOY_STR);
+        console.log("center-resources-human-service: evento procesado (store.controller.js:2066)");
         if (reg.dia === FECHA_HOY_STR) {
             stats.omitidos += 1;
             return;
@@ -2087,12 +2052,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         const horaSalida = getHoraMarcacion(reg.hrOut);
 
         if (!horaEntrada || !horaSalida || !reg.nroDocumento || !reg.dia) {
-            console.warn('Registro omitido por datos incompletos:', {
-                dia: reg.dia,
-                nroDocumento: reg.nroDocumento,
-                hrIn: reg.hrIn,
-                hrOut: reg.hrOut
-            });
+            console.warn('Registro omitido por datos incompletos:');
             stats.omitidos += 1;
             return;
         }
@@ -2185,7 +2145,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
         // Cálculo de exceso basado en la jornada que le corresponde (Normal o Lactancia)
         const excesoPreliminarMins = Math.max(0, totalMinsEfectivos - data.limiteJornada);
         const nivel = await validarNivelAutorizar(fecha, data.nroDocumento);
-        console.log("Resultado de la consulta de nivel de autorización:", nivel);
+        console.log("Resultado de la consulta de nivel de autorización:");
         if (esDiaLibre) {
             excesoMins = totalMinsEfectivos;
             observacion = "Trabajo en su dia de descanso.";
@@ -2201,7 +2161,7 @@ const procesarYRegistrarHoras = async (listaRegistros) => {
             } else if (data.especial) {
                 observacion = tag + "No marco salida";
                 esAprobacion = 1;
-                console.log(`Procesando ${fecha} para documento ${data.nroDocumento}: Total Minutos = ${data.totalMins}, Limite Jornada = ${data.limiteJornada}, Count = ${data.count}, Especial = ${data.especial}, Lactancia = ${data.lactancia}`);
+                console.log("center-resources-human-service: evento procesado (store.controller.js:2197)");
 
             } else if (data.count > 2) {
                 observacion = tag + "Marcacion irregular, verifique marcaciones.";
@@ -2290,7 +2250,7 @@ const verificarDiaLibre = async (documento, fecha) => {
         // Si el query devuelve filas, significa que ES su día libre
         return rows.length > 0;
     } catch (error) {
-        console.error("Error al verificar día libre:", error);
+        reportCenterError('center-resources-human-service.store.controller.2286',error);
         return false; // Por seguridad, si falla, asumimos que no es libre
     }
 };
@@ -2347,7 +2307,7 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
 
         return result;
     } catch (error) {
-        console.error("Error al precargar dias libres:", error);
+        reportCenterError('center-resources-human-service.store.controller.2343',error);
         return new Set();
     }
 };
@@ -2377,7 +2337,7 @@ const obtenerPapeletasPorDocumentoYFecha = async (documentos, fechas) => {
 
         return result;
     } catch (error) {
-        console.error("Error al precargar papeletas:", error);
+        reportCenterError('center-resources-human-service.store.controller.2373',error);
         return new Map();
     }
 };
@@ -2421,19 +2381,13 @@ const obtenerRangoSemana = (fechaStr) => {
 }
 
 const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = null, isAprobacion = 0) => {
-    console.log('guardarEnBD - parametros recibidos:', { nroDocumento, fechaRef, excesoDecimal, observacion, isAprobacion });
+    console.log('guardarEnBD - parametros recibidos:');
     const excesoTiempo = decimalATiempo(excesoDecimal);
     const estado = isAprobacion ? 'aprobar' : 'correcto';
     const fechaBase = fechaRef;
 
     if (!nroDocumento || !fechaBase || !excesoTiempo) {
-        console.warn('guardarEnBD omitido por parametros incompletos:', {
-            nroDocumento,
-            fechaRef,
-            fechaBase,
-            excesoDecimal,
-            excesoTiempo
-        });
+        console.warn('guardarEnBD omitido por parametros incompletos:');
         return { inserted: false, reason: 'invalid_params' };
     }
 
@@ -2448,13 +2402,13 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         `, [nroDocumento, fechaBase, fechaBase]);
 
         if (existe.length > 0) {
-            console.log('guardarEnBD - ya existe:', { nroDocumento, fechaBase });
+            console.log('guardarEnBD - ya existe:');
 
 
             return { inserted: false, reason: 'exists' };
         }
 
-        console.log('guardarEnBD - insertando:', { nroDocumento, fechaBase, excesoTiempo, estado });
+        console.log('guardarEnBD - insertando:');
 
         const [result] = await pool.query(`
             INSERT INTO tb_hora_extra_empleado 
@@ -2473,13 +2427,7 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             isAprobacion        // ISAPROBACION (nuevo valor)
         ]);
 
-        console.log('guardarEnBD insertado:', {
-            id: result.insertId,
-            nroDocumento,
-            fecha: fechaRef,
-            excesoTiempo,
-            estado
-        });
+        console.log('guardarEnBD insertado:');
 
         return { inserted: result.affectedRows > 0, id: result.insertId };
     } catch (err) {
@@ -2490,19 +2438,11 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         // crear un registro duplicado. Este UNIQUE KEY debe existir en la base de datos
         // (ver recomendaciones: no se puede crear una migracion sin acceso a la BD).
         if (err.code === 'ER_DUP_ENTRY') {
-            console.warn('guardarEnBD - insercion concurrente detectada, ya existia:', { nroDocumento, fechaBase });
+            console.warn('guardarEnBD - insercion concurrente detectada, ya existia:');
             return { inserted: false, reason: 'exists' };
         }
 
-        console.error(`Error al insertar en guardarEnBD:`, {
-            message: err.message,
-            code: err.code,
-            sqlMessage: err.sqlMessage,
-            nroDocumento,
-            fechaRef,
-            fechaBase,
-            excesoTiempo
-        });
+        reportCenterError('center-resources-human-service.store.controller.2490',undefined);
         return { inserted: false, error: err.message };
     }
 }
@@ -2548,9 +2488,9 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
 
     try {
         registros = await procesarYRegistrarHoras(registrosDelDocumento);
-        console.log(2409, registros);
+        console.log("center-resources-human-service: evento procesado (store.controller.js:2544)");
     } catch (error) {
-        console.error("Error al procesar y registrar horas:", error);
+        reportCenterError('center-resources-human-service.store.controller.2546',error);
         registros = { success: false, error: error.message };
     }
     // 2. Consultamos el saldo total en el rango solicitado por el frontend
@@ -2589,7 +2529,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             return acc + tiempoADecimal(row.HR_EXTRA_SOBRANTE);
         }, 0);
 
-        console.log("Total calculado:", totalDecimal);
+        console.log("Total calculado:");
 
         // 3. Convertimos el total nuevamente a "HH:MM" para el Frontend
         const totalTiempo = decimalATiempo(totalDecimal);
@@ -2608,7 +2548,7 @@ const procesarYResponder = async (listaRegistros, nroDocumento, fechaInicio, fec
             marcaciones: registrosDelDocumento || []
         };
     } catch (error) {
-        console.error("Error al obtener el saldo final:", error);
+        reportCenterError('center-resources-human-service.store.controller.2604',error);
         throw error;
     }
 }
@@ -2667,7 +2607,7 @@ const validarHoraExtraPapeleta = async (horasExtras = []) => {
 
     } catch (error) {
         if (connection) await connection.rollback();
-        console.error('Error validando papeletas:', error);
+        reportCenterError('center-resources-human-service.store.controller.2663',error);
 
         // Si falla algo en BD, no se eliminó nada → devolvemos todo igual
         return horasExtras;
@@ -2689,7 +2629,7 @@ const validarNivelAutorizar = async (fecha, documento) => {
         `;
 
         const [rows] = await pool.query(query, [fecha, documento]);
-        console.log("Resultado de la consulta de nivel de autorización:", rows);
+        console.log("Resultado de la consulta de nivel de autorización:");
         // Si encontramos al menos un registro, el nivel es RRHH
         return {
             nivel: rows.length > 0 ? "RECURSOS HUMANOS" : "GENERAL",
@@ -2697,7 +2637,7 @@ const validarNivelAutorizar = async (fecha, documento) => {
         };
 
     } catch (error) {
-        console.error("Error al validar nivel de autorización:", error);
+        reportCenterError('center-resources-human-service.store.controller.2693',error);
         // Es mejor devolver null o un estado de error manejable
         return { nivel: "ERROR" };
     }
@@ -2721,7 +2661,7 @@ const hrPapeleta = async (fecha, documento) => {
         };
 
     } catch (error) {
-        console.error("Error al validar nivel de autorización:", error);
+        reportCenterError('center-resources-human-service.store.controller.2717',error);
         // Es mejor devolver null o un estado de error manejable
         return { nivel: "ERROR" };
     }

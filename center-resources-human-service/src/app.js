@@ -1,8 +1,15 @@
+import { startCenterRuntime } from '../../shared/center-runtime.mjs';
+import { runScheduledOnce } from '../../shared/center-scheduler.mjs';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import { rateLimit } from 'express-rate-limit';
+import { installCenterHttp, centerErrorHandler } from '../../shared/center-http.mjs';
+import { origins } from './config/security.js';
 import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import compression from 'compression';
-import { initSocket } from './config/socket.js';
+import { initSocket, getIO } from './config/socket.js';
 import { pool } from './config/db.js';
 import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
@@ -13,33 +20,28 @@ import cron from 'node-cron';
 const app = express();
 const httpServer = createServer(app);
 const PORT = Number(process.env.PORT || 3004);
-const BODY_LIMIT = process.env.BODY_LIMIT || '50mb';
-const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 120000);
-const parseOrigins = () => {
-  if (!process.env.CORS_ORIGINS) return (origin, callback) => callback(null, true);
-  const allowedOrigins = process.env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean);
-  return (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin));
-};
-
 initSocket(httpServer);
 
 app.disable('x-powered-by');
-app.set('trust proxy', 1);
-httpServer.requestTimeout = REQUEST_TIMEOUT_MS;
-httpServer.headersTimeout = REQUEST_TIMEOUT_MS + 5000;
 
-app.use(cors({
-  origin: parseOrigins(),
-  credentials: true
-}));
+
+
+
+installCenterHttp(app,{helmet,cookieParser,rateLimit,cors,express,origins});
 
 app.use(compression());
-app.use(express.json({ limit: BODY_LIMIT }));
-app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
+
+
 //app.use(createApiLogger({ pool, serviceName: 'center-resources-human-service' }));
 
 
-cron.schedule('00 8 * * 0', async () => {
+let scheduledIndex=0;
+const scheduleJob=(expression,task,options)=>{
+ const name='center-resources-human-service'+':'+(++scheduledIndex)+':'+expression;
+ if(process.env.ENABLE_SCHEDULED_JOBS!=='true')return;
+ cron.schedule(expression,()=>runScheduledOnce(pool,name,task).catch(()=>console.error(JSON.stringify({event:'scheduled.failed',job:name}))),options);
+};
+scheduleJob('00 8 * * 0', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación de horarios creados...');
 
   const hoy = new Date();
@@ -66,14 +68,14 @@ cron.schedule('00 8 * * 0', async () => {
     const [rows] = await pool.query(query, [day]);
 
     if (rows.length > 0) {
-      emailService.pushToEmailQueue({
+      await emailService.pushToEmailQueue({
         email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com', 'fieldleaderbbw@metasperu.com', 'fieldleadervs@metasperu.com'],
         subject: `Alerta de tiendas Sin horario creado `,
         template: 'sedesSinHorario',
         variables: { sedes: rows, periodo: day }
       });
     } else {
-      emailService.pushToEmailQueue({
+      await emailService.pushToEmailQueue({
         email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
         subject: `Alerta de tiendas Sin horario creado `,
         template: 'sedesHorarioCorrecto',
@@ -109,31 +111,7 @@ app.get('/health/db', async (req, res) => {
 
 app.use('/s5/center/resources/human', rrhhRoutes);
 
-app.use((err, req, res, next) => {
-  console.error('Error no controlado:', err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: 'Error interno del servidor'
-  });
-});
+app.use(centerErrorHandler);
 
-const closeGracefully = async (signal) => {
-  console.log(`${signal} recibido, cerrando servicio...`);
-  httpServer.close(async () => {
-    await Promise.allSettled([pool.end(), dev_pool.end()]);
-    process.exit(0);
-  });
-};
-
-process.on('SIGTERM', () => closeGracefully('SIGTERM'));
-process.on('SIGINT', () => closeGracefully('SIGINT'));
-process.on('unhandledRejection', (error) => {
-  console.error('Promesa no manejada:', error);
-});
-process.on('uncaughtException', (error) => {
-  console.error('Excepcion no capturada:', error);
-});
-
-httpServer.listen(PORT, () => {
-  console.log(`Servidor listo en http://localhost:${PORT}`);
-});
+export { app,httpServer };
+await startCenterRuntime({moduleUrl:import.meta.url,app,server:httpServer,io:getIO(),pools:[pool,dev_pool],mail:emailService,port:3004,service:'center-resources-human-service'});

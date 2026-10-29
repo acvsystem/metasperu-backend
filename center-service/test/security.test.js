@@ -5,6 +5,9 @@ import { createCenterSecurity, readCenterToken } from '../../shared/center-secur
 
 const secret = 'test-only-'.repeat(9);
 const account = { ID_LOGIN: 7, USUARIO: 'QA', NIVEL: 'TIENDA', CODE_STORE: 'A', EMAIL: '' };
+test('a copied configuration placeholder cannot become a signing credential',()=>{
+  assert.throws(()=>createCenterSecurity({jwt,pool:{},secret:'replace-with-at-least-64-random-characters-shared-with-auth-and-center-services'}),/clave propia/);
+});
 function setup({ user = account, revoked = false } = {}) {
   const writes = [];
   const pool = { execute: async (sql, values) => {

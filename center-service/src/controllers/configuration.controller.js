@@ -1,9 +1,15 @@
+import { createPermissionController } from '../../../shared/center-permissions.mjs';
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
 import { pool } from '../config/db.js';
 import bcrypt from 'bcrypt';
+import { createUserController } from '../../../shared/center-users.mjs';
+const users=createUserController({pool,hash:password=>bcrypt.hash(password,12)});
 
+const permissions=createPermissionController(pool);
 export const configurationController = {
     postParametersStore: async (req, res) => {
         const { mac } = req.body;
+        if (req.agent.kind !== 'store') return res.status(403).json({message:'Dispositivo no autorizado.'});
 
         // Validación básica de entrada
         if (!mac) {
@@ -17,8 +23,8 @@ export const configurationController = {
                 `SELECT lt.SERIE_TIENDA,lt.DESCRIPCION,lt.ESTATUS,lt.UNID_SERVICIO,pt.MAC,pt.DATABASE_INSTANCE,pt.DATABASE_NAME,pt.COD_TIPO_FAC,pt.COD_TIPO_BOL,
                 pt.PROPERTY_STOCK,pt.NAME_EXCEL_REPORT_STOCK,pt.ASUNTO_EMAIL_REPORT_STOCK FROM tb_lista_tienda lt 
                 INNER JOIN tb_parametros_tienda pt on lt.SERIE_TIENDA = pt.SERIE_TIENDA
-                WHERE pt.MAC = ?`,
-                [mac.toUpperCase()]
+                WHERE pt.MAC = ? AND lt.SERIE_TIENDA = ?`,
+                [mac.toUpperCase(), req.agent.store]
             );
 
             if (parameters.length > 0) {
@@ -41,39 +47,14 @@ export const configurationController = {
             res.json([]);
 
         } catch (error) {
-            console.error('Error en postParametersStore:', error); // Log para debug
+            reportCenterError('center-service.configuration.controller.47',error); // Log para debug
             res.status(500).json({
                 message: 'Error interno del servidor',
                 error: process.env.NODE_ENV === 'development' ? error : {}
             });
         }
     },
-    permissionsStore: async (req, res) => {
-        const permissions = req.body; // Array de tiendas desde Angular
-
-        try {
-            for (let tienda of permissions) {
-                const query = `
-        INSERT INTO tb_configuracion_horario_pap 
-          (ID_TIENDA_HP, IS_FREE_HORARIO, IS_FREE_PAPELETA, IS_ALERT_TRAFFIC_COUNTER)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
-          IS_FREE_HORARIO = VALUES(IS_FREE_HORARIO),
-          IS_FREE_PAPELETA = VALUES(IS_FREE_PAPELETA),
-          IS_ALERT_TRAFFIC_COUNTER = VALUES(IS_ALERT_TRAFFIC_COUNTER)
-      `;
-                await pool.execute(query, [
-                    tienda.id,
-                    tienda.horarioPermiso ? 1 : 0,
-                    tienda.papeletaPermiso ? 1 : 0,
-                    tienda.avisosTraffic ? 1 : 0
-                ]);
-            }
-            res.json({ message: 'Configuración guardada exitosamente' });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
+    permissionsStore: permissions.storeSettings,
     gerPermissions: async (req, res) => {
         try {
             const query = `
@@ -89,14 +70,14 @@ export const configurationController = {
       ORDER BY t.DESCRIPCION ASC
     `;
             const [rows] = await pool.execute(query);
-            res.json(rows);
+            res.json(rows.filter(row => req.user.allStores || req.user.stores.includes(row.serie)));
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ message: 'No se pudieron consultar los permisos.' });
         }
     },
     gerPermissionsMenu: async (req, res) => {
         const { nivel } = req.params;
-        console.log(nivel);
+        console.log("center-service: evento procesado (configuration.controller.js:102)");
         try {
             const query = `
       SELECT ID_MENU_PS as id
@@ -108,7 +89,7 @@ export const configurationController = {
             // Devolvemos solo los IDs para facilitar la comparación en Angular
             res.json(rows);
         } catch (err) {
-            console.error(err);
+            reportCenterError('center-service.configuration.controller.114',err);
             res.status(500).json({ error: 'Error al obtener permisos' });
         }
     },
@@ -123,71 +104,14 @@ export const configurationController = {
             // Devolvemos solo los IDs para facilitar la comparación en Angular
             res.json(rows);
         } catch (err) {
-            console.error(err);
+            reportCenterError('center-service.configuration.controller.129',err);
             res.status(500).json({ error: 'Error al obtener permisos' });
         }
     },
-    getUsuarios: async (req, res) => {
-        try {
-            // Excluimos las contraseñas por seguridad
-            const [rows] = await pool.execute('SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE FROM tb_login');
-            res.json(rows);
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-    getUsuariosCreate: async (req, res) => {
-        const { USUARIO, PASSWORD, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE } = req.body;
-
-        try {
-            // Encriptar password para PASSWORD_NW
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(PASSWORD, salt);
-
-            const query = `
-        INSERT INTO tb_login (USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD_NW) 
-        VALUES (?, ?, ?, ?, ?, ?)`;
-
-            const [result] = await pool.execute(query, [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, hashedPassword]);
-
-            res.status(201).json({ id: result.insertId, message: 'Usuario creado con éxito' });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-    getUsuarioUpdate: async (req, res) => {
-        const { ID, USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE, PASSWORD } = req.body;
-
-        try {
-            let query = `UPDATE tb_login SET USUARIO=?, EMAIL=?, NIVEL=?, DEFAULT_PAGE=?, CODE_STORE=?`;
-            let params = [USUARIO, EMAIL, NIVEL, DEFAULT_PAGE, CODE_STORE];
-
-            // Si el usuario envió una nueva contraseña, la re-encriptamos
-            if (PASSWORD) {
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(PASSWORD, salt);
-                query += `, PASSWORD_NW=?`;
-                params.push(hashedPassword);
-            }
-
-            query += ` WHERE ID_LOGIN=?`;
-            params.push(ID);
-
-            await pool.execute(query, params);
-            res.json({ message: 'Usuario actualizado' });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
-    delUsuariosDelete: async (req, res) => {
-        const { id } = req.body;
-        try {
-            await pool.execute('DELETE FROM tb_login WHERE ID_LOGIN = ?', [id]);
-            res.json({ message: 'Usuario eliminado correctamente' });
-        } catch (err) {
-            res.status(500).json({ error: err.message });
-        }
-    },
+    getUsuarios: users.list,
+    getUsuariosCreate: users.create,
+    getUsuarioUpdate: users.update,
+    delUsuariosDelete: users.remove,
     gerPermissionsUserStore: async (req, res) => {
         const { id } = req.body;
         try {
@@ -197,133 +121,8 @@ export const configurationController = {
             res.status(500).json({ error: err.message });
         }
     },
-    postAsigPermissionsUserStore: async (req, res) => {
-        const { ID_USUARIO, TIENDAS } = req.body; // TIENDAS: [ {id: 1, nombre: 'Tienda A'}, ... ]
-
-        if (!ID_USUARIO || !TIENDAS) {
-            return res.status(400).json({ message: 'Datos incompletos' });
-        }
-
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // 1. Obtener las tiendas que el usuario YA tiene asignadas actualmente
-            const [rowsActuales] = await connection.query(
-                'SELECT ID_TIENDA_TASG FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG = ?',
-                [ID_USUARIO]
-            );
-            const idsActuales = rowsActuales.map(row => row.ID_TIENDA_TASG);
-            const idsNuevos = TIENDAS.map(t => t.id);
-
-            // 2. Identificar qué IDs borrar (están en la DB pero no en el nuevo envío)
-            const idsAEliminar = idsActuales.filter(id => !idsNuevos.includes(id));
-
-            // 3. Identificar qué IDs insertar (están en el envío pero no en la DB)
-            const tiendasAInsertar = TIENDAS.filter(t => !idsActuales.includes(t.id));
-
-            // --- Ejecutar Cambios ---
-
-            // A. Eliminar los que ya no sobran
-            if (idsAEliminar.length > 0) {
-                await connection.query(
-                    'DELETE FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG = ? AND ID_TIENDA_TASG IN (?)',
-                    [ID_USUARIO, idsAEliminar]
-                );
-            }
-
-            // B. Insertar los nuevos
-            if (tiendasAInsertar.length > 0) {
-                const values = tiendasAInsertar.map(t => [ID_USUARIO, t.id, t.nombre]);
-                await connection.query(
-                    'INSERT INTO tb_usuario_tiendas_asignadas (ID_USUARIO_TASG, ID_TIENDA_TASG, DESCRIPCION_TIENDA) VALUES ?',
-                    [values]
-                );
-            }
-
-            await connection.commit();
-
-            res.status(200).json({
-                message: 'Sincronización exitosa',
-                eliminados: idsAEliminar.length,
-                insertados: tiendasAInsertar.length,
-                mantenidos: idsActuales.length - idsAEliminar.length
-            });
-
-        } catch (error) {
-            await connection.rollback();
-            console.error("Error sincronizando tiendas:", error);
-            res.status(500).json({ message: 'Error en el servidor' });
-        } finally {
-            connection.release();
-        }
-    },
-    getAsingMenuUser: async (req, res) => {
-        const { NIVEL, MENUS } = req.body; // MENUS: [1, 2, 3, 4, ...] (Array de IDs de menú)
-
-        if (!NIVEL || !Array.isArray(MENUS)) {
-            return res.status(400).json({ message: 'Nivel o lista de menús inválida' });
-        }
-
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // 1. Obtener los permisos que el NIVEL ya tiene actualmente
-            const [rowsActuales] = await connection.query(
-                'SELECT ID_MENU_PS FROM tb_permiso_sistema WHERE NIVEL = ?',
-                [NIVEL]
-            );
-
-            const idsActuales = rowsActuales.map(row => row.ID_MENU_PS);
-            const idsNuevos = MENUS;
-
-            // 2. Identificar qué IDs borrar (están en DB pero no en el nuevo envío)
-            const idsAEliminar = idsActuales.filter(id => !idsNuevos.includes(id));
-
-            // 3. Identificar qué IDs insertar (están en el envío pero no en la DB)
-            const idsAInsertar = idsNuevos.filter(id => !idsActuales.includes(id));
-
-            // --- Ejecutar Cambios ---
-
-            // A. Eliminar los menús desmarcados
-            if (idsAEliminar.length > 0) {
-                await connection.query(
-                    'DELETE FROM tb_permiso_sistema WHERE NIVEL = ? AND ID_MENU_PS IN (?)',
-                    [NIVEL, idsAEliminar]
-                );
-            }
-
-            // B. Insertar los nuevos menús asignados
-            if (idsAInsertar.length > 0) {
-                const values = idsAInsertar.map(idMenu => [idMenu, NIVEL]);
-                await connection.query(
-                    'INSERT INTO tb_permiso_sistema (ID_MENU_PS, NIVEL) VALUES ?',
-                    [values]
-                );
-            }
-
-            await connection.commit();
-
-            res.status(200).json({
-                message: `Permisos para el nivel ${NIVEL} actualizados`,
-                detalles: {
-                    eliminados: idsAEliminar.length,
-                    insertados: idsAInsertar.length,
-                    mantenidos: idsActuales.length - idsAEliminar.length
-                }
-            });
-
-        } catch (error) {
-            await connection.rollback();
-            console.error("Error sincronizando permisos de menú:", error);
-            res.status(500).json({ message: 'Error interno del servidor' });
-        } finally {
-            connection.release();
-        }
-    },
+    postAsigPermissionsUserStore: permissions.assignStores,
+    getAsingMenuUser: permissions.assignMenu,
     obtenerParametrosStore: async (req, res) => {
         const { id } = req.params;
 
@@ -346,7 +145,7 @@ export const configurationController = {
                 return res.json(rows);
             }
         } catch (error) {
-            console.error("Error en GET parametros:", error);
+            reportCenterError('center-service.configuration.controller.295',error);
             res.status(500).json({
                 message: 'Error al obtener los datos de la base de datos',
                 error: error.message
@@ -366,7 +165,7 @@ export const configurationController = {
                 id: result.insertId
             });
         } catch (error) {
-            console.error(error);
+            reportCenterError('center-service.configuration.controller.315',error);
             res.status(500).json({ message: 'Error al registrar parámetros', error: error.message });
         }
     },
@@ -385,7 +184,7 @@ export const configurationController = {
 
             res.json({ message: 'Configuración actualizada correctamente' });
         } catch (error) {
-            console.error(error);
+            reportCenterError('center-service.configuration.controller.334',error);
             res.status(500).json({ message: 'Error al actualizar parámetros' });
         }
     },
@@ -403,7 +202,7 @@ export const configurationController = {
 
             res.json({ message: 'Configuración eliminada exitosamente' });
         } catch (error) {
-            console.error(error);
+            reportCenterError('center-service.configuration.controller.352',error);
             res.status(500).json({ message: 'Error al eliminar parámetros' });
         }
     },
@@ -420,7 +219,7 @@ export const configurationController = {
             // Enviamos el string directamente
             res.json(rows[0]);
         } catch (error) {
-            console.error("Error al obtener clientes clear:", error);
+            reportCenterError('center-service.configuration.controller.369',error);
             res.status(500).json({
                 message: 'Error al obtener la configuración',
                 error: error.message
@@ -454,7 +253,7 @@ export const configurationController = {
 
             res.json({ message: 'Lista de clientes actualizada correctamente' });
         } catch (error) {
-            console.error("Error al actualizar clientes clear:", error);
+            reportCenterError('center-service.configuration.controller.403',error);
             res.status(500).json({ message: 'Error interno al guardar' });
         }
     },

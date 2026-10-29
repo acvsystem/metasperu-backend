@@ -1,6 +1,14 @@
+import { emailService } from './services/email.service.js';
+import { startCenterRuntime } from '../../shared/center-runtime.mjs';
+import { runScheduledOnce } from '../../shared/center-scheduler.mjs';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import { rateLimit } from 'express-rate-limit';
+import { installCenterHttp, centerErrorHandler } from '../../shared/center-http.mjs';
+import { origins } from './config/security.js';
 import express from 'express';
 import { createServer } from 'http';
-import { initSocket } from './config/socket.js';
+import { initSocket, getIO } from './config/socket.js';
 import cors from 'cors';
 import cron from 'node-cron';
 import axios from 'axios';
@@ -9,7 +17,6 @@ import { extraServices } from './services/extra.services.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getIO } from './config/socket.js';
 //import { createApiLogger } from '../../shared/api-log.middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,16 +32,19 @@ const httpServer = createServer(app);
 initSocket(httpServer);
 
 // Middleware
-app.use(cors({
-  origin: (origin, callback) => callback(null, true),
-  credentials: true
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+installCenterHttp(app,{helmet,cookieParser,rateLimit,cors,express,origins});
+
+
 //app.use(createApiLogger({ pool, serviceName: 'center-accounting-service' }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('10 10 * * *', async () => {
+let scheduledIndex=0;
+const scheduleJob=(expression,task,options)=>{
+ const name='center-accounting-service'+':'+(++scheduledIndex)+':'+expression;
+ if(process.env.ENABLE_SCHEDULED_JOBS!=='true')return;
+ cron.schedule(expression,()=>runScheduledOnce(pool,name,task).catch(()=>console.error(JSON.stringify({event:'scheduled.failed',job:name}))),options);
+};
+scheduleJob('10 10 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   // 1. Asegurar fecha correcta en Lima (evita desfases de UTC)
@@ -116,9 +126,7 @@ cron.schedule('10 10 * * *', async () => {
 import accountingRoutes from './routes/accounting.routes.js';
 app.use('/s6/center/accounting', accountingRoutes);
 
-// Servidor
-const PORT = 3006;
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
-  console.log(`📅 Tarea programada configurada para las 09:00 AM (Lima)`);
-});
+app.use(centerErrorHandler);
+
+export { app,httpServer };
+await startCenterRuntime({moduleUrl:import.meta.url,app,server:httpServer,io:getIO(),pools:[pool],mail:emailService,port:3006,service:'center-accounting-service'});

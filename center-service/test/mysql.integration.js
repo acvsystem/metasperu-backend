@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import mysql from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import path from 'node:path';
+import os from 'node:os';
+import { mkdtemp,readFile,rmdir } from 'node:fs/promises';
+import { createExportQueue } from '../../shared/center-export-jobs.mjs';
+import { prepareExportDirectory,artifactPath } from '../../shared/center-export-files.mjs';
+import { runExportThread } from '../../shared/center-export-runner.mjs';
+import { createPermissionController } from '../../shared/center-permissions.mjs';
+import { createAttendanceRequests } from '../../shared/center-attendance-requests.mjs';
 import { createCenterAuthController } from '../../shared/center-auth-controller.mjs';
 import { randomUUID } from 'node:crypto';
 import { createTransferRegistration,createTransferHistory } from '../../shared/center-transfers.mjs';
@@ -38,12 +46,34 @@ test('MySQL: additive migration, revocation and concurrent recording retries',as
       CODIGO_BARRA VARCHAR(255),CODIGO_ARTICULO VARCHAR(255),DESCRIPCION VARCHAR(255),TALLA VARCHAR(255),COLOR VARCHAR(255),
       STOCK DECIMAL(12,2),STOCK_SOLICITADO DECIMAL(12,2),CODIGO_TRASPASO VARCHAR(80))`);
     await migrateCenter(connection);await migrateCenter(connection);
+    await connection.execute('DELETE FROM tb_center_hr_requests');
+    await connection.execute('DELETE FROM tb_center_hr_rosters');
+    const attendance=createAttendanceRequests(pool);
+    await assert.rejects(attendance.begin(1,'socket-a'),error=>error.status===409);
+    await attendance.saveRoster(1,[{NUMDOC:'QA-01'}]);
+    await attendance.saveRoster(2,[{NUMDOC:'QA-02'}]);
+    const [requestA,requestB]=await Promise.all([attendance.begin(1,'socket-a'),attendance.begin(2,'socket-b')]);
+    await attendance.saveRoster(1,[{NUMDOC:'CHANGED'}]);
+    assert.deepEqual((await attendance.context(1,'socket-a',requestA)).roster,[{NUMDOC:'QA-01'}]);
+    assert.deepEqual((await attendance.context(2,'socket-b',requestB)).roster,[{NUMDOC:'QA-02'}]);
+    await assert.rejects(attendance.context(2,'socket-b',requestA),error=>error.status===404);
+    await assert.rejects(attendance.complete(1,'wrong-socket',requestA,[]),error=>error.status===404);
+    const attendanceRows=[{fecha:'2026-10-29',documento:'QA-01'}];
+    const completion=await Promise.all(Array.from({length:5},()=>attendance.complete(1,'socket-a',requestA,attendanceRows)));
+    assert.equal(completion.filter(result=>!result.duplicate).length,1);
+    await assert.rejects(attendance.complete(1,'socket-a',requestA,[]),error=>error.status===409);
+    await assert.rejects(attendance.read(2,requestA),error=>error.status===404);
+    assert.deepEqual((await createAttendanceRequests(pool).read(1,requestA)).rows,attendanceRows);
+    assert.deepEqual((await attendance.read(1,requestA)).roster,[{NUMDOC:'QA-01'}]);
+    await connection.execute('UPDATE tb_center_hr_requests SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE id=?',[requestA]);
+    await assert.rejects(attendance.read(1,requestA),error=>error.status===404);
     for(const [name,type] of [['DEFAULT_PAGE','VARCHAR(80)'],['PASSWORD_NW','VARCHAR(100)']]) {
       const [columns]=await connection.execute("SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tb_login' AND COLUMN_NAME=?",[name]);
       if(!columns.length)await connection.query(`ALTER TABLE tb_login ADD COLUMN ${name} ${type}`);
     }
     await connection.execute("REPLACE INTO tb_login (ID_LOGIN,USUARIO,EMAIL,NIVEL,CODE_STORE,OLD_CODE_STORE) VALUES (1,'qa','qa@example.invalid','TIENDA','QA01',NULL)");
     await connection.execute("DELETE FROM tb_rrweb_sessions WHERE session_id='qa_recording_001'");
+    await connection.execute('DELETE FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG=1');
     const security=createCenterSecurity({jwt,pool,secret:'qa-only-'.repeat(12)});
     const issued=await security.issue({ID_LOGIN:1,NIVEL:'TIENDA'});
     const principal=await security.authenticate(issued.token);
@@ -51,11 +81,11 @@ test('MySQL: additive migration, revocation and concurrent recording retries',as
     await security.revoke(principal);
     await assert.rejects(security.authenticate(issued.token),error=>error.status===401);
 
-    for(const name of ['COD_ALMACEN','TIPO_TIENDA']) {
+    for(const name of ['COD_ALMACEN','TIPO_TIENDA','DESCRIPCION']) {
       const [columns]=await connection.execute("SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tb_lista_tienda' AND COLUMN_NAME=?",[name]);
       if(!columns.length)await connection.query(`ALTER TABLE tb_lista_tienda ADD COLUMN ${name} VARCHAR(80)`);
     }
-    await connection.execute("REPLACE INTO tb_lista_tienda (ID_TIENDA,SERIE_TIENDA,OLD_SERIE_TIENDA,UNID_SERVICIO,COD_ALMACEN,TIPO_TIENDA) VALUES (1,'QA01',NULL,'QA','ALM01','VSBA'),(2,'QA02',NULL,'QA','ALM02','VSBA')");
+    await connection.execute("REPLACE INTO tb_lista_tienda (ID_TIENDA,SERIE_TIENDA,OLD_SERIE_TIENDA,UNID_SERVICIO,COD_ALMACEN,TIPO_TIENDA,DESCRIPCION) VALUES (1,'QA01',NULL,'QA','ALM01','VSBA','Primera'),(2,'QA02',NULL,'QA','ALM02','VSBA','Segunda')");
     await connection.execute("UPDATE tb_login SET NIVEL='SISTEMAS' WHERE ID_LOGIN=1");
     const issuedAgain=await security.issue({ID_LOGIN:1,NIVEL:'SISTEMAS'});
     const users=createUserController({pool,hash:async()=>'qa-hash-no-real-password'});
@@ -81,6 +111,16 @@ test('MySQL: additive migration, revocation and concurrent recording retries',as
     const loggedOut=response();await auth.logout({user:current},loggedOut);assert.equal(loggedOut.cleared.name,'center_session');
     await assert.rejects(security.authenticate(logged.cookieValue.value),error=>error.status===401);
     const invalid=response();await auth.login({body:{username:'qa-admin',password:'wrong-password'}},invalid);assert.equal(invalid.code,401);
+
+    const [assignmentColumns]=await connection.execute("SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='tb_usuario_tiendas_asignadas' AND COLUMN_NAME='DESCRIPCION_TIENDA'");
+    if(!assignmentColumns.length)await connection.query('ALTER TABLE tb_usuario_tiendas_asignadas ADD COLUMN DESCRIPCION_TIENDA VARCHAR(120)');
+    const permissions=createPermissionController(pool),beforePermission=await security.issue({ID_LOGIN:1,NIVEL:'SISTEMAS'}),assigned=response();
+    await permissions.assignStores({user:{id:1,role:'SISTEMAS'},body:{ID_USUARIO:1,TIENDAS:[{id:2,nombre:'FAKE CLIENT LABEL'}]}},assigned);
+    assert.equal(assigned.code,200);await assert.rejects(security.authenticate(beforePermission.token),error=>error.status===401);
+    const [[actualStore]]=await pool.execute('SELECT DESCRIPCION_TIENDA FROM tb_usuario_tiendas_asignadas WHERE ID_USUARIO_TASG=1');assert.equal(actualStore.DESCRIPCION_TIENDA,'Segunda');
+    const beforeMenu=await security.issue({ID_LOGIN:1,NIVEL:'SISTEMAS'}),menuChanged=response();
+    await permissions.assignMenu({user:{role:'SISTEMAS'},body:{NIVEL:'SISTEMAS',MENUS:[1]}},menuChanged);assert.equal(menuChanged.code,200);
+    await assert.rejects(security.authenticate(beforeMenu.token),error=>error.status===401);
 
     const controller=createRecordingController(pool),sessionId='qa_recording_001';
     assert.equal((await call(controller,'startSession',{body:{sessionId,pageUrl:'https://center.example/test?private=value'}})).code,201);
@@ -118,5 +158,35 @@ test('MySQL: additive migration, revocation and concurrent recording retries',as
     assert.equal(historyPage.code,200);assert.equal(historyPage.body.data.length,2);assert.ok(historyPage.body.total>=5);
     const forbidden=response();await history({user:{allStores:false,stores:['FOREIGN']},query:{}},forbidden);
     assert.equal(forbidden.body.total,0);
+
+    const exportRoot=await mkdtemp(path.join(os.tmpdir(),'center-owned-export-qa-'));
+    try {
+      await prepareExportDirectory(exportRoot);
+      Object.assign(process.env,{DB_HOST:'127.0.0.1',DB_PORT:process.env.CENTER_QA_PORT,DB_USER:'center_test',DB_PASSWORD:process.env.CENTER_QA_PASSWORD,DB_NAME:'center_qa'});
+      const queue=createExportQueue(pool),requestId=randomUUID();
+      await pool.execute("UPDATE tb_center_export_jobs SET status='cancelled' WHERE status IN ('queued','running')");
+      await queue.heartbeat('exports:qa');assert.ok(await queue.workerReady());
+      const created=await queue.enqueue(1,{requestId,kind:'transfers',q:'QA Store 1'});
+      assert.equal((await queue.enqueue(1,{requestId,kind:'transfers',q:'QA Store 1'})).id,created.id);
+      await assert.rejects(queue.enqueue(2,{requestId,kind:'transfers'}),error=>error.status===409);
+      const job=await queue.claim();assert.equal(job.id,created.id);
+      await runExportThread(job,exportRoot);
+      const complete=await queue.find(1,created.id);assert.equal(complete.status,'completed');assert.equal(complete.progress,100);
+      assert.equal(await queue.find(2,created.id),null);
+      const csv=await readFile(artifactPath(exportRoot,created.id,complete.artifact_key),'utf8');
+      assert.ok(csv.includes('CODIGO_TRASPASO'));assert.ok(csv.includes('QA Store 1'));
+      const cancelled=await queue.enqueue(1,{kind:'recordings'}),cancelledJob=await queue.claim();
+      assert.equal(cancelledJob.id,cancelled.id);await queue.cancel(1,cancelled.id);
+      await assert.rejects(runExportThread(cancelledJob,exportRoot));
+      assert.equal((await queue.find(1,cancelled.id)).status,'cancelled');
+      await pool.execute('UPDATE tb_center_export_jobs SET expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE id IN (?,?)',[created.id,cancelled.id]);
+      await queue.prune(exportRoot);assert.equal(await queue.find(1,created.id),null);
+      const admissions=await Promise.allSettled(Array.from({length:12},()=>queue.enqueue(1,{kind:'transfers'})));
+      assert.equal(admissions.filter(result=>result.status==='fulfilled').length,10);
+      assert.ok(admissions.filter(result=>result.status==='rejected').every(result=>result.reason.status===429));
+      await pool.execute("UPDATE tb_center_export_jobs SET status='cancelled',expires_at=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 1 SECOND) WHERE status='queued'");
+      await queue.prune(exportRoot);
+    } finally {await rmdir(exportRoot);}
+
   } finally { connection.release();await pool.end(); }
 });

@@ -19,9 +19,11 @@ export const poolCenter = configured
       database: process.env.CENTER_DB_NAME,
       waitForConnections: true,
       connectionLimit: 10, // Máximo de conexiones simultáneas
-      queueLimit: 0,
+      queueLimit: Number(process.env.CENTER_DB_QUEUE_LIMIT || 100),
+      connectTimeout:10000,timezone:'Z',enableKeepAlive:true,
     })
   : {
+      execute: async () => { throw new Error('Configure las credenciales del servicio Center.'); },
       query: async () => {
         throw new Error('Configure las credenciales del servicio Center.');
       },

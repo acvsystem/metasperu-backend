@@ -1,3 +1,6 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
+import { boundary, origins } from './security.js';
+import { secureCenterSockets, emitScoped } from '../../../shared/center-sockets.mjs';
 import { Server } from 'socket.io';
 import { extraServices } from '../services/extra.services.js';
 import { pool } from './db.js';
@@ -24,19 +27,20 @@ const auditoriaEstado = {
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+            origin: origins.cors, // Permite cualquier origen
             credentials: true,
             methods: ["GET", "POST"]
         }
     });
 
 
+    secureCenterSockets(io,boundary,origins);
     io.on('connection', (socket) => {
-        console.log('center-accounting-service: Cliente conectado:', socket.id);
+        console.log('center-accounting-service: Cliente conectado:');
 
         // Registro de tienda
         socket.on('py_register_store', (info) => {
-            console.log(`🏪 Tienda conectada: ${info.nombre} (ID: ${info.id}, Marca: ${info.marca})`);
+            console.log("center-accounting-service: evento procesado (socket.js:42)");
             socket.data.id_tienda = info.id;
             socket.data.nombre = info.nombre;
             socket.data.serie = info.id;
@@ -46,7 +50,7 @@ export const initSocket = (server) => {
             socket.join(info.id); // Unimos la tienda a una "sala" por su ID única
             socket.join(info.marca); // Unimos la tienda a una "sala" por marca
             socket.tiendaId = info.id;
-            console.log(`🏪 Tienda ${info.nombre} registrada en sala ${info.marca}`);
+            console.log("center-accounting-service: evento procesado (socket.js:52)");
         });
 
         socket.on('py_response_kardex_store', (data) => {
@@ -57,7 +61,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('py_response_kardex_campos_libres', (data) => {
-            console.log(data);
+            console.log("center-accounting-service: evento procesado (socket.js:63)");
             const message = data.message;
             const socketId = data.pedido_por;
 
@@ -95,7 +99,7 @@ export const initSocket = (server) => {
                             cotizacionRetail = parseFloat(dataExchangeRate[0].cCotiActual);
                         }
                     } catch (e) {
-                        console.error("Error al parsear exchangeRate:", e);
+                        reportCenterError('center-accounting-service.socket.101',e);
                     }
                 }
 
@@ -120,7 +124,7 @@ export const initSocket = (server) => {
                             "Comparación de Tipo de Cambio"
                         );
 
-                        emailService.pushToEmailQueue({
+                        await emailService.pushToEmailQueue({
                             email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
@@ -139,7 +143,7 @@ export const initSocket = (server) => {
                             "Comparación de Tipo de Cambio"
                         );
 
-                        emailService.pushToEmailQueue({
+                        await emailService.pushToEmailQueue({
                             email: ['andrecanalesv@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'diegomoreno@metasperu.com'],
                             subject: `Diferencia Tipo Cambio FRONT RETAIL`,
                             template: 'alertaDiffTipoChambio',
@@ -153,7 +157,7 @@ export const initSocket = (server) => {
                 }
 
             } catch (error) {
-                console.error('❌ Error en py_response_exchange_rate:', error.message);
+                reportCenterError('center-accounting-service.socket.159',undefined);
             }
         });
 

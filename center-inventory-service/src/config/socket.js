@@ -1,3 +1,5 @@
+import { boundary, origins } from './security.js';
+import { secureCenterSockets, emitScoped } from '../../../shared/center-sockets.mjs';
 import { Server } from 'socket.io';
 
 let io;
@@ -21,28 +23,29 @@ const auditoriaEstado = {
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+            origin: origins.cors, // Permite cualquier origen
             credentials: true,
             methods: ["GET", "POST"]
         }
     });
 
 
+    secureCenterSockets(io,boundary,origins);
     io.on('connection', (socket) => {
-        console.log('center-inventario-service: Cliente conectado:', socket.id);
+        console.log('center-inventario-service: Cliente conectado:');
 
         // Registro de tienda
         socket.on('py_register_store', (info) => {
             socket.join(info.id); // Unimos la tienda a una "sala" por su ID única
             socket.join(info.marca); // Unimos la tienda a una "sala" por marca
             socket.tiendaId = info.id;
-            console.log(`🏪 Tienda ${info.nombre} registrada en sala ${info.marca}`);
+            console.log("center-inventory-service: evento procesado (socket.js:42)");
         });
 
         socket.on('py_response_one_store_inventory', (data) => {
             const datac = JSON.parse(data.dataCode);
             const socketId = data.pedido_por;
-            console.log('Respuesta de inventario de una tienda:', datac);
+            console.log('Respuesta de inventario de una tienda:');
             io.to(socketId).emit('dashboard_response_one_store_inventory', { dataCode: datac });
         });
 

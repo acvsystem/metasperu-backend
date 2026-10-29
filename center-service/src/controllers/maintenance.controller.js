@@ -1,3 +1,4 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
 import { pool } from '../config/db.js';
 
 const tableConfig = {
@@ -120,7 +121,7 @@ const buildWhere = (config, query) => {
 };
 
 const handleError = (res, error, message) => {
-    console.error(message, error);
+    reportCenterError('center-service.maintenance.controller.123',error);
     res.status(500).json({
         success: false,
         message

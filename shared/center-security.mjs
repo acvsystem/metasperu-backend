@@ -9,7 +9,7 @@ export function readCenterToken(req) {
 
 // Dependencies are injected so authorization can be tested without a live database.
 export function createCenterSecurity({ jwt, pool, secret }) {
-  if (typeof secret !== 'string' || secret.length < 64) throw new Error('CENTER_JWT_SECRET requiere al menos 64 caracteres.');
+  if (typeof secret !== 'string' || secret.length < 64 || /^(replace[-_ ]|change[-_ ]?me|your[-_ ]secret)/i.test(secret)) throw new Error('CENTER_JWT_SECRET requiere una clave propia de al menos 64 caracteres.');
   const options = { algorithms: ['HS256'], issuer: 'metasperu-center', audience: 'center-services' };
   async function issue(user) {
     const jti = randomUUID();

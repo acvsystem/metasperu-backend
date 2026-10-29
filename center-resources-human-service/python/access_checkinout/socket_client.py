@@ -1,4 +1,5 @@
 from __future__ import annotations
+from center_agent_auth import agent_token
 
 import os
 from typing import Any
@@ -67,7 +68,7 @@ def on_access_checkinout(payload: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> None:
     print(f"Conectando a {SOCKET_URL} con path {SOCKET_PATH}...")
-    sio.connect(SOCKET_URL, socketio_path=SOCKET_PATH, transports=["websocket", "polling"])
+    sio.connect(SOCKET_URL, socketio_path=SOCKET_PATH, transports=["websocket", "polling"], auth={"agentToken": agent_token()})
     sio.wait()
 
 

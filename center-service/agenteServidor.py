@@ -1,3 +1,4 @@
+from center_agent_auth import agent_token, agent_post
 import socketio
 import pyodbc
 import requests
@@ -81,7 +82,7 @@ if __name__ == '__main__':
         headers=headers,
         socketio_path=SOCKET_PATH, # <--- IMPORTANTE
         transports=['websocket', 'polling']
-        )
+        , auth={"agentToken": agent_token()})
         sio.wait()
     except Exception as e:
         print(f"Error: {e}")

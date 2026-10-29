@@ -1,3 +1,12 @@
+import { purgeExpiredRecordings } from '../../shared/center-retention.mjs';
+import { emailService } from './services/email.service.js';
+import { startCenterRuntime } from '../../shared/center-runtime.mjs';
+import { runScheduledOnce } from '../../shared/center-scheduler.mjs';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import { installCenterHttp, centerErrorHandler } from '../../shared/center-http.mjs';
+import { origins } from './config/security.js';
+
 
 
 import express from 'express';
@@ -15,20 +24,22 @@ const httpServer = createServer(app);
 
 initSocket(httpServer);
 
-app.use(cors({
-  origin: (origin, callback) => callback(null, true), // Permite cualquier origen
-  credentials: true
-}));
-
-app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-//app.use(createApiLogger({ pool, serviceName: 'center-service' }));
+installCenterHttp(app, { helmet, rateLimit, cookieParser, cors, express, origins });
+app.get('/health', (_req,res) => res.json({status:'ok',service:'center-service'}));
 
 import centerRoutes from './routes/center.routes.js';
 app.use('/s1/center', centerRoutes);
 
-cron.schedule('00 10 * * *', async () => {
+// Disabled by default. Enable only in the designated scheduler instance.
+let scheduleSequence = 0;
+const scheduleJob = (expression, task, options) => {
+  const name = 'center-' + (++scheduleSequence) + ':' + expression;
+  if (process.env.ENABLE_SCHEDULED_JOBS !== 'true') return;
+  cron.schedule(expression, () => runScheduledOnce(pool, name, task).catch(() =>
+    console.error(JSON.stringify({event:'scheduled.failed',job:name}))), options);
+};
+if(process.env.ENABLE_RECORDING_RETENTION==='true')scheduleJob('*/15 * * * *',()=>purgeExpiredRecordings(pool,{days:Number(process.env.RECORDING_RETENTION_DAYS||30)}),{timezone:'America/Lima'});
+scheduleJob('00 10 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando limpieza de clientes...');
 
   try {
@@ -39,7 +50,7 @@ cron.schedule('00 10 * * *', async () => {
     // o un string que identifique que lo hizo el sistema.
     const systemSocketId = 'SYSTEM_CRON';
 
-    executeClientDeleteLogic(systemSocketId);
+    await executeClientDeleteLogic(systemSocketId);
 
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
@@ -50,14 +61,14 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('00 10 * * *', async () => {
+scheduleJob('00 10 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando envio de ventas Arequipa...');
 
   try {
 
     console.log('Iniciando tarea programada: SendVentasFTP...');
 
-    executeSendVentasFTP();
+    await executeSendVentasFTP();
 
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
@@ -68,7 +79,7 @@ cron.schedule('00 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('10 10 * * *', async () => {
+scheduleJob('10 10 * * *', async () => {
   console.log('⏰ [Cron Job 1] Iniciando comprobacion documentos faltantes...');
 
   try {
@@ -86,7 +97,7 @@ cron.schedule('10 10 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('00 17 * * *', async () => {
+scheduleJob('00 17 * * *', async () => {
   console.log('⏰ [Cron Job 2] Iniciando comprobacion documentos faltantes...');
 
   try {
@@ -104,7 +115,7 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('00 21 * * *', async () => {
+scheduleJob('00 21 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando comprobacion documentos faltantes...');
 
   try {
@@ -122,7 +133,7 @@ cron.schedule('00 21 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('05 22 * * *', async () => {
+scheduleJob('05 22 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando generacion de reportes de rendimiento...');
 
   // Fecha actual en formato YYYY-MM-DD (zona America/Lima)
@@ -150,7 +161,7 @@ cron.schedule('05 22 * * *', async () => {
 });
 
 // Se ejecuta a las horas: 09:00, 12:00, 15:00, 18:00 y 21:00
-cron.schedule('0 9,12,15,18,21 * * *', async () => {
+scheduleJob('0 9,12,15,18,21 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando verificacion traffic counter...');
 
   try {
@@ -170,12 +181,12 @@ cron.schedule('0 9,12,15,18,21 * * *', async () => {
   timezone: "America/Lima" // Mantiene tu zona horaria de Perú
 });
 
-cron.schedule('0 9,12,15,17,21 * * *', async () => {
+scheduleJob('0 9,12,15,17,21 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando verificacion SUNAT...');
 
   try {
     console.log('Iniciando tarea programada: verificacion SUNAT...');
-    executeVerificationSunat();
+    await executeVerificationSunat();
 
   } catch (error) {
     const errorMsg = error.response?.data?.message || error.message;
@@ -189,7 +200,7 @@ cron.schedule('0 9,12,15,17,21 * * *', async () => {
 const executeClientDeleteLogic = async (socketIdFallback) => {
   try {
     let [data] = await pool.query(`SELECT * FROM TB_CLIENTES_CLEAR_FORNT;`);
-    let extra_client = ((data || [])[0]['LIST_CLIENTE']).split(',');
+    let extra_client = String(data[0]?.LIST_CLIENTE || '').split(',').filter(Boolean);
 
     if ((extra_client || []).length) {
       // Asegúrate de que getIO() esté disponible en este archivo
@@ -227,10 +238,7 @@ const executeVerificationSunat = async () => {
   }
 };
 
-const PORT = 3002;
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
-});
+app.use(centerErrorHandler);
 
-
-
+export { app,httpServer };
+await startCenterRuntime({moduleUrl:import.meta.url,app,server:httpServer,io:getIO(),pools:[pool],mail:emailService,port:3002,service:'center-service'});

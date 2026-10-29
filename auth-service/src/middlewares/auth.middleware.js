@@ -1,4 +1,5 @@
-import jwt from 'jsonwebtoken';
+import { getCenterSecurity } from '../config/center-security.js';
+import { readCenterToken } from '../../../shared/center-security.mjs';
 import { security } from '../config/security.js';
 import { readSessionToken } from '../../../shared/inventory-security.mjs';
 export const verifyToken = async (req, res, next) => {
@@ -12,15 +13,11 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 // Center uses a separate database and signing key; never accepted by inventory.
-export const verifyCenterToken = (req, res, next) => {
+export const verifyCenterToken = async (req, res, next) => {
   try {
-    const secret = process.env.CENTER_JWT_SECRET;
-    if (!secret || secret.length < 32) throw Error();
-    req.user = jwt.verify(req.headers.authorization?.replace(/^Bearer /, ''), secret, {
-      algorithms: ['HS256'],
-    });
+    req.user = await getCenterSecurity().authenticate(readCenterToken(req));
     next();
-  } catch {
-    res.status(401).json({ message: 'Token inválido o expirado' });
+  } catch (error) {
+    res.status(error.status || 503).json({ message: error.status ? error.message : 'No se pudo verificar la sesion.' });
   }
 };

@@ -1,3 +1,4 @@
+from center_agent_auth import agent_token, agent_post
 import socketio
 import pyodbc
 import requests
@@ -18,7 +19,7 @@ URL_METAS = 'https://api.metasperu.net.pe'
 SOCKET_PATH = '/s1/socket/'
 
 
-res = requests.post(URL_METAS + '/s1/center/api/parameters/store',data={"mac":gma()})
+res = agent_post(URL_METAS + '/s1/center/api/parameters/store',data={"mac":gma()})
 configuration = res.json()
 print('configuration',configuration)
 
@@ -409,7 +410,7 @@ if len(configuration) > 0:
             headers=headers,
             socketio_path=SOCKET_PATH, # <--- IMPORTANTE
             transports=['websocket', 'polling']
-            )
+            , auth={"agentToken": agent_token()})
             sio.wait()
         except Exception as e:
             print(f"Error: {e}")

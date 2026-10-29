@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "migrate": "node scripts/migrate.js",
+    "exports:worker": "node scripts/export-worker.js"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
@@ -16,6 +18,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^4.22.3",
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
@@ -24,7 +27,6 @@
     "mysql2": "^3.24.6",
     "node-cron": "^4.6.0",
     "redis": "^5.12.1",
-    "socket.io": "^4.8.4",
-    "xlsx": "^0.18.5"
+    "socket.io": "^4.8.4"
   }
 }

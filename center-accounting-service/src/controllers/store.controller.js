@@ -1,3 +1,4 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
 import { getIO } from '../config/socket.js';
 import axios from 'axios';
 import { pool } from '../config/db.js';
@@ -86,7 +87,7 @@ export const storeController = {
             );
 
             if (localRows.length > 0) {
-                console.log(`⚡ [Cache DB] Retornando fecha: ${fecha}`);
+                console.log("center-accounting-service: evento procesado (store.controller.js:89)");
                 return res.status(200).json({
                     success: true,
                     data: {
@@ -99,7 +100,7 @@ export const storeController = {
             }
 
             // --- PASO 2: SI NO ESTÁ, CONSULTAR API EXTERNA ---
-            console.log(`🌐 [API Exterior] Consultando ApiPeru para fecha: ${fecha}`);
+            console.log("center-accounting-service: evento procesado (store.controller.js:102)");
             const response = await axios.post(URL, { fecha }, {
                 headers: {
                     'Authorization': `Bearer ${API_TOKEN}`,
@@ -124,7 +125,7 @@ export const storeController = {
             }
 
         } catch (error) {
-            console.error('❌ Error:', error.message);
+            reportCenterError('center-accounting-service.store.controller.127',undefined);
             res.status(500).json({ success: false, error: error.message });
         }
     },
@@ -133,7 +134,7 @@ export const storeController = {
         // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
         const sockets = await getIO().in('grupo_tiendas').fetchSockets();
 
-        const listaTiendas = sockets.map(s => ({
+        const listaTiendas = sockets.filter(s => req.user.allStores || req.user.stores.includes(s.data.serie)).map(s => ({
             socketId: s.id,
             id_tienda: s.data.id_tienda,
             nombre: s.data.nombre,

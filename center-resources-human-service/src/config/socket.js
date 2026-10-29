@@ -1,3 +1,5 @@
+import { boundary, origins } from './security.js';
+import { secureCenterSockets, emitScoped } from '../../../shared/center-sockets.mjs';
 import { Server } from 'socket.io';
 
 let io;
@@ -29,7 +31,7 @@ const parseOrigins = () => {
 export const initSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: parseOrigins(),
+            origin: origins.cors,
             credentials: true,
             methods: ["GET", "POST"]
         },
@@ -38,8 +40,9 @@ export const initSocket = (server) => {
         maxHttpBufferSize: Number(process.env.SOCKET_MAX_HTTP_BUFFER_SIZE || 10000000)
     });
 
+    secureCenterSockets(io,boundary,origins);
     io.on('connection', (socket) => {
-        console.log('center-resources-human-service: Cliente conectado:', socket.id);
+        console.log('center-resources-human-service: Cliente conectado:');
 
         socket.on('py_register_server_backup', (info) => {
             socket.join('servidor_backup');

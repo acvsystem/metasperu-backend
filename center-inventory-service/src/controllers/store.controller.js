@@ -1,5 +1,7 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
+import { createTransferHistory,createTransferRegistration } from '../../../shared/center-transfers.mjs';
 import { getIO } from '../config/socket.js';
-import * as XLSX from 'xlsx';
+import { buildCenterWorkbook } from '../../../shared/center-workbook.mjs';
 import { emailService } from '../services/email.service.js';
 import { Client } from "basic-ftp"
 import fs from 'fs';
@@ -21,7 +23,7 @@ export const storeController = {
                 if (!inventariosPorMarca.has(marca)) {
                     inventariosPorMarca.set(marca, new Map());
                 }
-                console.log(stockData[0].cCodigoTienda, stockData.length);
+                console.log("center-inventory-service: evento procesado (store.controller.js:25)");
                 setImmediate(() => {
                     actualizarMapaPorMarca(marca, stockData[0].cCodigoTienda, stockData, socketId);
                 });
@@ -34,7 +36,7 @@ export const storeController = {
     },
     postSendInventoryStoreEmail: async (req, res) => {
         const { stockData, email, nombre, serie } = req.body;
-        console.log("Solicitud de envío de inventario a email:", email, nombre, serie);
+        console.log("Solicitud de envío de inventario a email:");
 
         try {
 
@@ -44,14 +46,10 @@ export const storeController = {
 
             // 1. Generar el Excel (Asumiendo que dataNotFound viene de algún proceso previo o del store)
             const dataToExport = stockData || []; // Usa los datos reales de la tienda
-            const workSheet = XLSX.utils.json_to_sheet(dataToExport);
-            const workBook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workBook, workSheet, "Inventario");
-
-            const xlsFile = XLSX.write(workBook, { bookType: "xlsx", type: "buffer" });
+            const xlsFile=await buildCenterWorkbook(import.meta.resolve('exceljs/dist/exceljs.min.js'),{rows:dataToExport,sheetName:'Inventario'});
 
             // 2. Encolar el email
-            const results = emailService.pushToEmailQueue({
+            const results = await emailService.pushToEmailQueue({
                 email: email,
                 subject: `Inventario - ${nombre}`,
                 template: 'solicitudInventario',
@@ -75,14 +73,14 @@ export const storeController = {
             });
 
         } catch (error) {
-            console.error('Error en postSendInventoryStoreEmail:', error);
+            reportCenterError('center-inventory-service.store.controller.79',error);
             return res.status(500).json({ message: 'Error al procesar el envío de inventarios' });
         }
     },
     callInventoryStore: async (req, res) => { // Cuando el Dashboard de Angular pide actualizar
         const { marca, socketId } = req.params;
         try {
-            console.log(`📢 Pidiendo inventario a todas las tiendas de: ${marca}`);
+            console.log("center-inventory-service: evento procesado (store.controller.js:86)");
             getIO().to(marca).emit('py_request_inventory', { email: "", isEmail: false, socketId: socketId }); // El email es opcional aquí, solo queremos que respondan con su stock actual
             res.json({ message: 'Se emitio señal de comprobacion.', online: await getActiveStoresByBrand(marca) });
         } catch (error) {
@@ -141,127 +139,20 @@ export const storeController = {
             res.status(500).json({ message: 'Error', error });
         }
     },
-    getTraspasos: async (req, res) => {
-        try {
-            // 1. Obtenemos todas las cabeceras
-            const [headers] = await pool.query(`SELECT * FROM TB_HEAD_TRASPASOS ORDER BY ID_TRASPASOS DESC;`);
-
-            if (!headers.length) {
-                return res.status(200).json(mdwErrorHandler.error({
-                    status: 200, type: 'OK', message: 'OK', api: '/transfers/all', data: []
-                }));
-            }
-
-            // 2. Mapeamos las cabeceras y preparamos las promesas para los detalles
-            // Esto evita el problema del "if (length - 1 == i)" que es muy propenso a errores
-            const responseJSON = await Promise.all(headers.map(async (header) => {
-                const [details] = await pool.query(
-                    `SELECT * FROM TB_DETALLE_TRASPASOS WHERE CODIGO_TRASPASO = ?;`,
-                    [header.CODIGO_TRASPASO]
-                );
-
-                return {
-                    code_transfer: header.CODIGO_TRASPASO,
-                    unid_service: header.UNIDAD_SERVICIO,
-                    store_origin: header.TIENDA_ORIGEN,
-                    store_destination: header.TIENDA_DESTINO,
-                    code_warehouse_origin: header.CODIGO_ALM_ORIGEN,
-                    code_warehouse_destination: header.CODIGO_ALM_DESTINO,
-                    datetime: header.DATETIME,
-                    detail: details.map(d => ({
-                        barcode: d.CODIGO_BARRA,
-                        article_code: d.CODIGO_ARTICULO,
-                        description: d.DESCRIPCION,
-                        size: d.TALLA,
-                        color: d.COLOR,
-                        stock: d.STOCK,
-                        stock_required: d.STOCK_SOLICITADO,
-                        status: d.ESTADO,
-                        code_transfers: d.CODIGO_TRASPASO
-                    }))
-                };
-            }));
-
-            res.status(200).json({ data: responseJSON });
-
-        } catch (err) {
-            console.error("Error en allTransfers:", err);
-            res.status(500).json({ status: 'error', message: err.message });
-        }
-    },
-    postTraspasoBD: async (req, res) => {
-        const {
-            unid_service, store_origin, store_destination,
-            code_warehouse_origin, code_warehouse_destination,
-            datetime, details
-        } = req.body;
-
-        // 1. Obtener conexión del pool para la transacción
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // 2. Generar código de transferencia
-            // Nota: Es mejor contar registros dentro de la transacción para evitar duplicados concurrentes
-            const [rows] = await connection.query(`SELECT COUNT(*) as total FROM TB_HEAD_TRASPASOS`);
-            const code_transfer = generarCodigoSerie(rows[0].total + 1, 'T', 6);
-
-            // 3. Insertar Cabecera (Usando parámetros ? para seguridad)
-            const sqlHead = `INSERT INTO TB_HEAD_TRASPASOS 
-            (CODIGO_TRASPASO, UNIDAD_SERVICIO, TIENDA_ORIGEN, TIENDA_DESTINO, CODIGO_ALM_ORIGEN, CODIGO_ALM_DESTINO, DATETIME) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`;
-
-            await connection.query(sqlHead, [
-                code_transfer, unid_service, store_origin, store_destination,
-                code_warehouse_origin, code_warehouse_destination, datetime
-            ]);
-
-            // 4. Insertar Detalles en paralelo
-            if (details && details.length > 0) {
-                const sqlDetail = `INSERT INTO TB_DETALLE_TRASPASOS 
-                (CODIGO_BARRA, CODIGO_ARTICULO, DESCRIPCION, TALLA, COLOR, STOCK, STOCK_SOLICITADO, CODIGO_TRASPASO) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-
-                // Creamos un array de promesas para ejecutar todo de golpe
-                const detailPromises = details.map(det =>
-                    connection.query(sqlDetail, [
-                        det.barcode, det.article_code, det.description,
-                        det.size, det.color, det.stock, det.stock_required, code_transfer
-                    ])
-                );
-
-                await Promise.all(detailPromises);
-            }
-
-            // 5. Confirmar cambios
-            await connection.commit();
-
-            res.status(200).json({ message: 'Traspaso registrado con éxito', data: { code_transfer } });
-
-        } catch (err) {
-            // Si algo falla, deshacemos todo lo anterior (Rollback)
-            await connection.rollback();
-            console.error("Error en inTransfers:", err);
-
-            res.status(400).json({ status: 'error', message: err.message, });
-
-        } finally {
-            // Siempre liberar la conexión al pool
-            connection.release();
-        }
-    },
+    getTraspasos: createTransferHistory(pool),
+    postTraspasoBD: createTransferRegistration(pool),
     callTraspasosFTP: async (req, res) => {
         // 1. Validaciones iniciales
         if (!req.file) {
             return res.status(400).send('No se recibió ningún archivo.');
         }
 
+        if(!req.file)return res.status(422).json({message:'Seleccione un archivo XLSX o CSV.'});
         const { path: filePath, originalname: fileName } = req.file;
         const { ftpDirectorio, origenStore, destinoStore, email } = req.body;
+        if(typeof ftpDirectorio!=='string'||!/^[a-zA-Z0-9 _/-]{1,120}$/.test(ftpDirectorio)||ftpDirectorio.includes('..')) return res.status(422).json({message:'Directorio de destino invalido.'});
 
-        console.log(ftpDirectorio, origenStore, destinoStore, email);
-        console.log({ path: filePath, originalname: fileName });
+
         // Obtenemos la hora para el template
         const ahora = new Date();
         const fechaPE = ahora.toLocaleDateString('es-PE');
@@ -272,13 +163,8 @@ export const storeController = {
 
         try {
             // 2. Conexión al FTP (Idealmente usar variables de entorno)
-            await client.access({
-                host: process.env.FTP_HOST || '199.89.54.31',
-                port: 9879,
-                user: process.env.FTP_USER || 'ftpuser25801247',
-                password: process.env.FTP_PASSWORD || 'Cfz&}q)]i_^c~6MSVPI%',
-                secure: false
-            });
+            await client.access({ host:process.env.CENTER_FTP_HOST, user:process.env.CENTER_FTP_USER,
+                password:process.env.CENTER_FTP_PASSWORD, secure:true });
 
             // 3. Subida al FTP
             // Usamos la ruta dinámica que viene en el body o la de prueba
@@ -288,9 +174,10 @@ export const storeController = {
 
             // 4. Preparar el contenido para RabbitMQ
             // Leemos el archivo para enviarlo como Buffer/Base64
-            const fileBuffer = fs.readFileSync(filePath);
+            const fileBuffer = await fs.promises.readFile(filePath);
 
-            emailService.pushToEmailQueue({
+            let emailQueued=true;
+            try { await emailService.pushToEmailQueue({
                 email: ['carlosmoron@metasperu.com', 'paulodosreis@metasperu.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com'], // Fallback si no viene en req.body
                 subject: `Traspaso Realizado - ${origenStore} a ${destinoStore}`,
                 template: 'confirmacionTraspaso',
@@ -307,15 +194,16 @@ export const storeController = {
                     filename: fileName,
                     content: fileBuffer.toString('base64')
                 }
-            });
+            }); } catch { emailQueued=false; }
 
             res.status(200).json({
+                emailQueued,
                 status: 'success',
-                message: 'Traspaso realizado exitosamente.'
+                message: emailQueued?'Archivo de traspaso enviado.':'Archivo enviado; el aviso de correo no fue confirmado.'
             });
 
         } catch (err) {
-            console.error(`Error en Traspaso FTP: ${err.message}`);
+            reportCenterError('center-inventory-service.store.controller.209',undefined);
             res.status(500).json({
                 status: 'error',
                 message: 'Error en el proceso de traspaso: ' + err.message
@@ -328,7 +216,7 @@ export const storeController = {
             fs.access(filePath, fs.constants.F_OK, (err) => {
                 if (!err) {
                     fs.unlink(filePath, (unlinkErr) => {
-                        if (unlinkErr) console.error(`No se pudo borrar temporal: ${filePath}`);
+                        if (unlinkErr) reportCenterError('center-inventory-service.store.controller.222',undefined);
                     });
                 }
             });
@@ -349,9 +237,9 @@ export const storeController = {
 
             // 2. Verificamos si existe y si tiene miembros
             if (sala && sala.size > 0) {
-                console.log(`La sala '${marca}' existe y tiene ${sala.size} usuario(s) conectado(s).`);
+                console.log("center-inventory-service: evento procesado (store.controller.js:243)");
             } else {
-                console.log(`La sala '${marca}' no existe o está vacía.`);
+                console.log("center-inventory-service: evento procesado (store.controller.js:245)");
             }
 
             getIO().to(marca).emit('py_request_one_store_inventory', { pedido_por: socketId, dataCode: [{ 'codigo_barra': codigo_barra, 'cantidad_solicitada': '1' }] });
@@ -372,7 +260,7 @@ async function getActiveStoresByBrand(marca) {
         tiendaId: socket.tiendaId, // El ID que asignamos en el evento 'register_store'
         lastConnected: new Date()
     }));
-    console.log(`Tiendas activas para marca ${marca}:`, onlineStores);
+    console.log("center-inventory-service: evento procesado (store.controller.js:266)");
     return onlineStores;
 }
 
@@ -415,7 +303,7 @@ function actualizarMapaPorMarca(marca, serieStore, data, socketId) {
         mapaMarca.get(item.cCodigoBarra).cStock[serieStore] = item.cStock;
     });
 
-    console.log(`✅ [${marca}] Actualizada tienda ${serieStore}. SKUs totales de la marca: ${mapaMarca.size}`);
+    console.log("center-inventory-service: evento procesado (store.controller.js:309)");
     getIO().to(socketId).emit('update_inventory', { serieStore, marca });
 }
 

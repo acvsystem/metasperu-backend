@@ -1,3 +1,4 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
 import { pool } from '../config/db.js';
 import { getIO, reiniciarAuditoriaDocumentos, servidorOnline } from '../config/socket.js';
 import { emailService } from '../services/email.service.js';
@@ -29,7 +30,7 @@ export const storeController = {
 
             const [rows] = await pool.execute(query);
 
-            const tiendasMapeadas = rows.map(t => {
+            const tiendasMapeadas = rows.filter(t => req.user.allStores || req.user.stores.includes(t.SERIE_TIENDA)).map(t => {
                 // Función auxiliar para parsear JSON de forma segura
                 const parseJsonField = (field) => {
                     if (!field) return [];
@@ -61,7 +62,7 @@ export const storeController = {
 
             res.json(tiendasMapeadas);
         } catch (error) {
-            console.error("Error en getTiendas:", error);
+            reportCenterError('center-service.store.controller.64',error);
             res.status(500).json({
                 message: 'Error al obtener tiendas',
                 error: error.message
@@ -251,7 +252,7 @@ export const storeController = {
             return res.status(200).json(documentos);
 
         } catch (error) {
-            console.error(error);
+            reportCenterError('center-service.store.controller.254',error);
             return res.status(500).json({ error: "Error interno del servidor" });
         }
     },
@@ -332,7 +333,7 @@ export const storeController = {
             res.send('RECEPCION EXITOSA..!!');
 
         } catch (error) {
-            console.error('Error al procesar los datos:', error);
+            reportCenterError('center-service.store.controller.335',error);
             throw error;
         }
     }
@@ -352,6 +353,6 @@ async function enviarActualizacionDashboard() {
         online: true // Si está en la lista, es porque está online
     }));
 
-    console.log(listaTiendas);
-    getIO().emit('actualizar_dashboard', listaTiendas);
+    console.log("center-service: evento procesado (store.controller.js:355)");
+    getIO().to('dashboards:all').emit('actualizar_dashboard', listaTiendas);
 }

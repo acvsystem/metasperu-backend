@@ -1,23 +1,42 @@
 import { randomUUID } from 'node:crypto';
 export function createMailPublisher({ connect, url, timeoutMs=10000, maxInFlight=20 }) {
-  let connecting, connection, channel, inFlight=0;
+  let connecting, connection, channel, inFlight=0,generation=0;
+  async function dispose(resources) {
+    let deadline;
+    try {
+      await Promise.race([
+        Promise.allSettled(resources.filter(Boolean).map(resource=>Promise.resolve().then(()=>resource.close()))),
+        new Promise(resolve=>{deadline=setTimeout(resolve,Math.min(timeoutMs,1000));})
+      ]);
+    }finally{clearTimeout(deadline);}
+  }
   async function close() {
     const oldChannel=channel,oldConnection=connection;
+    generation++;
     channel=undefined;connection=undefined;connecting=undefined;
-    await Promise.allSettled([oldChannel?.close(),oldConnection?.close()]);
+    await dispose([oldChannel,oldConnection]);
   }
   async function ready() {
     if(channel)return channel;
-    if(!connecting)connecting=(async()=>{
+    if(!connecting){
+      const attempt=generation;
+      connecting=(async()=>{
       if(!url||!/^amqps?:\/\//.test(url))throw new Error('Configure AMQP_URL.');
-      connection=await connect(url,{timeout:timeoutMs});
-      connection.on('error',()=>{});
-      connection.on('close',()=>{channel=undefined;connecting=undefined;});
-      channel=await connection.createConfirmChannel();
-      channel.on('error',()=>{});
-      channel.on('close',()=>{channel=undefined;connecting=undefined;});
-      await channel.assertQueue('email_queue',{durable:true});return channel;
-    })().catch(async()=>{await close();throw new Error('No se pudo conectar con la cola de correo.');});
+      const created=await connect(url,{timeout:timeoutMs});
+      created.on('error',()=>{});
+      if(attempt!==generation){await dispose([created]);throw new Error('Conexion cancelada.');}
+      connection=created;
+      created.on('close',()=>{if(attempt===generation){channel=undefined;connecting=undefined;}});
+      const confirmed=await created.createConfirmChannel();
+      confirmed.on('error',()=>{});
+      if(attempt!==generation){await dispose([confirmed,created]);throw new Error('Conexion cancelada.');}
+      channel=confirmed;
+      confirmed.on('close',()=>{if(attempt===generation){channel=undefined;connecting=undefined;}});
+      await confirmed.assertQueue('email_queue',{durable:true});
+      if(attempt!==generation)throw new Error('Conexion cancelada.');
+      return confirmed;
+    })().catch(async()=>{if(attempt===generation)await close();throw new Error('No se pudo conectar con la cola de correo.');});
+    }
     return connecting;
   }
   return {

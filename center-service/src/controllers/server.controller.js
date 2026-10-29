@@ -7,7 +7,7 @@ export const serverController = {
         const { socketId } = req.params;
         try {
             const servidor = servidorOnline;
-            console.log("callComparationDocumentsServer servidor:", servidor);
+            console.log("callComparationDocumentsServer servidor:");
             getIO().to(servidor.socketId).emit('py_request_comparation_documents_server', { pedido_por: socketId });
 
             res.json({
@@ -21,7 +21,7 @@ export const serverController = {
         const { socketId } = req.params;
         try {
             const servidor = servidorOnline;
-            console.log("callDocumentsPendingServer servidor:", servidor);
+            console.log("callDocumentsPendingServer servidor:");
             getIO().to(servidor.socketId).emit('py_request_documents_pending_server', { pedido_por: socketId });
 
             res.json({

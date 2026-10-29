@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { reportCenterError } from './center-diagnostics.mjs';
 export function installCenterHttp(app, { helmet, cors, cookieParser, rateLimit, express, origins }) {
   const hops = Number(process.env.TRUST_PROXY_HOPS || 0);
   if (!Number.isInteger(hops) || hops < 0 || hops > 5) throw new Error('TRUST_PROXY_HOPS invalido.');
@@ -25,8 +26,9 @@ export function installCenterHttp(app, { helmet, cors, cookieParser, rateLimit, 
     message:{message:'Demasiadas solicitudes. Intente nuevamente en un momento.'} }));
 }
 
-export function centerErrorHandler(error, req, res, _next) {
-  console.error(JSON.stringify({event:'http.failed',requestId:req.requestId,code:error.code || 'INTERNAL'}));
+export function centerErrorHandler(error, req, res, next) {
+  if(res.headersSent)return next(error);
+  reportCenterError('http.failed',error,req.requestId);
   const status = error.type === 'entity.too.large' ? 413 : error instanceof SyntaxError ? 400 : 500;
   res.status(status).json({message:status === 413 ? 'El contenido supera el limite permitido.' : 'No se pudo procesar la solicitud.',requestId:req.requestId});
 }

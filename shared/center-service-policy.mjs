@@ -23,6 +23,8 @@ const scopes = {
     'GET /api/stores/online': () => [], // Controller filters the response independently.
   },
   human: {
+    'GET /api/schedule/store': () => [], // Controller applies the verified store predicate.
+    'POST /api/ballot/employes/store': () => [], // Controller checks the ballot's stored owner.
     'GET /api/type/ballot': () => [],
     'POST /api/search/schedule/store': body('code_store'),
     'POST /api/register/schedule/store': body('codigoTienda'),
@@ -43,7 +45,7 @@ export function authorizeServiceAction(service) {
     let value;
     try { value=extractor(req); } catch { return res.status(422).json({message:'Tiendas invalidas.'}); }
     const values=Array.isArray(value)?value:[value];
-    const globalRead=new Set(['GET /api/type/ballot','GET /api/stores/online','POST /api/exchange-rate/sunat','GET /api/inventory/traspasos']);
+    const globalRead=new Set(['GET /api/type/ballot','GET /api/stores/online','POST /api/exchange-rate/sunat','GET /api/inventory/traspasos','GET /api/schedule/store','POST /api/ballot/employes/store']);
     if(!values.length&&!globalRead.has(req.method+' '+req.route?.path)) return res.status(403).json({message:'Seleccione al menos una tienda autorizada.'});
     if(values.some(item=>typeof item!=='string' || !item || !user.stores.includes(item))) {
       return res.status(403).json({message:'No tiene acceso a las tiendas de esta operacion.'});
@@ -54,7 +56,7 @@ export function authorizeServiceAction(service) {
 
 export function bindReplySocket(getIO) {
   return async (req,res,next) => {
-    const id=req.body?.socketId || req.body?.socket || req.query?.socket_id;
+    const id=req.body?.socketId || req.body?.socket || req.query?.socket_id || req.params?.socketId;
     if(!id) return next();
     try {
       const [target]=await getIO().in(String(id)).fetchSockets();

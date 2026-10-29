@@ -1,9 +1,12 @@
+import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
+import { boundary, origins } from './security.js';
+import { secureCenterSockets, emitScoped } from '../../../shared/center-sockets.mjs';
 import { Server } from 'socket.io';
 import { emailService } from '../services/email.service.js';
 import { pool } from './db.js';
 import { extraServices } from '../services/extra.services.js';
 import crypto from 'crypto';
-import * as XLSX from 'xlsx';
+import { buildCenterWorkbook } from '../../../shared/center-workbook.mjs';
 
 let io;
 let tiendasActivas = {}; // Aqui se almacenan las tiendas que van conectandoce 
@@ -29,6 +32,7 @@ const auditoriaEstado = {
 /** Estado para recolectar informes de rendimiento de todas las tiendas */
 const informeRendimientoEstado = {
     activo: false,
+    generando: false,
     fechaDesde: null,
     fechaHasta: null,
     tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
@@ -52,6 +56,7 @@ export function reiniciarAuditoriaDocumentos() {
  * Reinicia el estado y programa el cierre automático por timeout.
  */
 export function iniciarRecoleccionInformeRendimiento(fechaDesde, fechaHasta) {
+    if(informeRendimientoEstado.activo||informeRendimientoEstado.generando)throw Object.assign(new Error('Ya hay un informe consolidado en proceso.'),{status:409});
     if (informeRendimientoEstado.timeoutId) {
         clearTimeout(informeRendimientoEstado.timeoutId);
     }
@@ -61,7 +66,7 @@ export function iniciarRecoleccionInformeRendimiento(fechaDesde, fechaHasta) {
     informeRendimientoEstado.fechaHasta = fechaHasta;
     informeRendimientoEstado.tiendasData = {};
 
-    console.log(`📊 [Informe Rendimiento] Recolección iniciada (${fechaDesde} → ${fechaHasta}). Esperando respuestas de tiendas...`);
+    console.log("center-service: evento procesado (socket.js:68)");
 
     informeRendimientoEstado.timeoutId = setTimeout(() => {
         console.log('⏰ [Informe Rendimiento] Timeout alcanzado. Generando Excel con las tiendas que respondieron...');
@@ -74,15 +79,16 @@ export const initSocket = (server) => {
         pingTimeout: 60000, // Tiempo de espera para considerar desconexión (60s)
         pingInterval: 25000, // Frecuencia del ping (25s)
         cors: {
-            origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+            origin: origins.cors, // Permite cualquier origen
             credentials: true,
             methods: ["GET", "POST"]
         }
     });
 
 
+    secureCenterSockets(io, boundary, origins);
     io.on('connection', (socket) => {
-        console.log('center-service: Cliente conectado:', socket.id);
+        console.log('center-service: Cliente conectado:');
 
         socket.on('registrar_servidor', (data) => {
             socket.join('servidor_backup');
@@ -92,8 +98,8 @@ export const initSocket = (server) => {
             servidorOnline.nombre = data.id_servidor
             servidorOnline.online = true;
 
-            console.log("🚀 registrar_servidor", servidorOnline);
-            console.log(`🚀 Servidor conectado: ${data.id_servidor}`);
+            console.log("🚀 registrar_servidor");
+            console.log("center-service: evento procesado (socket.js:101)");
         });
 
         socket.on('registrar_dashboard', () => {
@@ -116,7 +122,7 @@ export const initSocket = (server) => {
             // 2. Lo unimos a la sala
             await socket.join('grupo_tiendas');
             socket.join(data.id_tienda); // Unimos la tienda a una "sala" por su ID única
-            console.log(`🚀 Tienda ${data.id_tienda} registrada en memoria del socket.`);
+            console.log("center-service: evento procesado (socket.js:124)");
 
             // 3. Notificar al dashboard (ver paso siguiente)
             enviarActualizacionDashboard();
@@ -128,19 +134,19 @@ export const initSocket = (server) => {
             auditoriaEstado.tiendasData[data.serie] = data.documentos;
 
             const totalRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-            console.log(`🚀 ( ${data.serie} - ${totalRecibidas} ) Tiendas han respondido.`);
+            console.log("center-service: evento procesado (socket.js:136)");
 
             verificarYComparar(data.serie);
         });
 
 
         socket.on('py_response_clear_cola_pana', (data) => {
-            io.emit('transaction_refresh_dashboard', data);
+            emitScoped(io, 'transaction_refresh_dashboard', data);
         });
 
         // --- Retorno de Python store al backend documentos de venta---
         socket.on('py_response_delete_client', (data) => {
-            io.emit('client_refresh_dashboard', data);
+            emitScoped(io, 'client_refresh_dashboard', data);
         });
 
         // --- Retorno de Python server al backend ---
@@ -155,55 +161,55 @@ export const initSocket = (server) => {
 
         // --- Retorno de python store al backend transacciones
         socket.on('py_requets_transactions_store', (data) => {
-            console.log('py_requets_transactions_store', data);
-            io.emit('transactions_response_dashboard', data);
+            console.log('py_requets_transactions_store');
+            emitScoped(io, 'transactions_response_dashboard', data);
         })
 
         // --- Retorno de python store al backend clientes en blanco
         socket.on('py_response_client_blank', (data) => {
-            console.log('py_response_client_blank', data);
-            io.emit('client_blank_response_dashboard', data);
+            console.log('py_response_client_blank');
+            emitScoped(io, 'client_blank_response_dashboard', data);
         })
 
         // --- Retorno de python store al backend traffic counter
         socket.on('py_update_devices_status', (data) => {
-            console.log('py_update_devices_status', data);
-            io.emit('traffic_response_dashboard', data);
+            console.log('py_update_devices_status');
+            emitScoped(io, 'traffic_response_dashboard', data);
         })
 
         // --- Retorno de python store al backend transferencia de cola entre cajas
         socket.on('py_response_transfer_terminal', (data) => {
-            console.log('py_response_transfer_terminal', data);
-            io.emit('transfer_response_dashboard', data);
+            console.log('py_response_transfer_terminal');
+            emitScoped(io, 'transfer_response_dashboard', data);
         });
 
         // --- Retorno de python store al backend de limpieza de clientes
         socket.on('py_response_delete_client', (data) => {
-            console.log('py_response_delete_client', data);
-            io.emit('delete_client_esponse_dashboard', data);
+            console.log('py_response_delete_client');
+            emitScoped(io, 'delete_client_esponse_dashboard', data);
         });
 
         // --- Retorno de python store al backend eliminar cola panama
         socket.on('py_response_delete_cola_panama', (data) => {
-            console.log('py_response_delete_cola_panama', data);
-            io.emit('delete_cola_panama_dashboard', data);
+            console.log('py_response_delete_cola_panama');
+            emitScoped(io, 'delete_cola_panama_dashboard', data);
         });
 
         // --- Retorno de python server al backend comparacion de documentos
         socket.on('py_response_comparation_documents_server', (data) => {
-            console.log('py_response_comparation_documents_server', data);
-            io.emit('comparation_documents_server_dashboard', data);
+            console.log('py_response_comparation_documents_server');
+            emitScoped(io, 'comparation_documents_server_dashboard', data);
         });
 
         // --- Retorno de python server al backend documentos pendientes de comparacion
         socket.on('py_response_documents_pending_server', (data) => {
-            console.log('py_response_documents_pending_server', data);
-            io.emit('documents_pending_server_dashboard', data);
+            console.log('py_response_documents_pending_server');
+            emitScoped(io, 'documents_pending_server_dashboard', data);
         });
 
         // --- Retorno de python server al backend status de servidor backup
         socket.on('py_status_server_backup', (data) => {
-            io.emit('status_server_backup_dashboard', data);
+            emitScoped(io, 'status_server_backup_dashboard', data);
         });
 
         // --- Retorno de python server al backend traffic counter de servidor backup
@@ -240,7 +246,7 @@ export const initSocket = (server) => {
                             const store = rows[0];
 
                             // Enviamos al queue de emails con los parámetros simplificados (IP, TIENDA, ESTATUS)
-                            emailService.pushToEmailQueue({
+                            await emailService.pushToEmailQueue({
                                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
                                 subject: `ALERTA TRAFFIC COUNTER - ${store.DESCRIPCION}`,
                                 template: 'alertaTrafficCounterOffLine',
@@ -251,25 +257,25 @@ export const initSocket = (server) => {
                                 }
                             });
                         } else {
-                            console.log(`⚠️ No se encontró la tienda con la serie: ${offlineTraffic.serie}`);
+                            console.log("center-service: evento procesado (socket.js:259)");
                         }
                     } catch (dbError) {
-                        console.error("❌ Error en la consulta a base de datos:", dbError);
+                        reportCenterError('center-service.socket.262',dbError);
                     } finally {
                         if (connection) connection.release(); // Siempre libera la conexión del pool
                     }
                 }
 
                 // Transmitimos al dashboard independientemente de si hay offline o no
-                io.emit('traffic_counter_dashboard', data);
+                emitScoped(io, 'traffic_counter_dashboard', data);
 
             } catch (error) {
-                console.error("❌ Error crítico en el socket de verificación:", error);
+                reportCenterError('center-service.socket.272',error);
             }
         });
 
         socket.on('py_response_informe_rendimiento', (data) => {
-            console.log('py_response_informe_rendimiento', data?.serie, Array.isArray(data?.data) ? data.data.length + ' filas' : 'sin data');
+            console.log('py_response_informe_rendimiento');
 
             // Si hay un destinatario real (dashboard), reenviar en vivo
             if (data?.enviar_a && data.enviar_a !== 'CRONREPORTE01') {
@@ -277,14 +283,14 @@ export const initSocket = (server) => {
             }
 
             // Recolección para el Excel consolidado (cron o sesión activa)
-            if (informeRendimientoEstado.activo && data?.serie) {
+            if (informeRendimientoEstado.activo && data?.enviar_a==='CRONREPORTE01' && data?.serie) {
                 informeRendimientoEstado.tiendasData[data.serie] = {
                     data: Array.isArray(data.data) ? data.data : [],
                     recibidoEn: new Date()
                 };
 
                 const totalRecibidas = Object.keys(informeRendimientoEstado.tiendasData).length;
-                console.log(`📊 [Informe Rendimiento] (${data.serie}) Tiendas respondieron: ${totalRecibidas}`);
+                console.log("center-service: evento procesado (socket.js:292)");
 
                 // Intentar finalizar si ya respondieron todas las tiendas online
                 tryFinalizarSiCompleto();
@@ -292,7 +298,7 @@ export const initSocket = (server) => {
         });
 
         socket.on('disconnect', () => {
-            console.log(`❌ Un socket se ha ido.`);
+            console.log("center-service: evento procesado (socket.js:300)");
             enviarActualizacionDashboard();
 
         });
@@ -310,20 +316,20 @@ export const getIO = () => {
 
 function verificarYComparar(serie) {
     const totalTiendasRecibidas = Object.keys(auditoriaEstado.tiendasData).length;
-    console.log("totalTiendasRecibidas:", totalTiendasRecibidas);
+    console.log("totalTiendasRecibidas:");
 
     if (!auditoriaEstado.serverRespondido) {
-        console.log(`Esperando respuesta del servidor para comparar la tienda ${serie}.`);
+        console.log("center-service: evento procesado (socket.js:321)");
         return;
     }
 
     if (!Object.prototype.hasOwnProperty.call(auditoriaEstado.tiendasData, serie)) {
-        console.log(`Esperando respuesta de la tienda ${serie}.`);
+        console.log("center-service: evento procesado (socket.js:326)");
         return;
     }
 
     if (auditoriaEstado.comparacionesProcesadas.has(serie) || auditoriaEstado.comparacionesEnProceso.has(serie)) {
-        console.log(`La tienda ${serie} ya fue enviada a comparacion en esta auditoria.`);
+        console.log("center-service: evento procesado (socket.js:331)");
         return;
     }
 
@@ -335,7 +341,7 @@ function verificarYComparar(serie) {
             auditoriaEstado.comparacionesProcesadas.add(serie);
         })
         .catch((error) => {
-            console.error(`Error al comparar documentos de la tienda ${serie}:`, error);
+            reportCenterError('center-service.socket.343',error);
         })
         .finally(() => {
             auditoriaEstado.comparacionesEnProceso.delete(serie);
@@ -382,7 +388,7 @@ async function iniciarProcesoComparacion(serie) {
                 "Comparación de Documentos faltantes", ":bookmark_tabs:"
             );
 
-            emailService.pushToEmailQueue({
+            await emailService.pushToEmailQueue({
                 email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com'],
                 subject: `Documentos Pendientes - ${storeDescription.DESCRIPCION}`,
                 template: 'documentosPendientes',
@@ -393,10 +399,10 @@ async function iniciarProcesoComparacion(serie) {
             });
         }
 
-        io.emit('documents_response_dashboard', resultadosFinales);
+        emitScoped(io, 'documents_response_dashboard', resultadosFinales);
     } else {
         resultadosFinales = { serie: serie, documents: [], length: 0 };
-        io.emit('documents_response_dashboard', resultadosFinales);
+        emitScoped(io, 'documents_response_dashboard', resultadosFinales);
     }
 
 }
@@ -431,7 +437,7 @@ function obtenerFaltantes(serieStore, storeRaw, servidorRaw) {
                 return acc;
             }, []);
 
-            console.info(`🚀 Documentos Faltantes [${serieStore}]: ${faltantes.length} encontrados.`);
+            console.info("center-service: evento procesado (socket.js:439)");
 
             return {
                 serie: serieStore,
@@ -441,7 +447,7 @@ function obtenerFaltantes(serieStore, storeRaw, servidorRaw) {
         }
 
     } catch (error) {
-        console.error("Error al procesar la comparación de documentos:", error);
+        reportCenterError('center-service.socket.449',error);
         return { serie: serieStore, documents: [], length: 0, error: true };
     }
 }
@@ -459,8 +465,8 @@ async function enviarActualizacionDashboard() {
         online: true // Si está en la lista, es porque está online
     }));
 
-    console.log(listaTiendas);
-    io.emit('actualizar_dashboard', listaTiendas);
+    console.log("center-service: evento procesado (socket.js:467)");
+    emitScoped(io, 'actualizar_dashboard', listaTiendas);
 }
 
 /**
@@ -487,7 +493,7 @@ async function tryFinalizarSiCompleto() {
             await finalizarInformeRendimiento();
         }
     } catch (err) {
-        console.error('❌ [Informe Rendimiento] Error al verificar completitud:', err.message);
+        reportCenterError('center-service.socket.495',undefined);
     }
 }
 
@@ -500,6 +506,7 @@ async function finalizarInformeRendimiento() {
 
     // Evitar doble ejecución
     informeRendimientoEstado.activo = false;
+    informeRendimientoEstado.generando = true;
     if (informeRendimientoEstado.timeoutId) {
         clearTimeout(informeRendimientoEstado.timeoutId);
         informeRendimientoEstado.timeoutId = null;
@@ -641,34 +648,8 @@ async function finalizarInformeRendimiento() {
         });
 
         // Generar Excel
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(filas, {
-            header: [
-                'ORDEN DE TIENDA',
-                'BRAND',
-                'NAME',
-                'TYPE',
-                'DAILY SALES S/',
-                'DAILY SALES $',
-                'DAILY UNITS',
-                'STOCK'
-            ]
-        });
-
-        ws['!cols'] = [
-            { wch: 16 },
-            { wch: 8 },
-            { wch: 24 },
-            { wch: 12 },
-            { wch: 16 },
-            { wch: 16 },
-            { wch: 14 },
-            { wch: 12 }
-        ];
-
-        XLSX.utils.book_append_sheet(wb, ws, 'Daily Report');
-
-        const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        const buffer=await buildCenterWorkbook(import.meta.resolve('exceljs/dist/exceljs.min.js'),{rows:filas,sheetName:'Daily Report',
+          headers:['ORDEN DE TIENDA','BRAND','NAME','TYPE','DAILY SALES S/','DAILY SALES $','DAILY UNITS','STOCK'],widths:[16,8,24,12,16,16,14,12]});
         const base64 = Buffer.from(buffer).toString('base64');
 
         const nombreArchivo = `Informe_Rendimiento_${fechaDesde}_${fechaHasta}.xlsx`;
@@ -695,9 +676,9 @@ async function finalizarInformeRendimiento() {
             }
         });
 
-        console.log(`📧 [Informe Rendimiento] Excel enviado (${respondieron}/${totalCatalogo} tiendas). Archivo: ${nombreArchivo}`);
+        console.log("center-service: evento procesado (socket.js:704)");
 
-        io.emit('informe_rendimiento_completado', {
+        emitScoped(io, 'informe_rendimiento_completado', {
             fechaDesde,
             fechaHasta,
             tiendasRespondieron: respondieron,
@@ -706,8 +687,9 @@ async function finalizarInformeRendimiento() {
         });
 
     } catch (error) {
-        console.error('❌ [Informe Rendimiento] Error al generar/enviar Excel:', error);
+        reportCenterError('center-service.socket.715',error);
     } finally {
         informeRendimientoEstado.tiendasData = {};
+        informeRendimientoEstado.generando = false;
     }
 }
