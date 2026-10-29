@@ -1,4 +1,4 @@
-from center_agent_auth import agent_token, agent_post
+from center_agent_auth import agent_token, agent_post, agent_api_origin
 import socketio
 import pyodbc
 import requests
@@ -10,7 +10,7 @@ from datetime import datetime,timedelta
 
 sio = socketio.Client()
 
-URL_METAS = 'https://api.metasperu.net.pe'
+URL_METAS = agent_api_origin()
 SOCKET_PATH = '/s1/socket/'
 
 arConexionSQL = [

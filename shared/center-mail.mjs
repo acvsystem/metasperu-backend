@@ -60,7 +60,8 @@ export function createMailPublisher({ connect, url, timeoutMs=10000, maxInFlight
               const onDrain=()=>{drained=true;done();};
               current.once('close',failed);current.once('error',failed);current.once('drain',onDrain);
               try {
-                const writable=current.sendToQueue('email_queue',payload,{persistent:true,messageId:randomUUID(),contentType:'application/json'},
+                const messageId=typeof data.messageId==='string'&&/^[a-f0-9-]{36}$/i.test(data.messageId)?data.messageId:randomUUID();
+                const writable=current.sendToQueue('email_queue',payload,{persistent:true,messageId,contentType:'application/json'},
                   error=>{if(error)return failed();confirmed=true;done();});
                 if(writable){drained=true;done();}
               }catch{failed();}

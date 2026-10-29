@@ -23,7 +23,7 @@ export const storeController = {
                     FROM tb_terminales_store
                     WHERE SERIE = t.SERIE_TIENDA
                 ) as terminales_json
-            FROM bd_metasperu.tb_lista_tienda t
+            FROM tb_lista_tienda t
             WHERE t.ESTATUS = "ACTIVO"
             ORDER BY t.DESCRIPCION ASC;
         `;

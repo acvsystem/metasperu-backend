@@ -8,7 +8,8 @@
     "dev": "nodemon src/app.js",
     "test": "node --test test/*.test.js",
     "migrate": "node scripts/migrate.js",
-    "exports:worker": "node scripts/export-worker.js"
+    "exports:worker": "node scripts/export-worker.js",
+    "notifications:worker": "node scripts/notifications-worker.js"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",

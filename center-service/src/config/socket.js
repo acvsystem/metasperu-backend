@@ -236,7 +236,7 @@ export const initSocket = (server) => {
                         connection = await pool.getConnection();
                         const [rows] = await connection.execute(
                             `SELECT DESCRIPCION
-                     FROM bd_metasperu.tb_lista_tienda t
+                     FROM tb_lista_tienda t
                      WHERE t.SERIE_TIENDA = ?`,
                             [trafficCounter.serie || '']
                         );
@@ -354,7 +354,7 @@ async function iniciarProcesoComparacion(serie) {
 
         const query = `
             SELECT DESCRIPCION
-            FROM bd_metasperu.tb_lista_tienda t
+            FROM tb_lista_tienda t
             WHERE t.SERIE_TIENDA = ?
         `;
 
@@ -524,7 +524,7 @@ async function finalizarInformeRendimiento() {
                 DESCRIPCION AS nombre,
                 UNID_SERVICIO AS brand,
                 TIPO_TIENDA AS tipo
-            FROM bd_metasperu.tb_lista_tienda
+            FROM tb_lista_tienda
             WHERE ESTATUS = 'ACTIVO'
             ORDER BY UNID_SERVICIO ASC, DESCRIPCION ASC
         `);

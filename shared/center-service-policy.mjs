@@ -23,6 +23,10 @@ const scopes = {
     'GET /api/stores/online': () => [], // Controller filters the response independently.
   },
   human: {
+    'POST /api/solicitude/approval/hours/works/employes': body('codigoTienda'),
+    'POST /api/approval/hours/works/employes': () => [], // Exact ownership and decision role checked by controller.
+    'GET /api/all/solicitude/hours/works/employes': () => [], // SQL filters verified stores.
+    'GET /api/solicitude/hours/works/employes': () => [],
     'GET /api/schedule/store': () => [], // Controller applies the verified store predicate.
     'POST /api/ballot/employes/store': () => [], // Controller checks the ballot's stored owner.
     'GET /api/type/ballot': () => [],
@@ -45,7 +49,8 @@ export function authorizeServiceAction(service) {
     let value;
     try { value=extractor(req); } catch { return res.status(422).json({message:'Tiendas invalidas.'}); }
     const values=Array.isArray(value)?value:[value];
-    const globalRead=new Set(['GET /api/type/ballot','GET /api/stores/online','POST /api/exchange-rate/sunat','GET /api/inventory/traspasos','GET /api/schedule/store','POST /api/ballot/employes/store']);
+    const globalRead=new Set(['GET /api/type/ballot','GET /api/stores/online','POST /api/exchange-rate/sunat','GET /api/inventory/traspasos','GET /api/schedule/store','POST /api/ballot/employes/store',
+      'POST /api/approval/hours/works/employes','GET /api/all/solicitude/hours/works/employes','GET /api/solicitude/hours/works/employes']);
     if(!values.length&&!globalRead.has(req.method+' '+req.route?.path)) return res.status(403).json({message:'Seleccione al menos una tienda autorizada.'});
     if(values.some(item=>typeof item!=='string' || !item || !user.stores.includes(item))) {
       return res.status(403).json({message:'No tiene acceso a las tiendas de esta operacion.'});

@@ -1,5 +1,26 @@
 # Agentes Center: pruebas aisladas
 
+## Extraer la carpeta completa
+
+No copie unicamente `centerService.py`. Los archivos auxiliares son parte del
+agente y deben quedar en la MISMA carpeta:
+
+```text
+center-agentes-dev/
+  centerService.py
+  center_agent_dev.py
+  center_agent_auth.py
+  ...otros agentes y archivos del paquete
+```
+
+`ModuleNotFoundError: No module named 'center_agent_dev'` significa que falta
+ese archivo junto al agente que esta ejecutando. Ambos auxiliares vienen en
+el ZIP; extraiga todo su contenido. Son archivos propios del proyecto.
+
+Una vez configurado DEV segun los pasos siguientes, ejecute desde la carpeta
+extraida `py centerService.py`. No mueva el script individual al Escritorio
+ni lo copie encima del agente de produccion.
+
 Estas copias se preparan sin importar ni ejecutar los originales. Los originales
 no se modifican. `manifest.json` permite comprobar su SHA-256. No instalar estas
 copias encima de los agentes de produccion.

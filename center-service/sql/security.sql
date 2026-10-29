@@ -66,3 +66,18 @@ CREATE TABLE IF NOT EXISTS tb_center_hr_requests (
   INDEX idx_center_hr_owner (owner_user_id,expires_at),
   INDEX idx_center_hr_expiry (expires_at)
 );
+CREATE TABLE IF NOT EXISTS tb_center_overtime_adjustments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,overtime_id INT NOT NULL,
+  owner_user_id INT NOT NULL,store_serie VARCHAR(80) NOT NULL,
+  employee_document VARCHAR(80) NOT NULL,work_date DATE NOT NULL,
+  previous_balance JSON NOT NULL,reason VARCHAR(80) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_center_overtime_adjustment (overtime_id,created_at)
+);
+CREATE TABLE IF NOT EXISTS tb_center_notification_outbox (
+  id CHAR(36) PRIMARY KEY,event_key VARCHAR(120) NOT NULL UNIQUE,payload JSON NOT NULL,
+  status ENUM('pending','sending','sent','failed') NOT NULL DEFAULT 'pending',attempts INT NOT NULL DEFAULT 0,
+  lease_token CHAR(36) NULL,lease_until DATETIME NULL,
+  next_attempt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME NULL,INDEX idx_center_notification_queue (status,next_attempt,lease_until)
+);

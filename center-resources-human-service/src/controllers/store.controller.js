@@ -1,19 +1,15 @@
+import {createOvertimeApprovals} from '../../../shared/center-overtime-approvals.mjs';
 import { reportCenterError } from '../../../shared/center-diagnostics.mjs';
 import {canReadHrStore,scheduleStorePredicate,lockBallotForDateChange} from '../../../shared/center-hr-scope.mjs';
 import {createAttendanceRequests} from '../../../shared/center-attendance-requests.mjs';
+import {findRemovedRestDays,reconcileRemovedRestOvertime,isUnusedOvertime,scheduleDocuments,lockOvertimeDocuments,hasCurrentRestDay} from '../../../shared/center-schedule-overtime.mjs';
+import {prepareOvertimeConsumption,overtimeMinutes} from '../../../shared/center-overtime-consumption.mjs';
 import { getIO, requestAccessCheckinoutServer } from '../config/socket.js';
-import { emailService } from '../services/email.service.js';
 import { pool } from '../config/db.js';
-import { dev_pool } from '../config/dev_bd.js';
 import fs from 'fs/promises';
 
 const attendanceRequests=createAttendanceRequests(pool);
-
-const pushEmailQueue = (data) => {
-    emailService.pushToEmailQueue(data).catch((error) => {
-        reportCenterError('center-resources-human-service.store.controller.13',undefined);
-    });
-};
+const overtimeApprovals=createOvertimeApprovals(pool);
 
 const getHoraMarcacion = (value) => {
     if (!value || typeof value !== 'string') return null;
@@ -445,7 +441,7 @@ export const storeController = {
                         const [paps] = await connection.query(
                             `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
-             FROM bd_metasperu.tb_head_papeleta 
+             FROM tb_head_papeleta
              WHERE ID_PAP_TIPO_PAPELETA = 7 
              AND CODIGO_TIENDA = ?
              AND (
@@ -793,7 +789,7 @@ export const storeController = {
                         const [paps] = await connection.query(
                             `SELECT ID_HEAD_PAPELETA, CODIGO_PAPELETA, NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO, 
                     DATE_FORMAT(FECHA_DESDE, '%d-%m-%Y') AS FECHA_DESDE,DATE_FORMAT(FECHA_HASTA, '%d-%m-%Y') AS FECHA_HASTA, DESCRIPCION 
-             FROM bd_metasperu.tb_head_papeleta 
+             FROM tb_head_papeleta
              WHERE ID_PAP_TIPO_PAPELETA = 7 
              AND CODIGO_TIENDA = ?
              AND (
@@ -948,6 +944,9 @@ export const storeController = {
     postUpdateScheduleStore: async (req, res) => {
         // Recibimos los mismos datos que en el registro
         const { codigoTienda, fechaCabecera, rangoDias, datos, rango } = req.body;
+        if(typeof codigoTienda!=='string'||typeof rango!=='string'||!Array.isArray(datos)||!datos.length||datos.length>50){
+            return res.status(422).json({success:false,message:'El horario o su rango de fechas no es valido.'});
+        }
 
         const n = (val) => (val === undefined || val === null ? null : val);
 
@@ -955,6 +954,8 @@ export const storeController = {
 
         try {
             await connection.beginTransaction();
+            // Serialize edits for this store, including periods with no existing schedule rows.
+            await connection.execute("INSERT INTO tb_center_sequences (sequence_name,current_value) VALUES (?,0) ON DUPLICATE KEY UPDATE sequence_name=VALUES(sequence_name)",['schedule:'+codigoTienda]);
 
             const rango_fecha_old = rango.split(" ").map(fecha => {
                 const [anio, mes, dia] = fecha.split("-");
@@ -968,9 +969,15 @@ export const storeController = {
 
             const [existentes] = await connection.execute(
                 `SELECT ID_HORARIO FROM tb_horario_property 
-             WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?)`,
+             WHERE CODIGO_TIENDA = ? AND (RANGO_DIAS = ? OR RANGO_DIAS = ?) FOR UPDATE`,
                 [codigoTienda, rango, rango_fecha_old]
             );
+            const [previousRest]=await connection.execute(`SELECT dl.NUMERO_DOCUMENTO,d.FECHA_NUMBER,d.FECHA
+                FROM tb_dias_libre dl INNER JOIN tb_dias_horario d ON d.ID_DIAS=dl.ID_TRB_DIAS
+                INNER JOIN tb_horario_property h ON h.ID_HORARIO=dl.ID_TRB_HORARIO
+                WHERE h.CODIGO_TIENDA=? AND (h.RANGO_DIAS=? OR h.RANGO_DIAS=?)`,[codigoTienda,rango,rango_fecha_old]);
+            await lockOvertimeDocuments(connection,[...previousRest.map(row=>row.NUMERO_DOCUMENTO),...scheduleDocuments(datos)]);
+            const changedRestDays=findRemovedRestDays(previousRest,datos);
             if (existentes.length > 0) {
                 const idsABorrar = existentes.map(h => h.ID_HORARIO);
 
@@ -1077,8 +1084,11 @@ export const storeController = {
                 }
             }
 
+            const overtime=await reconcileRemovedRestOvertime(connection,changedRestDays,{userId:req.user.id,store:codigoTienda});
             await connection.commit();
-            res.status(200).json({ success: true, message: 'Horario actualizado correctamente' });
+            const balanceMessage=overtime.removed?` Se retiraron ${overtime.removed} saldos de descanso sin utilizar.`:'';
+            const preservedMessage=overtime.preserved?` Se conservaron ${overtime.preserved} saldos utilizados o relacionados con solicitudes.`:'';
+            res.status(200).json({ success: true, message: 'Horario actualizado correctamente.'+balanceMessage+preservedMessage,overtime });
 
         } catch (error) {
             if (connection) await connection.rollback();
@@ -1094,6 +1104,10 @@ export const storeController = {
 
         try {
             await connection.beginTransaction();
+            const verifiedDetails=await prepareOvertimeConsumption(connection,empleado?.nroDocumento,detalles);
+            if(verifiedDetails.length&&verifiedDetails.reduce((sum,row)=>sum+overtimeMinutes(row.hrExtraSolicitado),0)!==overtimeMinutes(papeleta?.horaSolicitada)){
+                throw Object.assign(new Error('El total solicitado no coincide con los saldos seleccionados.'),{status:422});
+            }
 
             // 1. VALIDACIÓN DE NEGOCIO: Evitar papeletas duplicadas para el mismo empleado/fecha
             // FOR UPDATE bloquea la fila hasta el commit/rollback, evitando que dos solicitudes
@@ -1147,7 +1161,7 @@ export const storeController = {
             const idHeadPapeleta = headerResult.insertId;
 
             // 4. INSERTAR DETALLE (tb_detalle_papeleta)
-            for (const det of detalles) {
+            for (const det of verifiedDetails) {
                 if (det.hrExtraSolicitado != "00:00") {
                     await connection.execute(
                         `INSERT INTO tb_detalle_papeleta (
@@ -1169,7 +1183,7 @@ export const storeController = {
                      ESTADO = ? ,
                      SELECCIONADO = ?
                      WHERE ID_HR_EXTRA = ?`,
-                        [det.hrExtraSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'utilizado' ? 1 : 0, det.idHrExtra]
+                        [det.totalSolicitado, det.hrExtraSobrante, nuevoEstado, nuevoEstado == 'utilizado' ? 1 : 0, det.idHrExtra]
                     );
                 }
 
@@ -1180,6 +1194,7 @@ export const storeController = {
 
         } catch (error) {
             await connection.rollback();
+            if(error.status)return res.status(error.status).json({success:false,message:error.message});
             const code = error.message.includes("Ya existe") ? 200 : 500;
             res.status(code).json({ success: false, error: error.message });
         } finally {
@@ -1211,327 +1226,10 @@ export const storeController = {
             });
         }
     },
-    postSolicitudHoursWorksEmployes: async (req, res) => {
-        const {
-            id_hora_extra,
-            nroDocumento,
-            nombreCompleto,
-            horasAcumuladas,
-            fecha,
-            codigoTienda,
-            comentario
-        } = req.body;
-
-        // Validaciones básicas
-        if (!nroDocumento || !horasAcumuladas || !fecha) {
-            return res.status(400).json({
-                success: false,
-                message: "Faltan datos obligatorios (Documento, Horas o Fecha)."
-            });
-        }
-
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // FOR UPDATE bloquea la fila hasta el commit/rollback: evita que dos solicitudes
-            // simultáneas para la misma hora extra pasen ambas la validación de duplicados.
-            const [existe] = await connection.execute(
-                `SELECT ID_HORA_EXTRA FROM tb_autorizar_hr_extra 
-             WHERE ID_HORA_EXTRA = ?
-             FOR UPDATE`,
-                [id_hora_extra]
-            );
-
-            if (existe.length > 0) {
-                await connection.rollback();
-                return res.status(409).json({
-                    success: false,
-                    message: "Ya existe una solicitud para esta hora extra."
-                });
-            }
-
-            const [rows] = await connection.execute(
-                `SELECT DESCRIPCION
-                    FROM bd_metasperu.tb_lista_tienda t
-                    WHERE t.SERIE_TIENDA = ?`,
-                [codigoTienda]
-            );
-
-            const storeDescription = rows[0];
-
-            const nivel = comentario == 'Tiene una papeleta ese dia.' ? 'RECURSOS HUMANOS' : 'GENERAL';
-
-            const [result] = await connection.execute(
-                `INSERT INTO tb_autorizar_hr_extra (
-                ID_HORA_EXTRA,
-                HR_EXTRA_ACOMULADO, 
-                NRO_DOCUMENTO_EMPLEADO, 
-                NOMBRE_COMPLETO, 
-                APROBADO, 
-                RECHAZADO, 
-                FECHA, 
-                CODIGO_TIENDA,  
-                NIVEL
-            ) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)`,
-                [
-                    id_hora_extra,
-                    horasAcumuladas, // "01:30"
-                    nroDocumento,
-                    nombreCompleto,
-                    fecha,           // "2026-04-24"
-                    codigoTienda,
-                    nivel || 'SISTEMAS'
-                ]
-            );
-
-            await connection.execute(
-                `UPDATE tb_hora_extra_empleado SET ESTADO = 'espera aprobacion' 
-                    WHERE ID_HR_EXTRA = ?;`,
-                [id_hora_extra]
-            );
-
-            await connection.commit();
-
-            pushEmailQueue({
-                email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
-                subject: `Solicitud de autorización de horas extras - ${(storeDescription || {}).DESCRIPCION || 'OFICINA'}`,
-                template: 'solicitudHorasExtras',
-                variables: {
-                    fecha: fecha,
-                    nombre: nombreCompleto,
-                    documento: nroDocumento,
-                    horas: horasAcumuladas,
-                    motivo: comentario
-                }
-            });
-
-            res.status(201).json({
-                success: true,
-                message: "Solicitud de autorización enviada con exito.",
-                id_hora_extra: id_hora_extra,
-                estado: 'espera aprobacion',
-                id: result.insertId
-            });
-
-        } catch (error) {
-            await connection.rollback();
-            reportCenterError('center-resources-human-service.store.controller.1355',error);
-            res.status(500).json({
-                success: false,
-                message: "Error interno del servidor al procesar la solicitud."
-            });
-        } finally {
-            connection.release();
-        }
-    },
-    postApprovalHoursWorksEmployes: async (req, res) => {
-        const { id_auth_hrx, id_hrx, aprobado, comentario, usuario, nombre_empleado, hr_extra, tienda, fecha } = req.body;
-
-        // Validación de entrada
-        if (!id_hrx) {
-            return res.status(200).json({ success: false, message: 'ID de autorización requerido.' });
-        }
-
-        const connection = await pool.getConnection();
-
-        try {
-            await connection.beginTransaction();
-
-            // 1. Uso de parámetros (?) para prevenir inyección SQL
-            // 2. Simplificación de la lógica de actualización
-
-            const queryCheck = `
-            SELECT ID_AUTH_HR_EXT, APROBADO, RECHAZADO 
-            FROM tb_autorizar_hr_extra 
-            WHERE ID_AUTH_HR_EXT = ?`;
-
-            const [resultCheck] = await connection.execute(queryCheck, [id_auth_hrx]);
-
-            if (resultCheck[0].RECHAZADO === 1) {
-                await connection.rollback();
-                return res.status(404).json({ success: false, message: 'Error en horas extras, consulte nuevamente las horas extras.' });
-            }
-
-            const query = `
-            UPDATE tb_autorizar_hr_extra 
-            SET APROBADO = ?, RECHAZADO = ?, COMENTARIO = ?, USUARIO_MODF = ? 
-            WHERE ID_AUTH_HR_EXT = ?`;
-
-            // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values = [aprobado ? 1 : 0, aprobado ? 0 : 1, comentario, usuario, id_auth_hrx];
-
-            const [result] = await connection.execute(query, values);
-
-            if (aprobado) {
-                pushEmailQueue({
-                    email: ['itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
-                    subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
-                    template: 'aprobacionHoraExtra',
-                    variables: {
-                        tienda: tienda,
-                        fecha: fecha,
-                        hrx: hr_extra,
-                        usuario_responsable: usuario
-                    }
-                });
-            } else {
-                pushEmailQueue({
-                    email: ['metasperurrhh@gmail.com', 'metasperurrhh2@gmail.com', 'itperu@metasperu.com', 'johnnygermano@metasperu.com', 'paulodosreis@metasperu.com', 'carlosmoron@metasperu.com'],
-                    subject: `Respuesta de autorización de horas extras - ${tienda} ${nombre_empleado}`,
-                    template: 'rechazoHoraExtra',
-                    variables: {
-                        tienda: tienda,
-                        fecha: fecha,
-                        hrx: hr_extra,
-                        comentario: comentario,
-                        usuario_responsable: usuario
-                    }
-                });
-            }
-
-            const query_hrx = `
-            UPDATE tb_hora_extra_empleado 
-            SET ESTADO = ?, APROBADO = ?, ISAPROBACION = ? 
-            WHERE ID_HR_EXTRA = ?`;
-
-            // Si es aprobado: aprobado=1, rechazado=0. Si no: aprobado=0, rechazado=1
-            const values_hrx = [aprobado ? 'correcto' : 'rechazado', aprobado ? 1 : 0, aprobado ? 0 : 1, id_hrx];
-            console.log("center-resources-human-service: evento procesado (store.controller.js:1436)");
-            await connection.execute(query_hrx, values_hrx);
-
-            if (result.affectedRows === 0) {
-                await connection.rollback();
-                return res.status(404).json({ success: false, message: 'Registro no encontrado.' });
-            }
-
-            await connection.commit();
-
-            res.status(200).json({
-                success: true,
-                message: aprobado ? 'Autorización aprobada.' : 'Autorización rechazada.',
-            });
-
-        } catch (error) {
-            await connection.rollback();
-            reportCenterError('center-resources-human-service.store.controller.1453',error);
-            res.status(500).json({
-                success: false,
-                message: 'Error interno del servidor al registrar la respuesta.'
-            });
-        } finally {
-            // 3. SIEMPRE liberar la conexión al pool
-            connection.release();
-        }
-    },
-    getApprovalHoursWorksEmployes: async (req, res) => {
-        const { codigoTienda, nivel } = req.body;
-
-        const connection = await pool.getConnection();
-
-        try {
-            const query = `
-            SELECT ID_AUTH_HR_EXT,HR_EXTRA_ACOMULADO,NRO_DOCUMENTO_EMPLEADO,NOMBRE_COMPLETO,APROBADO,RECHAZADO,FECHA,DESCRIPCION,ID_HORA_EXTRA,COMENTARIO,USUARIO_MODF 
-            FROM tb_autorizar_hr_extra h
-            INNER JOIN tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA 
-            WHERE h.CODIGO_TIENDA = ? AND h.NIVEL = ?
-        `;
-
-            const nivelConsulta = nivel == 'RRHH' ? 'RECURSOS HUMANOS' : 'GENERAL';
-
-            const values = [codigoTienda, nivelConsulta];
-
-            const [result] = await connection.execute(query, values);
-
-            const parseData = result.map(item => {
-                return {
-                    id_auth_hr_ext: item.ID_AUTH_HR_EXT,
-                    hr_extra: item.HR_EXTRA_ACOMULADO,
-                    nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
-                    nombre_completo: item.NOMBRE_COMPLETO,
-                    estado_auth: item.APROBADO == 1 ? 'aprobado' : item.RECHAZADO == 1 ? 'rechazado' : 'espera',
-                    fecha: item.FECHA,
-                    descripcion: item.DESCRIPCION,
-                    id_hora_extra: item.ID_HORA_EXTRA,
-                    comentario: item.COMENTARIO,
-                    usuario_modf: item.USUARIO_MODF
-                }
-            });
-
-            res.status(200).json({
-                success: true,
-                data: parseData,
-            });
-
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error interno del servidor.'
-            });
-        } finally {
-            if (connection) connection.release();
-        }
-    },
-    getAllApprovalHoursWorksEmployes: async (req, res) => {
-        let connection;
-        try {
-            // 1. Obtener conexión
-            connection = await pool.getConnection();
-
-            const query = `
-              SELECT 
-                ID_AUTH_HR_EXT, 
-                HR_EXTRA_ACOMULADO, 
-                NRO_DOCUMENTO_EMPLEADO, 
-                NOMBRE_COMPLETO, 
-                APROBADO, 
-                RECHAZADO, 
-                FECHA, 
-                DESCRIPCION, 
-                ID_HORA_EXTRA, 
-                COMENTARIO, 
-                USUARIO_MODF, 
-                EMAIL,
-                CODIGO_TIENDA 
-            FROM bd_metasperu.tb_autorizar_hr_extra h
-            INNER JOIN bd_metasperu.tb_lista_tienda t ON t.SERIE_TIENDA = h.CODIGO_TIENDA OR t.OLD_SERIE_TIENDA = h.CODIGO_TIENDA
-            ORDER BY 
-                /* Esta condición devuelve 0 si es verdad y 1 si es falso, 
-                   por eso los que cumplen aparecen primero */
-                (h.APROBADO = 0 AND h.RECHAZADO = 0) DESC, 
-                h.FECHA DESC;
-        `;
-
-            // 2. Ejecutar consulta
-            const [result] = await connection.execute(query);
-
-            // 3. Mapeo de datos (más eficiente)
-            const parseData = result.map(item => ({
-                id_auth_hr_ext: item.ID_AUTH_HR_EXT,
-                hr_extra: item.HR_EXTRA_ACOMULADO,
-                nro_documento: item.NRO_DOCUMENTO_EMPLEADO,
-                nombre_completo: item.NOMBRE_COMPLETO,
-                estado_auth: item.APROBADO === 1 ? 'aprobado' : (item.RECHAZADO === 1 ? 'rechazado' : 'espera'),
-                fecha: item.FECHA,
-                descripcion: item.DESCRIPCION || 'OFICINA',
-                id_hora_extra: item.ID_HORA_EXTRA,
-                comentario: item.COMENTARIO,
-                usuario_modf: item.USUARIO_MODF,
-                store_code: item.CODIGO_TIENDA || '',
-                email: item.EMAIL || ''
-            }));
-
-            res.status(200).json({ success: true, data: parseData });
-
-        } catch (error) {
-            reportCenterError('center-resources-human-service.store.controller.1563',error);
-            res.status(500).json({ success: false, message: 'Error al consultar autorizaciones.' });
-        } finally {
-            // 4. PUNTO CRÍTICO: Liberar conexión siempre
-            if (connection) connection.release();
-        }
-    },
+    postSolicitudHoursWorksEmployes: overtimeApprovals.request,
+    postApprovalHoursWorksEmployes: overtimeApprovals.decide,
+    getApprovalHoursWorksEmployes: overtimeApprovals.list,
+    getAllApprovalHoursWorksEmployes: overtimeApprovals.list,
     getAllBallotEmployesStore: async (req, res) => {
         const { old_codestore, codestore } = req.body;
         const currentYear = new Date().getFullYear();
@@ -2266,8 +1964,8 @@ const obtenerDiasLibresPorDocumentoYFecha = async (documentos, fechas) => {
             DL.NUMERO_DOCUMENTO,     
             DH.FECHA_NUMBER,     
             DH.FECHA 
-        FROM bd_metasperu.TB_DIAS_LIBRE DL 
-        INNER JOIN bd_metasperu.TB_DIAS_HORARIO DH     
+        FROM TB_DIAS_LIBRE DL
+        INNER JOIN TB_DIAS_HORARIO DH
             ON DH.ID_DIAS = DL.ID_TRB_DIAS 
 
         WHERE DL.NUMERO_DOCUMENTO IN (?)
@@ -2391,8 +2089,18 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         return { inserted: false, reason: 'invalid_params' };
     }
 
+    let connection;
     try {
-        const [existe] = await pool.query(`
+        connection=await pool.getConnection();
+        await connection.beginTransaction();
+        await lockOvertimeDocuments(connection,[nroDocumento]);
+        if(/^\d{4}-\d{2}-\d{2}$/.test(fechaBase)) {
+            const currentRest=await hasCurrentRestDay(connection,nroDocumento,fechaBase);
+            if(currentRest!==(observacion==='Trabajo en su dia de descanso.')) {
+                await connection.rollback();return {inserted:false,reason:'schedule_changed'};
+            }
+        }
+        const [existe] = await connection.query(`
             SELECT ID_HR_EXTRA
             FROM tb_hora_extra_empleado
             WHERE NRO_DOCUMENTO_EMPLEADO = ?
@@ -2405,12 +2113,12 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
             console.log('guardarEnBD - ya existe:');
 
 
-            return { inserted: false, reason: 'exists' };
+            await connection.rollback();return { inserted: false, reason: 'exists' };
         }
 
         console.log('guardarEnBD - insertando:');
 
-        const [result] = await pool.query(`
+        const [result] = await connection.query(`
             INSERT INTO tb_hora_extra_empleado 
             (NRO_DOCUMENTO_EMPLEADO, HR_EXTRA_ACUMULADO, HR_EXTRA_SOLICITADO, 
              HR_EXTRA_SOBRANTE, ESTADO, APROBADO, SELECCIONADO, FECHA, FECHA_MODIFICACION, OBSERVACION, ISAPROBACION)
@@ -2429,8 +2137,9 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
 
         console.log('guardarEnBD insertado:');
 
-        return { inserted: result.affectedRows > 0, id: result.insertId };
+        await connection.commit();return { inserted: result.affectedRows > 0, id: result.insertId };
     } catch (err) {
+        if(connection)await connection.rollback();
         // Defensa final contra condiciones de carrera: si dos llamadas concurrentes a
         // guardarEnBD pasan ambas el SELECT de "no existe" antes de que la primera inserte
         // (por ejemplo, el mismo webhook/proceso disparado dos veces), la segunda insercion
@@ -2443,8 +2152,8 @@ const guardarEnBD = async (nroDocumento, fechaRef, excesoDecimal, observacion = 
         }
 
         reportCenterError('center-resources-human-service.store.controller.2490',undefined);
-        return { inserted: false, error: err.message };
-    }
+        return { inserted: false, error: "No se pudo registrar el saldo." };
+    } finally {if(connection)connection.release();}
 }
 
 /**
@@ -2576,6 +2285,11 @@ const validarHoraExtraPapeleta = async (horasExtras = []) => {
             const { ID_HR_EXTRA, FECHA, NRO_DOCUMENTO_EMPLEADO } = item || {};
 
             if (!ID_HR_EXTRA) continue;
+            const [[current]]=await connection.execute(`SELECT h.*,
+                EXISTS(SELECT 1 FROM tb_detalle_papeleta d WHERE d.DET_ID_HR_EXTRA=h.ID_HR_EXTRA) AS has_ballot,
+                EXISTS(SELECT 1 FROM tb_autorizar_hr_extra a WHERE a.ID_HORA_EXTRA=h.ID_HR_EXTRA) AS has_authorization
+                FROM tb_hora_extra_empleado h WHERE h.ID_HR_EXTRA=? FOR UPDATE`,[ID_HR_EXTRA]);
+            if(!current||!isUnusedOvertime(current,{hasBallot:Boolean(current.has_ballot),hasAuthorization:Boolean(current.has_authorization)}))continue;
 
             const [rows] = await connection.query(
                 `SELECT 1 
@@ -2595,7 +2309,7 @@ const validarHoraExtraPapeleta = async (horasExtras = []) => {
         // 3. Ejecutar los DELETE solo de los identificados
         for (const id of idsAEliminar) {
             await connection.query(
-                `DELETE FROM tb_hora_extra_empleado WHERE ID_HR_EXTRA = ?`,
+                `DELETE FROM tb_hora_extra_empleado WHERE ID_HR_EXTRA = ? AND LOWER(TRIM(ESTADO))<>'utilizado' AND TIME_TO_SEC(HR_EXTRA_SOLICITADO)=0`,
                 [id]
             );
         }

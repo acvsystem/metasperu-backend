@@ -11,7 +11,6 @@ import cors from 'cors';
 import compression from 'compression';
 import { initSocket, getIO } from './config/socket.js';
 import { pool } from './config/db.js';
-import { dev_pool } from './config/dev_bd.js';
 import rrhhRoutes from './routes/resources-human.routes.js';
 import { emailService } from './services/email.service.js';
 import cron from 'node-cron';
@@ -114,4 +113,4 @@ app.use('/s5/center/resources/human', rrhhRoutes);
 app.use(centerErrorHandler);
 
 export { app,httpServer };
-await startCenterRuntime({moduleUrl:import.meta.url,app,server:httpServer,io:getIO(),pools:[pool,dev_pool],mail:emailService,port:3004,service:'center-resources-human-service'});
+await startCenterRuntime({moduleUrl:import.meta.url,app,server:httpServer,io:getIO(),pools:[pool],mail:emailService,port:3004,service:'center-resources-human-service'});

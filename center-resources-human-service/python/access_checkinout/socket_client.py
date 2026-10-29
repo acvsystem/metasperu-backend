@@ -1,5 +1,5 @@
 from __future__ import annotations
-from center_agent_auth import agent_token
+from center_agent_auth import agent_token, agent_api_origin
 
 import os
 from typing import Any
@@ -9,7 +9,7 @@ import socketio
 from access_reader import AccessConfigurationError, fetch_checkins
 
 
-SOCKET_URL = os.getenv("SOCKET_URL", "https://api.metasperu.net.pe")
+SOCKET_URL = agent_api_origin()
 SOCKET_PATH = os.getenv("SOCKET_PATH", "s5/socket")
 REGISTER_EVENT = os.getenv("REGISTER_EVENT", "py_register_server_access_checkinout")
 REQUEST_EVENT = os.getenv("REQUEST_EVENT", "py_access_checkinout")

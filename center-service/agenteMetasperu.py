@@ -1,4 +1,4 @@
-from center_agent_auth import agent_token, agent_post
+from center_agent_auth import agent_token, agent_post, agent_api_origin
 import socketio
 import pyodbc
 import requests
@@ -15,13 +15,12 @@ from getmac import get_mac_address as gma
 
 sio = socketio.Client()
 
-URL_METAS = 'https://api.metasperu.net.pe'
+URL_METAS = agent_api_origin()
 SOCKET_PATH = '/s1/socket/'
 
 
 res = agent_post(URL_METAS + '/s1/center/api/parameters/store',data={"mac":gma()})
 configuration = res.json()
-print('configuration',configuration)
 
 
 if len(configuration) > 0:

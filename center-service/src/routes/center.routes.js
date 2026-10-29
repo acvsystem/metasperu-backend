@@ -33,7 +33,7 @@ router.get('/api/exports/:id',exportsController.get);
 router.post('/api/exports/:id/cancel',exportsController.cancel);
 router.get('/api/exports/:id/download',exportsController.download);
 
-const LOG_TABLE = 'bd_metasperu.tb_api_logs';
+const LOG_TABLE = 'tb_api_logs';
 const ALLOWED_LOG_SERVICES = new Set([
     'auth-service',
     'center-service',
