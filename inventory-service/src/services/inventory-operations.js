@@ -74,10 +74,7 @@ export async function editCount(pool, body, user) {
     id <= 0 ||
     body.cantidad === null ||
     body.cantidad === '' ||
-    !['number', 'string'].includes(typeof body.cantidad) ||
-    !Number.isSafeInteger(quantity) ||
-    quantity < 0 ||
-    quantity > 999999999
+    !['number', 'string'].includes(typeof body.cantidad)
   ) {
     throw fail(400, 'Ingrese un ID válido y una cantidad entera entre 0 y 999999999.');
   }
