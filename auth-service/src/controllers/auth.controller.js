@@ -120,7 +120,7 @@ export const checkSessionCenter = async (req, res) => {
 
     res.json(rows[0]);
   } catch (error) {
-    res.status(500).json({ message: 'Error verificando sesión' });
+    res.status(500).json({ message: 'Error verificando sesión', error: error.message });
   }
 };
 
