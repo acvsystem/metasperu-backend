@@ -109,19 +109,29 @@ export const loginCenter = async (req, res) => {
 };
 
 export const checkSessionCenter = async (req, res) => {
-  console.log(req.user);
+  const userId = Number(req.user?.id);
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(401).json({ message: 'No autorizado' });
+  }
+
   try {
-    // req.user viene inyectado desde el middleware
-    const [rows] = await poolCenter.query(
-      'SELECT ID_LOGIN, USUARIO, EMAIL, NIVEL FROM tb_login WHERE ID_LOGIN = ?',
-      [req.user.id],
+    const [[user]] = await poolCenter.query(
+      `SELECT ID_LOGIN AS id, USUARIO AS usuario, EMAIL AS email, NIVEL AS nivel
+         FROM tb_login
+        WHERE ID_LOGIN = ?
+        LIMIT 1`,
+      [userId],
     );
 
-    if (rows.length === 0) return res.status(404).json({ message: 'Usuario no existe' });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no existe' });
+    }
 
-    res.json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Error verificando sesión', error: error.message });
+    return res.json(user);
+  } catch (err) {
+    console.error('getMe error:', err);
+    return res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
