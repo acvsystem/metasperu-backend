@@ -17,7 +17,10 @@ export function createApp() {
   app.set('trust proxy', hops);
   app.disable('x-powered-by');
   app.use(helmet());
-  app.use(cors({ origin: "*", credentials: true }));
+  app.use(cors({
+    origin: (origin, callback) => callback(null, true), // Permite cualquier origen
+    credentials: true
+  }));
   app.use(origins.protect);
   app.use(cookieParser());
   app.use(express.json({ limit: '16kb' }));
