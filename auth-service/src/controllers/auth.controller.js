@@ -109,6 +109,7 @@ export const loginCenter = async (req, res) => {
 };
 
 export const checkSessionCenter = async (req, res) => {
+  console.log(req.user);
   try {
     // req.user viene inyectado desde el middleware
     const [rows] = await poolCenter.query(
