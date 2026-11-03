@@ -1,11 +1,11 @@
 {
-    "name": "metas-inventory-server",
+    "name": "central-inventory-service",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "apps.js",
     "type": "module",
     "scripts": {
-        "start": "node index.js",
-        "dev": "nodemon index.js"
+        "start": "node apps.js",
+        "dev": "nodemon apps.js"
     },
     "dependencies": {
         "express": "^4.18.2",
