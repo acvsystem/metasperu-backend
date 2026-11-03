@@ -227,7 +227,7 @@ const executeVerificationSunat = async () => {
   }
 };
 
-const PORT = 3002;
+const PORT = 3004;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });
