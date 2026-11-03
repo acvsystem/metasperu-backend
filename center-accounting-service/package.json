@@ -1,5 +1,5 @@
 {
-    "name": "metas-inventory-server",
+    "name": "center-accounting-service",
     "version": "1.0.0",
     "main": "src/app.js",
     "type": "module",
