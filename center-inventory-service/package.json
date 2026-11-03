@@ -1,11 +1,11 @@
 {
     "name": "central-inventory-service",
     "version": "1.0.0",
-    "main": "apps.js",
+    "main": "src/app.js",
     "type": "module",
     "scripts": {
-        "start": "node apps.js",
-        "dev": "nodemon apps.js"
+        "start": "node src/app.js",
+        "dev": "nodemon src/app.js"
     },
     "dependencies": {
         "express": "^4.18.2",
