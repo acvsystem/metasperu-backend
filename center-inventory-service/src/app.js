@@ -24,7 +24,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 import inventoryRoutes from './routes/inventory.routes.js';
 app.use('/s4/center/inventory', inventoryRoutes);
 
-const PORT = 3003;
+const PORT = 3002;
 httpServer.listen(PORT, () => {
     console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
 });
