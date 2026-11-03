@@ -117,7 +117,7 @@ import accountingRoutes from './routes/accounting.routes.js';
 app.use('/s6/center/accounting', accountingRoutes);
 
 // Servidor
-const PORT = 3006;
+const PORT = 3001;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Servidor listo en http://localhost:${PORT}`);
   console.log(`📅 Tarea programada configurada para las 09:00 AM (Lima)`);
