@@ -61,7 +61,7 @@ export const logout = async (req, res) => {
 
 export const loginCenter = async (req, res) => {
   const { username, password } = req.body;
-
+  console.log('loginCenter request body:', req.body);
   try {
     const [rows] = await poolCenter.query(
       `SELECT ID_LOGIN,PASSWORD_NW,USUARIO,DEFAULT_PAGE,TB_LOGIN.NIVEL,NOMBRE_MENU,RUTA,TB_LOGIN.EMAIL,OLD_CODE_STORE,CODE_STORE,TB_LISTA_TIENDA.UNID_SERVICIO
@@ -104,7 +104,7 @@ export const loginCenter = async (req, res) => {
       menu: rows.map((r) => ({ nombre: r.NOMBRE_MENU, ruta: r.RUTA })),
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor' });
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
@@ -131,7 +131,7 @@ export const checkSessionCenter = async (req, res) => {
     return res.json(user);
   } catch (err) {
     console.error('getMe error:', err);
-    return res.status(500).json({ message: 'Error interno del servidor' });
+    return res.status(500).json({ message: 'Error interno del servidor', error: err.message });
   }
 };
 
