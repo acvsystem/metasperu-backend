@@ -71,6 +71,9 @@ export const loginCenter = async (req, res) => {
                 LEFT JOIN bd_metasperu.TB_LISTA_TIENDA ON  bd_metasperu.TB_LISTA_TIENDA.SERIE_TIENDA = TB_LOGIN.CODE_STORE WHERE usuario = ?`,
       [username],
     );
+
+     console.log(rows);
+
     if (rows.length === 0) return res.status(401).json({ message: 'Credenciales inválidas' });
 
     const user = rows[0];
