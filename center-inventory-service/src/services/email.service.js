@@ -1,12 +1,10 @@
 import amqp from 'amqplib';
-import dotenv from 'dotenv';
-dotenv.config();
 
 export const emailService = {
 
     async pushToEmailQueue(data, archivo = null) {
         console.log("Enviando mensaje a la cola de correos:", data);
-        const conn = await amqp.connect(process.env.AMQP_URL);
+        const conn = await amqp.connect('amqp://dunamisserver:J4s0nd34d@host.docker.internal:5672');
         const channel = await conn.createChannel();
         const queue = 'email_queue';
 
