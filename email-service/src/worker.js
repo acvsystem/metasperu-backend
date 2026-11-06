@@ -6,7 +6,7 @@ async function startWorker() {
     try {
 
         // 1. Conexión al servidor de mensajería (RabbitMQ)
-        const connection = await amqp.connect('amqp://dunamisserver:J4s0nd34d@192.168.0.200:5672');
+        const connection = await amqp.connect(process.env.AMQP_URL);
         const channel = await connection.createChannel();
 
         const queue = 'email_queue';
