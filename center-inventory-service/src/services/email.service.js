@@ -1,4 +1,6 @@
 import amqp from 'amqplib';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export const emailService = {
 
