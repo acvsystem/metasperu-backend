@@ -136,7 +136,7 @@ router.get(
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get(
   '/request/store',
-  verifyToken,
+  
   requireRoles('administrador', 'auditor'),
   getInventoryReqStore,
 );
