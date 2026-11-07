@@ -50,7 +50,6 @@ export function createApp() {
 
 if (isProcessEntrypoint(import.meta.url)) {
   const server = createServer(createApp());
-  const PORT = 3001;
   initSocket(server);
-  server.listen(PORT, () => console.log(`🚀 Servidor listo en http://localhost:${PORT}`));
+  server.listen(Number(process.env.PORT || 3005), process.env.HOST || '0.0.0.0', () => console.log('inventory-service iniciado.'));
 }
