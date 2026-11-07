@@ -119,7 +119,7 @@ router.post(
   requireRoles('administrador', 'auditor', 'pocket'),
   syncBulkScans,
 );
-router.get('/stores', verifyToken, requireRoles('administrador', 'auditor', 'pocket'), getStores);
+router.get('/stores',  requireRoles('administrador', 'auditor', 'pocket'), getStores);
 router.get(
   '/pocket/scan/:session_code',
   verifyToken,
@@ -136,7 +136,7 @@ router.get(
 // --- RUTAS PARA INVENTARIO DE TIENDA (WEB) ---
 router.get(
   '/request/store',
-  
+  verifyToken,
   requireRoles('administrador', 'auditor'),
   getInventoryReqStore,
 );
