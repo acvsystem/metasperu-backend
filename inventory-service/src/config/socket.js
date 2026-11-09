@@ -85,9 +85,10 @@ export const initSocket = (server) => {
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       socket.data.token = token;
       try {
-        console.log("Verificando token de importador para socket...", socket.data);
+       
         socket.data.importer = verifyImporter(token);
       } catch {
+         console.log("Verificando token de importador para socket...", socket.data);
         socket.data.user = await security.authenticate(token);
       }
       next();
