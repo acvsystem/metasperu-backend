@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getPocketPerformance } from '../controllers/pocket.controller.js';
+import { agentController } from '../controllers/agente.controller.js'
 import {
   createSession,
   registerScan,
@@ -284,6 +285,8 @@ router.delete(
   requireRoles('administrador'),
   storeController.deleteTienda,
 );
+
+router.post('/config/agente', agentController.getConfiguration);
 
 // --- RUTAS POCKET
 router.put(

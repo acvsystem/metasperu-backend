@@ -28,14 +28,14 @@ export function createInventorySecurity({ jwt, pool, secret }) {
         audience: options.audience,
         subject: String(user.id),
         jwtid: jti,
-        expiresIn: '8h',
+        expiresIn: '18h',
       });
       await pool.query(
         `INSERT INTO inventory_auth_sessions (id, user_id, credential_hash, expires_at)
-                VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))`,
+                VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 18 HOUR))`,
         [jti, user.id, fingerprint(user.password)],
       );
-      return { token, maxAge: 8 * 60 * 60 * 1000 };
+      return { token, maxAge: 18 * 60 * 60 * 1000 };
     },
     async authenticate(token) {
       const claims = decode(token);
