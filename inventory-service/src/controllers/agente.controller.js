@@ -22,7 +22,7 @@ export const agentController = {
             const [configuration] = await pool.execute(
                 `SELECT serie,nombre_tienda,database_instance,database_name,mac FROM tiendas td 
                 INNER JOIN conf_plugin_store cgp on cgp.fk_id_tienda = td.id where UPPER(mac) = ?;`,
-                [mac]
+                [mac.toUpperCase()]
             );
 
             if (configuration.length === 0) {
