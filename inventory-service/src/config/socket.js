@@ -72,17 +72,16 @@ export const trackSocketEmit = (event, payload = {}) => {
 
 export const initSocket = (server) => {
   io = new Server(server, {
-  //  allowRequest: (req, callback) => callback(null, origins.accepts(req.headers.origin)),
+    allowRequest: (req, callback) => callback(null, origins.accepts(req.headers.origin)),
     cors: {
       origin: origins.cors,
-     // credentials: true,
+      credentials: true,
       methods: ['GET', 'POST'],
     },
   });
 
   io.use(async (socket, next) => {
     try {
-      console.log('Verificando sesión de socket...', socket);
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       socket.data.token = token;
       try {
