@@ -75,12 +75,12 @@ export const initSocket = (server) => {
     allowRequest: (req, callback) => callback(null, origins.accepts(req.headers.origin)),
     cors: {
       origin: origins.cors,
-      credentials: true,
+     // credentials: true,
       methods: ['GET', 'POST'],
     },
   });
 
-  io.use(async (socket, next) => {
+ /* io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       socket.data.token = token;
@@ -93,7 +93,7 @@ export const initSocket = (server) => {
     } catch {
       next(new Error('Sesión inválida o expirada.'));
     }
-  });
+  });*/
 
   io.on('connection', (socket) => {
     countEvent('connection');
