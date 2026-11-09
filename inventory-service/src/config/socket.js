@@ -80,7 +80,7 @@ export const initSocket = (server) => {
     },
   });
 
-  io.use(async (socket, next) => {
+ /* io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       socket.data.token = token;
@@ -93,7 +93,7 @@ export const initSocket = (server) => {
     } catch {
       next(new Error('Sesión inválida o expirada.'));
     }
-  });
+  });*/
 
   io.on('connection', (socket) => {
     countEvent('connection');
