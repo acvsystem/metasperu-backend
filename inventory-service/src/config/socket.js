@@ -72,7 +72,7 @@ export const trackSocketEmit = (event, payload = {}) => {
 
 export const initSocket = (server) => {
   io = new Server(server, {
-    allowRequest: (req, callback) => callback(null, origins.accepts(req.headers.origin)),
+  //  allowRequest: (req, callback) => callback(null, origins.accepts(req.headers.origin)),
     cors: {
       origin: origins.cors,
      // credentials: true,
@@ -80,8 +80,9 @@ export const initSocket = (server) => {
     },
   });
 
- /* io.use(async (socket, next) => {
+  io.use(async (socket, next) => {
     try {
+      console.log('Verificando sesión de socket...', socket);
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       socket.data.token = token;
       try {
@@ -93,7 +94,7 @@ export const initSocket = (server) => {
     } catch {
       next(new Error('Sesión inválida o expirada.'));
     }
-  });*/
+  });
 
   io.on('connection', (socket) => {
     countEvent('connection');
