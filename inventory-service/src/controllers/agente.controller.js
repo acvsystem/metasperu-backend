@@ -5,6 +5,7 @@ import { pool } from '../config/db.js';
 export const agentController = {
     // LISTAR
     getConfiguration: async (req, res) => {
+        console.log("Recibiendo solicitud de configuración del agente...",req.body);
         const mac =
             typeof req.body?.mac === "string"
                 ? req.body.mac.trim().toUpperCase()
