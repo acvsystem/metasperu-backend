@@ -21,7 +21,7 @@ export const agentController = {
         try {
             const [configuration] = await pool.execute(
                 `SELECT serie,nombre_tienda,database_instance,database_name,mac FROM tiendas td 
-                INNER JOIN conf_plugin_store cgp on cgp.fk_id_tienda = td.id where UPPER(cgp.mac) = ?;`,
+                INNER JOIN conf_plugin_store cgp on cgp.fk_id_tienda = td.id where UPPER(mac) = ?;`,
                 [mac.toUpperCase()]
             );
 
@@ -41,15 +41,14 @@ export const agentController = {
                 console.error("INVENTORY_IMPORT_SECRET no está configurado correctamente.");
                 return res.status(500).json({ message: "Configuración del servidor incompleta." });
             }
-            const options = { algorithms: ['HS256'], issuer: 'inventory-auth', audience: 'inventory-api' };
+
             const token = jwt.sign(
                 { kind: "store-import", store: config.serie, mac: config.mac },
                 secret,
                 {
                     algorithm: "HS256",
-                    issuer: options.issuer,
-                    audience: options.audience,
-                    subject: String(1),
+                    issuer: "inventory-importer",
+                    audience: "inventory-import",
                     expiresIn: "24h",
                 }
             );
