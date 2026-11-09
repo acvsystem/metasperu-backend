@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 export const agentController = {
     // LISTAR
     getConfiguration: async (req, res) => {
-        console.log("Recibiendo solicitud de configuración del agente...",req.body);
+        console.log("Recibiendo solicitud de configuración del agente...", req.body);
         const mac =
             typeof req.body?.mac === "string"
                 ? req.body.mac.trim().toUpperCase()
@@ -41,14 +41,15 @@ export const agentController = {
                 console.error("INVENTORY_IMPORT_SECRET no está configurado correctamente.");
                 return res.status(500).json({ message: "Configuración del servidor incompleta." });
             }
-
+            const options = { algorithms: ['HS256'], issuer: 'inventory-auth', audience: 'inventory-api' };
             const token = jwt.sign(
                 { kind: "store-import", store: config.serie, mac: config.mac },
                 secret,
                 {
                     algorithm: "HS256",
-                    issuer: "inventory-importer",
-                    audience: "inventory-import",
+                    issuer: options.issuer,
+                    audience: options.audience,
+                    subject: String(1),
                     expiresIn: "24h",
                 }
             );
