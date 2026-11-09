@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { pool } from '../config/db.js';
-
+import jwt from "jsonwebtoken";
 
 export const agentController = {
     // LISTAR
@@ -21,7 +21,7 @@ export const agentController = {
         try {
             const [configuration] = await pool.execute(
                 `SELECT serie,nombre_tienda,database_instance,database_name,mac FROM tiendas td 
-                INNER JOIN conf_plugin_store cgp on cgp.fk_id_tienda = td.id where UPPER(mac) = ?;`,
+                INNER JOIN conf_plugin_store cgp on cgp.fk_id_tienda = td.id where UPPER(cgp.mac) = ?;`,
                 [mac.toUpperCase()]
             );
 
