@@ -82,7 +82,7 @@ export const initSocket = (server) => {
 
   io.use(async (socket, next) => {
     try {
-      console.log("Verificando token de importador para socket...", socket.handshake.auth?.token, readSessionToken(socket.request));
+      console.log("Verificando token de importador para socket...", socket.data);
       const token = socket.handshake.auth?.token || readSessionToken(socket.request);
       
       socket.data.token = token;
