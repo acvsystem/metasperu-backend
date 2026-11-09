@@ -119,7 +119,7 @@ router.post(
   requireRoles('administrador', 'auditor', 'pocket'),
   syncBulkScans,
 );
-router.get('/stores', getStores);
+router.get('/stores', verifyToken, getStores);
 router.get(
   '/pocket/scan/:session_code',
   verifyToken,
