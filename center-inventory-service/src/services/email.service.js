@@ -4,7 +4,7 @@ export const emailService = {
 
     async pushToEmailQueue(data, archivo = null) {
         console.log("Enviando mensaje a la cola de correos:", data);
-        const conn = await amqp.connect('amqp://dunamisserver:J4s0nd34d@host.docker.internal:5672');
+        const conn = await amqp.connect('amqp://dunamisserver:J4s0nd34d@rabbitmq:5672');
         const channel = await conn.createChannel();
         const queue = 'email_queue';
 
