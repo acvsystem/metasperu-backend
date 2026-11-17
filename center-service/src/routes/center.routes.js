@@ -243,5 +243,8 @@ router.get('/api/reports/informe-rendimiento', verifyToken, reportsController.in
 // ---- RUTAS NOTIFICACIONES
 router.post('/api/sunat-notification', storeController.callNotificationSunat);
 
+// ---- COMPROBACION DE COMPROBANTES EN SERVIDOR COE_DATA
+router.post('/api/notificacion-diferencias-documentos-bds', storeController.callNotificationdiferenciasDocumentosBDS);
+router.post('/api/verificacion-diferencias-documentos-bds', storeController.callVerificaciondiferenciasDocumentosBDS);
 
 export default router;

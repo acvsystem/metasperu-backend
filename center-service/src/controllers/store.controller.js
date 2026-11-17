@@ -335,6 +335,82 @@ export const storeController = {
             console.error('Error al procesar los datos:', error);
             throw error;
         }
+    },
+    callNotificationdiferenciasDocumentosBDS: async (req, res) => {
+        try {
+            // Soporta tanto { socketId, diferencias: [...] } como el array directo [...]
+            const socketId = req.body.socketId || req.query.socketId || null;
+            const diferencias = Array.isArray(req.body)
+                ? req.body
+                : (req.body.diferencias || []);
+
+            const io = getIO(); // O tu instancia global de Socket.IO
+
+            const payload = {
+                ok: true,
+                tieneDiferencias: diferencias.length > 0,
+                total: diferencias.length,
+                mensaje: diferencias.length > 0
+                    ? `Se encontraron ${diferencias.length} comprobante(s) faltante(s) en COE_DATA.`
+                    : 'Todo cuadrado: no hay comprobantes faltantes en COE_DATA.',
+                data: diferencias
+            };
+
+            if (io) {
+                if (socketId) {
+                    // Envía SOLO al usuario del frontend que solicitó la verificación
+                    io.to(socketId).emit('resultado_verificacion_documentos_bds', payload);
+                } else {
+                    // Fallback: si no llegó socketId (ej. ejecución automática por cron), notifica general
+                    // io.emit('resultado_verificacion_documentos_bds', payload);
+                }
+            }
+
+            return res.status(200).json({
+                status: 'ok',
+                recibidos: diferencias.length
+            });
+
+        } catch (error) {
+            console.error('Error en callNotificationdiferenciasDocumentosBDS:', error);
+            return res.status(500).json({
+                status: 'error',
+                message: 'Error interno al procesar la notificación de documentos.'
+            });
+        }
+    },
+    callVerificaciondiferenciasDocumentosBDS: async (req, res) => {
+        try {
+            // Obtiene el socketId enviado por el frontend (desde body, query o headers)
+            const socketId = req.body?.socketId || req.query?.socketId || req.headers['x-socket-id'] || null;
+
+            const io = getIO(); // O tu instancia global de Socket.IO
+
+            if (!io) {
+                return res.status(500).json({
+                    ok: false,
+                    message: 'Instancia de Socket.IO no disponible en el servidor.'
+                });
+            }
+
+            // Emite el evento hacia el cliente Python pasándole el socketId del solicitante
+            io.emit('py_verificacion_documentos_dbs', {
+                socketId: socketId
+            });
+
+            return res.status(200).json({
+                ok: true,
+                message: 'Solicitud de verificación enviada al servicio de auditoría.',
+                socketId: socketId
+            });
+
+        } catch (error) {
+            console.error('Error en callVerificaciondiferenciasDocumentosBDS:', error);
+            return res.status(500).json({
+                ok: false,
+                message: 'Error interno al solicitar la verificación de documentos.'
+            });
+        }
     }
 }
 
