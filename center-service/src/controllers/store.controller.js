@@ -370,7 +370,7 @@ export const storeController = {
                     // io.emit('resultado_verificacion_documentos_bds', payload);
 
                     if (diferencias.length > 0) {
-                        const correosDestino = ['itperu@metasperu.com'];
+                        const correosDestino = ['itperu@metasperu.com','jhonnygermano@metasperu.com'];
 
                         await emailService.pushToEmailQueue({
                             email: correosDestino,
