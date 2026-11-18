@@ -416,10 +416,6 @@ export const storeController = {
                 socketId: socketId
             });
 
-            await pool.execute(
-                "UPDATE tb_cron_ejectute_history SET date_ejecucion = CURDATE(), cron_status = 'EJECUTANDO' WHERE id_cron = 1"
-            );
-
             return res.status(200).json({
                 ok: true,
                 message: 'Solicitud de verificación enviada al servicio de auditoría.',

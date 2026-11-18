@@ -104,7 +104,7 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('10 17 * * *', async () => {
+cron.schedule('16 17 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando verificación de documentos BDS...');
 
   try {
@@ -250,6 +250,10 @@ const executeVerificationDocumentoBDS = async () => {
     // Asegúrate de que getIO() esté disponible en este archivo
     getIO().to('servidor_backup').emit('py_verificacion_documentos_dbs');
     console.log(`[CRON] Señal emitida Documentos BDS exitosamente`);
+
+    await pool.execute(
+      "UPDATE tb_cron_ejectute_history SET date_ejecucion = CURDATE(), cron_status = 'EJECUTANDO' WHERE id_cron = 1"
+    );
 
   } catch (error) {
     console.error('[CRON ERROR] Error en ejecución programada:', error);
