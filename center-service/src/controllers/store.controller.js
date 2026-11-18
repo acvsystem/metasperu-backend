@@ -363,6 +363,17 @@ export const storeController = {
                 } else {
                     // Fallback: si no llegó socketId (ej. ejecución automática por cron), notifica general
                     // io.emit('resultado_verificacion_documentos_bds', payload);
+
+                    const correosDestino = ['itperu@metasperu.com'];
+
+                    await emailService.pushToEmailQueue({
+                        email: correosDestino,
+                        subject: `Verificacion de documentos BDS`,
+                        template: 'alertaDiferenciasDocumentosBDS',
+                        variables: {
+                            documentos: diferencias   // Lista de documentos específicos de esta tienda
+                        }
+                    });
                 }
             }
 

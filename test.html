@@ -1,277 +1,146 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <title>Papeleta Permiso de Salida</title>
+    <meta charset="utf-8">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
+        .body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
             margin: 0;
             padding: 20px;
-            background-color: #fff;
         }
+
         .container {
-            max-width: 750px;
+            max-width: 600px;
+            background: #ffffff;
             margin: 0 auto;
-            border: 1px solid #e0e0e0;
-            padding: 25px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.05);
-        }
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 3px solid #004080;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logo-box {
-            background-color: #004080;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-            padding: 8px 12px;
-            border-radius: 4px;
-        }
-        .logo-text {
-            font-size: 14px;
-            font-weight: bold;
-            color: #004080;
-            line-height: 1.2;
-        }
-        .title-section {
-            text-align: center;
-            flex-grow: 1;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-top: 5px;
-        }
-        .nro-papeleta {
-            text-align: right;
-        }
-        .nro-papeleta span:first-child {
-            font-size: 11px;
-            color: #666;
-            display: block;
-        }
-        .nro-papeleta span:last-child {
-            font-size: 16px;
-            font-weight: bold;
-            color: #004080;
-        }
-
-        /* Form Fields */
-        .field-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-        .field-group {
-            flex: 1;
-            margin-right: 20px;
-        }
-        .field-group:last-child {
-            margin-right: 0;
-        }
-        .field-label {
-            font-size: 10px;
-            color: #777;
-            text-transform: uppercase;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-        .field-value {
-            font-size: 14px;
-            color: #222;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 4px;
-        }
-
-        /* Info Box */
-        .info-box {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 20px 0;
-        }
-        .time-details div {
-            margin-bottom: 6px;
-            font-size: 13px;
-        }
-        .time-details span {
-            font-weight: bold;
-            color: #444;
-            display: inline-block;
-            width: 55px;
-        }
-        .total-hours-card {
-            border: 2px dashed #004080;
             border-radius: 8px;
-            padding: 10px 20px;
-            text-align: center;
-            background: #fff;
-        }
-        .total-hours-card .label {
-            font-size: 11px;
-            color: #004080;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-        .total-hours-card .value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #004080;
+            overflow: hidden;
+            border: 1px solid #e1e8ed;
         }
 
-        /* Table */
-        table {
+        .header {
+            background-color: #0056b3;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .content h2 {
+            color: #333;
+            font-size: 18px;
+            border-bottom: 2px solid #0056b3;
+            padding-bottom: 10px;
+        }
+
+        /* Contenedor del scroll */
+        .table-scroll-wrapper {
+            max-height: 400px;
+            /* Altura máxima antes de activar el scroll */
+            overflow-y: auto;
+            border: 1px solid #edf2f7;
+            margin-top: 20px;
+        }
+
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            margin-bottom: 35px;
-        }
-        th {
-            background-color: #333;
-            color: white;
-            font-size: 11px;
-            text-transform: uppercase;
-            padding: 8px;
-            text-align: center;
-            font-weight: normal;
-        }
-        td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-            font-size: 13px;
-            color: #333;
-        }
-        tr:nth-child(even) {
-            background-color: #fdfdfd;
         }
 
-        /* Signatures */
-        .signatures {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 50px;
-            text-align: center;
+        .data-table th {
+            background-color: #edf2f7;
+            color: #4a5568;
+            text-align: left;
+            padding: 12px;
+            font-size: 13px;
+            border-bottom: 2px solid #cbd5e0;
+            position: sticky;
+            top: 0;
         }
-        .signature-line {
-            width: 250px;
-            border-top: 1px solid #333;
-            padding-top: 5px;
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #edf2f7;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-size: 12px;
-            color: #444;
+            font-weight: bold;
+        }
+
+        .footer {
+            background: #f8fafc;
+            padding: 20px;
+            text-align: center;
+            color: #718096;
+            font-size: 12px;
         }
     </style>
 </head>
-<body>
 
-<div class="container">
-    <!-- Header -->
-    <div class="header">
-        <div class="logo-section">
-            <div class="logo-box">M</div>
-            <div class="logo-text">METAS<br>PERÚ SAC</div>
+<body class="body">
+    <div class="container">
+        <div class="header">
+            <h1>Metas Perú S.A.C</h1>
+            <p style="margin-top: 5px; opacity: 0.8;">Gestión de Verificación de Documentos</p>
         </div>
-        <div class="title-section">
-            PAPELETA PERMISO DE SALIDA
+
+        <div class="content">
+            <h2>Reporte de Diferencias de Documentos</h2>
+            <p>Hola, se han detectado los siguientes documentos faltantes:</p>
+
+            <div class="table-scroll-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ORIGEN</th>
+                            <th>DOC.ORIGEN</th>
+                            <th>DOC.COE</th>
+                            <th>FECHA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each documentos}}
+                        <tr>
+                            <td><strong>{{this.origen}}</strong></td>
+                            <td>{{this.comprobante_original}}</td>
+                            <td>{{this.comprobante_facturacion}}</td>
+                            <td>{{this.fecha_comprobante}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div
+                style="margin-top: 30px; padding: 15px; background: #ebf8ff; border-left: 4px solid #3182ce; color: #2c5282; font-size: 14px;">
+                <strong>Nota:</strong> Favor de verificar la información de los documentos faltantes.
+            </div>
         </div>
-        <div class="nro-papeleta">
-            <span>Nro. Papeleta</span>
-            <span>{{nroPapeleta}}</span>
+
+        <div class="footer">
+            Este es un mensaje automático generado por el Sistema de Monitoreo.<br>
+            &copy; 2026 Metas Perú S.A.C - Lima, Perú.
         </div>
     </div>
-
-    <!-- Colaborador -->
-    <div class="field-row">
-        <div class="field-group">
-            <div class="field-label">Apellidos y Nombre</div>
-            <div class="field-value">{{empleado}}</div>
-        </div>
-    </div>
-
-    <!-- Fecha Solicitud / Cargo -->
-    <div class="field-row">
-        <div class="field-group">
-            <div class="field-label">Fecha Solicitud</div>
-            <div class="field-value">{{fechaSolicitud}}</div>
-        </div>
-        <div class="field-group">
-            <div class="field-label">Cargo</div>
-            <div class="field-value">{{cargo}}</div>
-        </div>
-    </div>
-
-    <!-- Unidad de Servicio / Tipo Papeleta -->
-    <div class="field-row">
-        <div class="field-group">
-            <div class="field-label">Unidad de Servicio</div>
-            <div class="field-value">{{unidadServicio}}</div>
-        </div>
-        <div class="field-group">
-            <div class="field-label">Tipo Papeleta</div>
-            <div class="field-value">{{tipoPapeleta}}</div>
-        </div>
-    </div>
-
-    <!-- Cuadro de Horas -->
-    <div class="info-box">
-        <div class="time-details">
-            <div><span>Desde:</span> {{desde}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span>Salida:</span> {{salida}}</div>
-            <div><span>Hasta:</span> {{hasta}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span>Llegada:</span> {{llegada}}</div>
-        </div>
-        <div class="total-hours-card">
-            <div class="label">Horas Solicitadas</div>
-            <div class="value">{{horasSolicitadas}}</div>
-        </div>
-    </div>
-
-    <!-- Tabla de Compensaciones -->
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha Compensación</th>
-                <th>Hora Extra Acum.</th>
-                <th>Hora Solicitada</th>
-                <th>Hora Sobrante</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{#each compensaciones}}
-            <tr>
-                <td>{{fechaCompensacion}}</td>
-                <td>{{horaExtraAcum}}</td>
-                <td>{{horaSolicitada}}</td>
-                <td>{{horaSobrante}}</td>
-            </tr>
-            {{/each}}
-        </tbody>
-    </table>
-
-    <!-- Firmas -->
-    <div class="signatures">
-        <div class="signature-line">
-            Firma del Colaborador
-        </div>
-        <div class="signature-line">
-            V°B° Jefe Inmediato
-        </div>
-    </div>
-</div>
-
 </body>
+
 </html>
