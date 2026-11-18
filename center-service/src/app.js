@@ -104,7 +104,7 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('16 17 * * *', async () => {
+cron.schedule('18 17 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando verificación de documentos BDS...');
 
   try {
@@ -252,7 +252,7 @@ const executeVerificationDocumentoBDS = async () => {
     console.log(`[CRON] Señal emitida Documentos BDS exitosamente`);
 
     await pool.execute(
-      "UPDATE tb_cron_ejectute_history SET date_ejecucion = CURDATE(), cron_status = 'EJECUTANDO' WHERE id_cron = 1"
+      "UPDATE tb_cron_ejectute_history SET date_ejecution = CURDATE(), cron_status = 'EJECUTANDO' WHERE id_cron = 1"
     );
 
   } catch (error) {
