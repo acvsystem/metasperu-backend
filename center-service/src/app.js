@@ -104,7 +104,7 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
-cron.schedule('22 16 * * *', async () => {
+cron.schedule('30 16 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando verificación de documentos BDS...');
 
   try {
