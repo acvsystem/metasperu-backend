@@ -357,6 +357,11 @@ export const storeController = {
             };
 
             if (io) {
+
+                await pool.execute(
+                    "UPDATE tb_cron_ejectute_history SET date_response = CURDATE(), cron_status = 'READY' WHERE id_cron = 1"
+                );
+
                 if (socketId) {
                     // Envía SOLO al usuario del frontend que solicitó la verificación
                     io.to(socketId).emit('resultado_verificacion_documentos_bds', payload);
@@ -364,16 +369,18 @@ export const storeController = {
                     // Fallback: si no llegó socketId (ej. ejecución automática por cron), notifica general
                     // io.emit('resultado_verificacion_documentos_bds', payload);
 
-                    const correosDestino = ['itperu@metasperu.com','johnnygermano@metasperu.com'];
+                    if (diferencias.length > 0) {
+                        const correosDestino = ['itperu@metasperu.com'];
 
-                    await emailService.pushToEmailQueue({
-                        email: correosDestino,
-                        subject: `Verificacion de documentos BDS`,
-                        template: 'alertaDiferenciasDocumentosBDS',
-                        variables: {
-                            documentos: diferencias   // Lista de documentos específicos de esta tienda
-                        }
-                    });
+                        await emailService.pushToEmailQueue({
+                            email: correosDestino,
+                            subject: `Verificacion de documentos BDS`,
+                            template: 'alertaDiferenciasDocumentosBDS',
+                            variables: {
+                                documentos: diferencias   // Lista de documentos específicos de esta tienda
+                            }
+                        });
+                    }
                 }
             }
 
@@ -408,6 +415,10 @@ export const storeController = {
             io.emit('py_verificacion_documentos_dbs', {
                 socketId: socketId
             });
+
+            await pool.execute(
+                "UPDATE tb_cron_ejectute_history SET date_ejecucion = CURDATE(), cron_status = 'EJECUTANDO' WHERE id_cron = 1"
+            );
 
             return res.status(200).json({
                 ok: true,
