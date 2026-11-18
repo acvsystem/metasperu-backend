@@ -364,7 +364,7 @@ export const storeController = {
                     // Fallback: si no llegó socketId (ej. ejecución automática por cron), notifica general
                     // io.emit('resultado_verificacion_documentos_bds', payload);
 
-                    const correosDestino = ['itperu@metasperu.com'];
+                    const correosDestino = ['itperu@metasperu.com','johnnygermano@metasperu.com'];
 
                     await emailService.pushToEmailQueue({
                         email: correosDestino,
