@@ -429,6 +429,37 @@ export const storeController = {
                 message: 'Error interno al solicitar la verificación de documentos.'
             });
         }
+    },
+    callCronVerificaciondiferenciasDocumentosBDS: async (req, res) => {
+        try {
+
+            const query = `SELECT * FROM tb_cron_ejectute_history where id_cron = 1;`;
+
+            const [rows] = await pool.execute(query);
+
+            const dataCron = rows.map(t => {
+                // Función auxiliar para parsear JSON de forma segura
+
+                return {
+                    name: t.cron_name,
+                    date_ejecution: t.date_ejecution,
+                    date_response: t.date_response,
+                    cron_status: t.cron_status
+                };
+            });
+
+            return res.status(200).json({
+                ok: true,
+                data: dataCron
+            });
+
+        } catch (error) {
+            console.error('Error en callCronVerificaciondiferenciasDocumentosBDS:', error);
+            return res.status(500).json({
+                ok: false,
+                message: 'Error interno al obtener el historial de ejecución del cron.'
+            });
+        }
     }
 }
 
