@@ -104,6 +104,23 @@ cron.schedule('00 17 * * *', async () => {
   timezone: "America/Lima"
 });
 
+cron.schedule('15 16 * * *', async () => {
+  console.log('⏰ [Cron Job 3] Iniciando verificación de documentos BDS...');
+
+  try {
+
+    executeVerificationDocumentoBDS();
+
+  } catch (error) {
+    const errorMsg = error.response?.data?.message || error.message;
+    console.error('❌ [Cron Error]:', errorMsg);
+  }
+}, {
+  scheduled: true,
+  timezone: "America/Lima"
+});
+
+
 cron.schedule('00 21 * * *', async () => {
   console.log('⏰ [Cron Job 3] Iniciando comprobacion documentos faltantes...');
 
@@ -221,6 +238,18 @@ const executeVerificationSunat = async () => {
     // Asegúrate de que getIO() esté disponible en este archivo
     getIO().to('servidor_backup').emit('py_verificacion_sunat');
     console.log(`[CRON] Señal emitida SUNAT exitosamente`);
+
+  } catch (error) {
+    console.error('[CRON ERROR] Error en ejecución programada:', error);
+  }
+};
+
+
+const executeVerificationDocumentoBDS = async () => {
+  try {
+    // Asegúrate de que getIO() esté disponible en este archivo
+    getIO().to('servidor_backup').emit('py_verificacion_documentos_dbs');
+    console.log(`[CRON] Señal emitida Documentos BDS exitosamente`);
 
   } catch (error) {
     console.error('[CRON ERROR] Error en ejecución programada:', error);
