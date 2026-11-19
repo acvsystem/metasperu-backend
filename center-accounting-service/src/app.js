@@ -34,7 +34,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 //app.use(createApiLogger({ pool, serviceName: 'center-accounting-service' }));
 
 // --- AUTOMATIZACIÓN: CRON JOB A LAS 9:00 AM ---
-cron.schedule('30 15 * * *', async () => {
+cron.schedule('45 15 * * *', async () => {
   console.log('⏰ [Cron Job] Iniciando comprobación diaria de Tipo de Cambio...');
 
   // 1. Asegurar fecha correcta en Lima (evita desfases de UTC)
