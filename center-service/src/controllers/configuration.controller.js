@@ -4,13 +4,14 @@ import bcrypt from 'bcrypt';
 export const configurationController = {
     postParametersStore: async (req, res) => {
         const { mac } = req.body;
-
+        const normalizedMac = normalizeMac(mac);
         // Validación básica de entrada
-        if (!mac) {
-            return res.status(400).json({ message: 'MAC son requeridos' });
+        if (!normalizedMac) {
+            return res.status(400).json({ message: 'MAC inválida' });
         }
 
         try {
+
             // 1. Uso de Prepared Statements (?) para evitar Inyección SQL
             // 2. Solo traemos los campos necesarios en lugar de SELECT *
             const [parameters] = await pool.execute(
@@ -18,28 +19,28 @@ export const configurationController = {
                 pt.PROPERTY_STOCK,pt.NAME_EXCEL_REPORT_STOCK,pt.ASUNTO_EMAIL_REPORT_STOCK FROM tb_lista_tienda lt 
                 INNER JOIN tb_parametros_tienda pt on lt.SERIE_TIENDA = pt.SERIE_TIENDA
                 WHERE pt.MAC = ?`,
-                [mac.toUpperCase()]
+                [normalizedMac]
             );
 
-            if (parameters.length > 0) {
-                // Buscamos los contadores de tráfico asociados a la serie
-                const [sqlTraffics] = await pool.query(
-                    'SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = ?',
-                    [parameters[0]['SERIE_TIENDA']]
-                );
-
-                // Simplificamos el mapeo de IPs
-                const traffics = sqlTraffics.map(t => t.IP);
-
-                // Asignamos los contadores al primer objeto encontrado
-                parameters[0].TRAFFIC_COUNTERS = traffics;
-
-                return res.json(parameters);
+            if (parameters.length === 0) {
+                return res.json([]);
             }
 
-            // Si no hay parámetros, enviamos un array vacío o 404 según prefieras
-            res.json([]);
+            const store = parameters[0];
+            const serieTienda = store.SERIE_TIENDA;
 
+            const [[sqlTraffics], [sqlQueries]] = await Promise.all([
+                pool.execute(
+                    'SELECT IP FROM tb_traffic_counter_tienda WHERE CODIGO_TIENDA = ?',
+                    [serieTienda],
+                ),
+                pool.execute('SELECT name_query, query FROM tb_query_sql;'),
+            ]);
+
+            store.TRAFFIC_COUNTERS = sqlTraffics.map((t) => t.IP);
+            store.QUERIES_SQL = sqlQueries;
+
+            return res.json(parameters);
         } catch (error) {
             console.error('Error en postParametersStore:', error); // Log para debug
             res.status(500).json({
@@ -507,4 +508,11 @@ export const configurationController = {
             res.status(500).json({ message: 'Error al eliminar', error });
         }
     }
+}
+
+
+function normalizeMac(rawMac) {
+    if (typeof rawMac !== 'string') return null;
+    const normalized = rawMac.trim().toUpperCase();
+    return MAC_REGEX.test(normalized) ? normalized : null;
 }
