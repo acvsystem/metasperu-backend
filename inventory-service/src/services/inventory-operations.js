@@ -87,7 +87,7 @@ export async function editCount(pool, body, user) {
       [id],
     );
     if (!scan) throw fail(404, 'No se encontró el escaneo.');
-    if (user.role !== 'administrador' && Number(scan.escaneado_por) !== Number(user.id))
+    if (user.role !== 'auditor' && user.role !== 'administrador' && Number(scan.escaneado_por) !== Number(user.id))
       throw fail(403, 'Solo puede modificar sus propios escaneos.');
     if (scan.estado !== 'ACTIVO') throw fail(409, 'La sesión está finalizada.');
     if (Number(scan.cantidad) !== quantity) {
