@@ -512,6 +512,8 @@ export const configurationController = {
 
 
 function normalizeMac(rawMac) {
+    const MAC_REGEX = /^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$/i;
+    
     if (typeof rawMac !== 'string') return null;
     const normalized = rawMac.trim().toUpperCase();
     return MAC_REGEX.test(normalized) ? normalized : null;
