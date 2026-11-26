@@ -249,6 +249,6 @@ router.post('/api/verificacion-diferencias-documentos-bds', storeController.call
 router.get('/api/cron/verificacion-diferencias-documentos-bds', storeController.callCronVerificaciondiferenciasDocumentosBDS);
 
 // ---- RESET PLUGIN
-router.post('/api/reset/plugin', verifyToken, storeController.callResetPlugin);
+router.get('/api/reset/plugin', verifyToken, storeController.callResetPlugin);
 
 export default router;
