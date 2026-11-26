@@ -360,6 +360,14 @@ export const storeController = {
         } catch (error) {
             res.status(500).json({ message: 'Error', error });
         }
+    },
+    callResetPlugin: async (req, res) => {
+        try {
+            getIO().to('grupo_tiendas').emit('py_restart_service', []);
+            res.json({ message: 'Plugin reiniciado' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al reiniciar el plugin', error });
+        }
     }
 };
 

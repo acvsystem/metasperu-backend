@@ -37,4 +37,7 @@ router.post('/api/approval/hours/works/employes', storeController.postApprovalHo
 router.get('/api/solicitude/hours/works/employes', storeController.getApprovalHoursWorksEmployes);
 router.get('/api/all/solicitude/hours/works/employes', storeController.getAllApprovalHoursWorksEmployes);
 
+// ---- RESET PLUGIN
+router.get('/api/reset/plugin', verifyToken, storeController.callResetPlugin);
+
 export default router;

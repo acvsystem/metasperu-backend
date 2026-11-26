@@ -19,4 +19,7 @@ router.post('/api/exchange-rate/sunat', storeController.postExchangeRateSunat);
 // --- RUTA TIENDAS ONLINE
 router.get('/api/stores/online', storeController.verificationStoreConection);
 
+// ---- RESET PLUGIN
+router.get('/api/reset/plugin', verifyToken, storeController.callResetPlugin);
+
 export default router;
