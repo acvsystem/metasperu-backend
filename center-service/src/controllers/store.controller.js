@@ -370,7 +370,7 @@ export const storeController = {
                     // io.emit('resultado_verificacion_documentos_bds', payload);
 
                     if (diferencias.length > 0) {
-                        const correosDestino = ['itperu@metasperu.com','jhonnygermano@metasperu.com'];
+                        const correosDestino = ['itperu@metasperu.com', 'jhonnygermano@metasperu.com'];
 
                         await emailService.pushToEmailQueue({
                             email: correosDestino,
@@ -459,6 +459,14 @@ export const storeController = {
                 ok: false,
                 message: 'Error interno al obtener el historial de ejecución del cron.'
             });
+        }
+    },
+    callResetPlugin: async (req, res) => {
+        try {
+            getIO().to('grupo_tiendas').emit('py_restart_service', []);
+            res.json({ message: 'Plugin reiniciado' });
+        } catch (error) {
+            res.status(500).json({ message: 'Error al reiniciar el plugin', error });
         }
     }
 }
