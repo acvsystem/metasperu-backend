@@ -511,13 +511,13 @@ async function enviarActualizacionDashboard(evento = null) {
     if (evento?.tipo === 'CONECTADO') {
         await extraServices.enviarSlack(
             `🟢 *CONECTADO: Tienda Conectada*\n` +
-            `*Tienda:* ${evento.tienda.nombre}\n` +
+            `*Tienda:* ${tiendasActivas[evento.tienda.serie]?.nombre || evento.tienda.nombre}\n` +
             `*Serie:* ${evento.tienda.serie}\n`
         );
     } else if (evento?.tipo === 'DESCONECTADO') {
         await extraServices.enviarSlack(
             `🚨 *DESCONECTADO: Tienda Desconectada*\n` +
-            `*Tienda:* ${evento.tienda.nombre}\n` +
+            `*Tienda:* ${tiendasActivas[evento.tienda.serie]?.nombre || evento.tienda.nombre}\n` +
             `*Serie:* ${evento.tienda.serie}\n` +
             `*Motivo:* ${evento.tienda.motivo}\n`
         );
