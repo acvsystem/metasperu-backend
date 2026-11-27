@@ -507,17 +507,29 @@ async function enviarActualizacionDashboard(evento = null) {
 
     const listaTiendas = Object.values(tiendasActivas);
 
+    const query = `
+            SELECT DESCRIPCION
+            FROM bd_metasperu.tb_lista_tienda t
+            WHERE t.SERIE_TIENDA = ?
+        `;
+
+    const [rows] = await pool.execute(query, [evento.tienda.serie]);
+
+    const store = rows.find(t => {
+        return t;
+    });
+
     // Solo enviamos a Slack si hubo un evento real de conexión o desconexión
     if (evento?.tipo === 'CONECTADO') {
         await extraServices.enviarSlack(
             `🟢 *CONECTADO: Tienda Conectada*\n` +
-            `*Tienda:* ${tiendasActivas[evento.tienda.serie]?.nombre || evento.tienda.nombre}\n` +
+            `*Tienda:* ${store?.DESCRIPCION || evento.tienda.nombre}\n` +
             `*Serie:* ${evento.tienda.serie}\n`
         );
     } else if (evento?.tipo === 'DESCONECTADO') {
         await extraServices.enviarSlack(
             `🚨 *DESCONECTADO: Tienda Desconectada*\n` +
-            `*Tienda:* ${tiendasActivas[evento.tienda.serie]?.nombre || evento.tienda.nombre}\n` +
+            `*Tienda:* ${store?.DESCRIPCION || evento.tienda.nombre}\n` +
             `*Serie:* ${evento.tienda.serie}\n` +
             `*Motivo:* ${evento.tienda.motivo}\n`
         );
