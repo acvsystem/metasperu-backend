@@ -31,8 +31,10 @@ export const initSocket = (server) => {
     io.on('connection', (socket) => {
         console.log('center-inventario-service: Cliente conectado:', socket.id);
 
+        
         // Registro de tienda
         socket.on('py_register_store', (info) => {
+            socket.join('grupo_tiendas');
             socket.join(info.id); // Unimos la tienda a una "sala" por su ID única
             socket.join(info.marca); // Unimos la tienda a una "sala" por marca
             socket.tiendaId = info.id;
