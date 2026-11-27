@@ -363,6 +363,7 @@ export const storeController = {
     },
     callResetPlugin: async (req, res) => {
         try {
+            console.log('🔄 Reiniciando plugin...');
             getIO().to('grupo_tiendas').emit('py_restart_service', []);
             res.json({ message: 'Plugin reiniciado' });
         } catch (error) {
