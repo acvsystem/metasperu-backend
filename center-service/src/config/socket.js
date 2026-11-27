@@ -34,7 +34,7 @@ const informeRendimientoEstado = {
     tiendasData: {},      // serie -> { data: [...], recibidoEn: Date }
     timeoutId: null,
     timeoutMs: 180000,    // 3 minutos para esperar respuestas
-    emails: ['itperu@metasperu.com', 'paulodosreis@metasperu.com', 'fieldleadervs@metasperu.com','johnnygermano@metasperu.com', 'carlosmoron@metasperu.com','fieldleaderbbw@metasperu.com']
+    emails: ['itperu@metasperu.com', 'paulodosreis@metasperu.com', 'fieldleadervs@metasperu.com', 'johnnygermano@metasperu.com', 'carlosmoron@metasperu.com', 'fieldleaderbbw@metasperu.com']
 };
 
 export function reiniciarAuditoriaDocumentos() {
@@ -106,7 +106,6 @@ export const initSocket = (server) => {
         // --- Lógica para las Tiendas (Python) ---
 
         socket.on('tienda_identificarse', async (data) => {
-
             // 1. Guardamos los metadatos dentro del objeto socket.data
             socket.data.id_tienda = data.id_tienda;
             socket.data.nombre = data.nombre;
@@ -115,11 +114,25 @@ export const initSocket = (server) => {
 
             // 2. Lo unimos a la sala
             await socket.join('grupo_tiendas');
-            socket.join(data.id_tienda); // Unimos la tienda a una "sala" por su ID única
+            socket.join(data.id_tienda);
             console.log(`🚀 Tienda ${data.id_tienda} registrada en memoria del socket.`);
 
-            // 3. Notificar al dashboard (ver paso siguiente)
-            enviarActualizacionDashboard();
+            const infoTienda = {
+                socketId: socket.id,
+                id_tienda: data.id_tienda,
+                nombre: data.nombre,
+                serie: data.id_tienda,
+                lastSeen: socket.data.lastSeen,
+                online: true
+            };
+
+            tiendasActivas[data.id_tienda] = infoTienda;
+
+            // 3. Notificar al dashboard y Slack indicando conexión
+            await enviarActualizacionDashboard({
+                tipo: 'CONECTADO',
+                tienda: infoTienda
+            });
         });
 
         // --- Retorno de Python store al backend documentos de venta---
@@ -291,10 +304,32 @@ export const initSocket = (server) => {
             }
         });
 
-        socket.on('disconnect', () => {
-            console.log(`❌ Un socket se ha ido.`);
-            enviarActualizacionDashboard();
+        socket.on('disconnect', async (reason) => {
+            // Verificamos si el socket que cayó era una tienda identificada
+            // (para ignorar dashboards o conexiones sin identificar)
+            if (socket.data?.id_tienda) {
+                const { id_tienda, nombre, serie } = socket.data;
+                console.log(`❌ Tienda desconectada: ${nombre} (${serie}) - Motivo: ${reason}`);
 
+                const infoTienda = {
+                    socketId: socket.id,
+                    id_tienda,
+                    nombre,
+                    serie,
+                    lastSeen: new Date(),
+                    online: false,
+                    motivo: reason
+                };
+
+                tiendasActivas[id_tienda] = infoTienda;
+
+                await enviarActualizacionDashboard({
+                    tipo: 'DESCONECTADO',
+                    tienda: infoTienda
+                });
+            } else {
+                console.log(`❌ Un socket (dashboard/otro) se ha ido: ${socket.id}`);
+            }
         });
 
 
@@ -446,18 +481,47 @@ function obtenerFaltantes(serieStore, storeRaw, servidorRaw) {
     }
 }
 
-async function enviarActualizacionDashboard() {
-    // Obtenemos todos los sockets que están en la sala 'grupo_tiendas'
+async function enviarActualizacionDashboard(evento = null) {
+    // Obtenemos todos los sockets que siguen en la sala 'grupo_tiendas'
     const sockets = await io.in('grupo_tiendas').fetchSockets();
 
-    const listaTiendas = sockets.map(s => ({
-        socketId: s.id,
-        id_tienda: s.data.id_tienda,
-        nombre: s.data.nombre,
-        serie: s.data.serie,
-        lastSeen: s.data.lastSeen,
-        online: true // Si está en la lista, es porque está online
-    }));
+    // Sincronizamos el estado online real con los sockets activos en la sala
+    const seriesOnline = new Set(sockets.map(s => s.data.id_tienda));
+
+    sockets.forEach(s => {
+        tiendasActivas[s.data.id_tienda] = {
+            socketId: s.id,
+            id_tienda: s.data.id_tienda,
+            nombre: s.data.nombre,
+            serie: s.data.serie,
+            lastSeen: s.data.lastSeen,
+            online: true
+        };
+    });
+
+    Object.keys(tiendasActivas).forEach(serie => {
+        if (!seriesOnline.has(serie)) {
+            tiendasActivas[serie].online = false;
+        }
+    });
+
+    const listaTiendas = Object.values(tiendasActivas);
+
+    // Solo enviamos a Slack si hubo un evento real de conexión o desconexión
+    if (evento?.tipo === 'CONECTADO') {
+        await extraServices.enviarSlack(
+            `🟢 *CONECTADO: Tienda Conectada*\n` +
+            `*Tienda:* ${evento.tienda.nombre}\n` +
+            `*Serie:* ${evento.tienda.serie}\n`
+        );
+    } else if (evento?.tipo === 'DESCONECTADO') {
+        await extraServices.enviarSlack(
+            `🚨 *DESCONECTADO: Tienda Desconectada*\n` +
+            `*Tienda:* ${evento.tienda.nombre}\n` +
+            `*Serie:* ${evento.tienda.serie}\n` +
+            `*Motivo:* ${evento.tienda.motivo}\n`
+        );
+    }
 
     console.log(listaTiendas);
     io.emit('actualizar_dashboard', listaTiendas);
