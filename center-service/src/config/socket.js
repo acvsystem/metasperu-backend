@@ -507,6 +507,10 @@ async function enviarActualizacionDashboard(evento = null) {
 
     const listaTiendas = Object.values(tiendasActivas);
 
+    if ((evento?.tienda?.serie || "").length == 0) {
+        return;
+    }
+
     const query = `
             SELECT DESCRIPCION
             FROM bd_metasperu.tb_lista_tienda t
